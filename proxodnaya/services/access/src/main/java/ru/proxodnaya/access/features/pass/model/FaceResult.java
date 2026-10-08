@@ -1,26 +1,13 @@
 package ru.proxodnaya.access.features.pass.model;
 
 /**
- * Результат сверки лица от Python-сервиса face.
+ * Ответ face на сверку 1:1 с владельцем QR.
  *
- * @param match     совпадает ли лицо с эталоном
- * @param score     косинусная близость (0..1)
- * @param liveness  прошла ли проверка живости
- * @param quality   качество кадра (0..1)
- * @param reason    причина отказа (если не match)
+ * @param match    лицо совпало с эталоном
+ * @param score    близость 0..1
+ * @param liveness живость подтверждена
+ * @param quality  качество кадров 0..1
+ * @param reason   причина от face (FACE_NOT_FOUND, FACE_MULTIPLE, FACE_NOT_ENROLLED, ...) или пусто
  */
-public record FaceResult(
-        boolean match,
-        double score,
-        boolean liveness,
-        double quality,
-        String reason
-) {
-    public static FaceResult ok(double score, double quality) {
-        return new FaceResult(true, score, true, quality, null);
-    }
-
-    public static FaceResult deny(String reason, double score, double quality) {
-        return new FaceResult(false, score, false, quality, reason);
-    }
+public record FaceResult(boolean match, double score, boolean liveness, double quality, String reason) {
 }

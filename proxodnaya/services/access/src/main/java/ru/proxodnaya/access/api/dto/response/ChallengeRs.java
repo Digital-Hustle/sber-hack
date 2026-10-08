@@ -1,13 +1,11 @@
 package ru.proxodnaya.access.api.dto.response;
 
-import java.time.Instant;
-
 /**
- * Челлендж живости: действие, сколько кадров, срок.
+ * Челлендж живости.
+ *
+ * @param kind      turn-left | turn-right | blink | nod
+ * @param text      подсказка на экране
+ * @param timeoutMs сколько ждём кадры
  */
-public record ChallengeRs(
-        String action,
-        String text,
-        int framesRequired,
-        Instant expiresAt
-) {}
+public record ChallengeRs(String kind, String text, long timeoutMs) {
+}

@@ -1,211 +1,240 @@
 package ru.proxodnaya.access.features.pass.application;
 
+import java.security.SecureRandom;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import ru.proxodnaya.access.features.pass.gateway.AccessProfile;
-import ru.proxodnaya.access.features.pass.gateway.ActiveShift;
-import ru.proxodnaya.access.features.pass.gateway.FaceClient;
-import ru.proxodnaya.access.features.pass.gateway.FaceVerifyResult;
-import ru.proxodnaya.access.features.pass.gateway.PeopleClient;
-import ru.proxodnaya.access.features.pass.gateway.ShiftClient;
+import com.github.f4b6a3.uuid.UuidCreator;
+
+import ru.proxodnaya.access.config.properties.AccessProperties;
+import ru.proxodnaya.access.features.pass.command.service.ChallengeService;
+import ru.proxodnaya.access.features.pass.gateway.FaceGateway;
+import ru.proxodnaya.access.features.pass.gateway.PeopleGateway;
+import ru.proxodnaya.access.features.pass.gateway.ShiftGateway;
+import ru.proxodnaya.access.features.pass.model.ActiveShift;
 import ru.proxodnaya.access.features.pass.model.DecisionResult;
 import ru.proxodnaya.access.features.pass.model.FaceResult;
 import ru.proxodnaya.access.features.pass.model.PassContext;
-import ru.proxodnaya.access.features.qr.command.QrParser;
-import ru.proxodnaya.access.features.qr.command.QrVerifier;
-import ru.proxodnaya.access.features.qr.model.QrPayload;
+import ru.proxodnaya.access.features.pass.model.PassOutcome;
+import ru.proxodnaya.access.features.pass.model.PassRecord;
+import ru.proxodnaya.access.features.pass.model.PendingAttempt;
+import ru.proxodnaya.access.features.pass.model.ScanOutcome;
+import ru.proxodnaya.access.features.pass.model.WorkerPreview;
+import ru.proxodnaya.access.features.pass.model.WorkerProfile;
+import ru.proxodnaya.access.features.pass.query.service.PassQueryService;
+import ru.proxodnaya.access.features.qr.api.QrCheck;
+import ru.proxodnaya.access.features.qr.api.QrCheckResult;
 import ru.proxodnaya.access.shared.AttemptSource;
-import ru.proxodnaya.access.shared.Challenge;
 import ru.proxodnaya.access.shared.ChallengeAction;
 import ru.proxodnaya.access.shared.Decision;
 import ru.proxodnaya.access.shared.Direction;
 import ru.proxodnaya.access.shared.ReasonCode;
-import ru.proxodnaya.access.shared.ReasonView;
+import ru.proxodnaya.common.exception.NotFoundException;
 
 /**
- * Оркестрация попытки прохода (FR-01, FR-06, NFR-16):
- * 1. Создать попытку: QR → парсинг → проверка подписи → выдача челленджа (или DENY)
- * 2. Принять кадры: вызов face/people/shift параллельно → DecisionEngine → запись в журнал → outbox
+ * Поток прохода (FR-01, FR-06, NFR-16).
  *
- * <p>Транзакция (гашение QR + журнал + outbox) — одна, в методе submitFrames.</p>
- * <p>Внешние вызовы (face/people/shift) — вне транзакции, параллельно, таймаут 1.5 с, fail-closed.</p>
+ * <ol>
+ *   <li>Скан: QR локально (подпись, окно, ключ из проекции) → блокировка, TEMP_LOCKED, REPEAT_SCAN →
+ *       направление по присутствию → профиль people → челлендж.</li>
+ *   <li>Кадры: face, people, shift параллельно с таймаутом (fail-closed) → DecisionEngine →
+ *       одна транзакция: гашение QR + журнал + присутствие + outbox.</li>
+ * </ol>
  */
 @Service
 public class PassService {
 
-    private static final int FRAMES_REQUIRED = 3;
-    private static final int CHALLENGE_TIMEOUT_SECONDS = 10;
-    private static final int MAX_RECENT_FAILURES = 5;
+    private static final String FACE = "face";
+    private static final String PEOPLE = "people";
+    private static final String SHIFT = "shift";
+    private static final String FAILED = "failedDependency";
+    private static final ChallengeAction[] ACTIONS = ChallengeAction.values();
 
-    private final QrParser qrParser;
-    private final QrVerifier qrVerifier;
-    private final DecisionEngine decisionEngine;
-    private final FaceClient faceClient;
-    private final PeopleClient peopleClient;
-    private final ShiftClient shiftClient;
-    private final JournalService journalService;
+    private final QrCheck qrCheck;
+    private final PassQueryService query;
+    private final ChallengeService challenges;
+    private final FaceGateway face;
+    private final PeopleGateway people;
+    private final ShiftGateway shift;
+    private final DecisionEngine engine;
+    private final PassRecorder recorder;
+    private final AccessProperties props;
+    private final Clock clock;
+    private final ExecutorService executor;
+    private final SecureRandom random = new SecureRandom();
 
-    @Autowired
-    public PassService(QrParser qrParser, QrVerifier qrVerifier, DecisionEngine decisionEngine,
-                       FaceClient faceClient, PeopleClient peopleClient, ShiftClient shiftClient,
-                       JournalService journalService) {
-        this.qrParser = qrParser;
-        this.qrVerifier = qrVerifier;
-        this.decisionEngine = decisionEngine;
-        this.faceClient = faceClient;
-        this.peopleClient = peopleClient;
-        this.shiftClient = shiftClient;
-        this.journalService = journalService;
+    public PassService(QrCheck qrCheck, PassQueryService query, ChallengeService challenges, FaceGateway face,
+                       PeopleGateway people, ShiftGateway shift, DecisionEngine engine, PassRecorder recorder,
+                       AccessProperties props, Clock clock, @Qualifier("depsExecutor") ExecutorService executor) {
+        this.qrCheck = qrCheck;
+        this.query = query;
+        this.challenges = challenges;
+        this.face = face;
+        this.people = people;
+        this.shift = shift;
+        this.engine = engine;
+        this.recorder = recorder;
+        this.props = props;
+        this.clock = clock;
+        this.executor = executor;
     }
 
     /**
-     * Шаг 1: приём QR → парсинг → проверка подписи и окна → выдача челленджа или DENY.
+     * Шаг 1: скан QR.
+     *
+     * @param rawQr        строка QR
+     * @param checkpointId проходная
+     * @return отказ или челлендж
      */
-    public AttemptStartResult startAttempt(String rawQr, Direction direction, String checkpointId) {
-        Instant now = Instant.now();
-        UUID attemptId = UUID.randomUUID();
-
-        // 1. Парсинг QR
-        QrPayload qr = qrParser.parse(rawQr);
-        if (qr == null) {
-            return AttemptStartResult.deny(attemptId, ReasonCode.QR_MISSING, direction, checkpointId, now);
+    public ScanOutcome scan(String rawQr, String checkpointId) {
+        Instant now = now();
+        UUID id = UuidCreator.getTimeOrderedEpoch();
+        QrCheckResult qrResult = qrCheck.check(rawQr, now);
+        if (!qrResult.isOk()) {
+            return ScanOutcome.decided(denyEarly(id, now, checkpointId, Direction.IN, qrResult, qrResult.code(), Map.of(), null));
         }
-
-        // 2. Устройство известно? (здесь — по projection device_keys; пока заглушка: проверим через people)
-        // В полной реализации: запрос device_keys из БД access по qr.deviceId()
-        // Для сейчас — отдаём челлендж, проверка подписи и гашение в submitFrames
-        // (в реальном коде подпись проверяется здесь, чтобы не выдавать челлендж на невалидный QR)
-
-        // 3. Окно времени
-        if (!qrVerifier.isWindowValid(qr, now)) {
-            return AttemptStartResult.deny(attemptId, ReasonCode.QR_EXPIRED, direction, checkpointId, now);
-        }
-
-        // 4. Челлендж
-        ChallengeAction action = ChallengeAction.values()[java.util.concurrent.ThreadLocalRandom.current()
-                .nextInt(ChallengeAction.values().length)];
-        Challenge challenge = new Challenge(action, FRAMES_REQUIRED,
-                now.plusSeconds(CHALLENGE_TIMEOUT_SECONDS));
-
-        return AttemptStartResult.challenge(attemptId, challenge, direction, checkpointId, qr, now);
-    }
-
-    /**
-     * Шаг 2: приём кадров → внешние вызовы → DecisionEngine → журнал + outbox.
-     * Транзакция: гашение QR + журнал + outbox — атомарно.
-     */
-    @Transactional
-    public DecisionResult submitFrames(UUID attemptId, QrPayload qr, Direction direction,
-                                        String checkpointId, String zoneId, List<String> frames,
-                                        String challengeAction, Instant startedAt) {
-        Instant now = Instant.now();
-
-        // Внешние вызовы (вне транзакции по правилам, но здесь для упрощения в одном методе):
-        // В полной реализации — CompletableFuture.allOf с таймаутом 1.5 с и circuit breaker.
-
-        // 1. Получить профиль рабочего (people) — пока по устройству → workerId
-        // В полной реализации: device_keys JOIN worker_state в БД access
-        String workerId = null;
-        AccessProfile profile = null;
-        boolean isInside = false; // из worker_state / presence
-        int recentFailures = 0;   // из pass_attempts
-
-        // 2. Вызов face (если workerId есть)
-        FaceResult faceResult = null;
-        if (workerId != null) {
+        String workerId = qrResult.workerId();
+        Direction direction = query.direction(workerId, now);
+        Map<String, Object> details = new LinkedHashMap<>();
+        Optional<WorkerProfile> profile = Optional.empty();
+        ReasonCode code = preCheck(workerId, now);
+        if (code == ReasonCode.OK) {
             try {
-                FaceVerifyResult face = faceClient.verify(workerId, frames, challengeAction);
-                faceResult = new FaceResult(face.match(), face.score(), face.liveness(), face.quality(), face.reason());
-            } catch (Exception e) {
-                // fail-closed: SYSTEM_ERROR
-                faceResult = FaceResult.deny("SYSTEM_ERROR", 0, 0);
+                profile = async(() -> people.accessProfile(workerId)).join();
+                code = profileCode(profile, qrResult.deviceId());
+            } catch (CompletionException error) {
+                code = ReasonCode.SYSTEM_ERROR;
+                details.put(FAILED, List.of(PEOPLE));
             }
         }
-
-        // 3. Вызов shift
-        boolean shiftActive = false;
-        boolean shiftWindowOk = false;
-        if (workerId != null) {
-            try {
-                ActiveShift shift = shiftClient.getActiveShift(workerId, now);
-                if (shift != null) {
-                    shiftActive = true;
-                    shiftWindowOk = shift.windowOk();
-                }
-            } catch (Exception e) {
-                // fail-closed
-            }
+        WorkerPreview preview = profile.map(WorkerPreview::of).orElse(null);
+        if (code != ReasonCode.OK) {
+            return ScanOutcome.decided(denyEarly(id, now, checkpointId, direction, qrResult, code, details, preview));
         }
-
-        // 4. Сборка контекста
-        PassContext ctx = new PassContext(
-                attemptId, qr, direction, checkpointId, zoneId,
-                null, // devicePublicKey — из device_keys
-                workerId,
-                profile != null ? profile.status() : "ACTIVE",
-                profile != null ? profile.permitUntil() : null,
-                profile != null ? profile.zoneIds() : Set.of(),
-                faceResult,
-                shiftActive, shiftWindowOk,
-                isInside,
-                0, // zoneOccupancy
-                0, // zoneCapacity
-                recentFailures,
-                now
-        );
-
-        // 5. DecisionEngine
-        DecisionResult result = decisionEngine.decide(ctx);
-
-        // 6. Гашение QR + журнал + outbox — в одной транзакции
-        long latencyMs = java.time.Duration.between(startedAt, Instant.now()).toMillis();
-        journalService.record(
-                attemptId, now, checkpointId, direction, workerId,
-                qr != null ? qr.deviceId() : null,
-                qr != null ? qr.window() : 0,
-                faceResult != null ? faceResult.score() : null,
-                faceResult != null && faceResult.liveness(),
-                challengeAction,
-                result.decision(), result.reasonCode(),
-                latencyMs, AttemptSource.KIOSK
-        );
-
-        return result;
+        PendingAttempt attempt = new PendingAttempt(id, workerId, qrResult.deviceId(), qrResult.window(), direction, checkpointId,
+                ACTIONS[random.nextInt(ACTIONS.length)], props.framesRequired(), now, now.plus(props.challengeTtl()));
+        challenges.create(attempt);
+        return ScanOutcome.challenge(attempt, preview);
     }
 
     /**
-     * Результат шага 1: челлендж или DENY.
+     * Шаг 2: кадры челленджа.
+     *
+     * @param token  токен из ответа на скан
+     * @param frames кадры JPEG base64
+     * @return решение
      */
-    public record AttemptStartResult(
-            UUID attemptId,
-            boolean challengeRequired,
-            Challenge challenge,
-            ReasonCode reasonCode,
-            Direction direction,
-            String checkpointId,
-            Instant startedAt,
-            QrPayload qr
-    ) {
-        public static AttemptStartResult challenge(UUID attemptId, Challenge challenge,
-                                                    Direction direction, String checkpointId,
-                                                    QrPayload qr, Instant startedAt) {
-            return new AttemptStartResult(attemptId, true, challenge, ReasonCode.OK,
-                    direction, checkpointId, startedAt, qr);
+    public PassOutcome submitFrames(UUID token, List<String> frames) {
+        Instant now = now();
+        PendingAttempt pending = challenges.take(token)
+                .orElseThrow(() -> new NotFoundException("Попытка не найдена или уже завершена"));
+        if (now.isAfter(pending.expiresAt()) || frames.size() < pending.framesRequired()) {
+            ReasonCode code = now.isAfter(pending.expiresAt()) ? ReasonCode.CHALLENGE_EXPIRED : ReasonCode.LIVENESS_FAILED;
+            PassRecord rec = record(pending, now, DecisionResult.deny(code, null), null, Map.of("framesReceived", frames.size()));
+            return outcome(recorder.deny(rec), null);
         }
+        CompletableFuture<FaceResult> faceF = async(() -> face.verify(pending.workerId(), frames, pending.action()));
+        CompletableFuture<Optional<WorkerProfile>> profileF = async(() -> people.accessProfile(pending.workerId()));
+        CompletableFuture<Optional<ActiveShift>> shiftF = pending.direction() == Direction.IN
+                ? async(() -> shift.activeShift(pending.workerId(), now))
+                : CompletableFuture.completedFuture(Optional.empty());
+        List<String> failed = new ArrayList<>();
+        FaceResult faceResult = join(faceF, FACE, failed);
+        Optional<WorkerProfile> profile = Optional.ofNullable(join(profileF, PEOPLE, failed)).flatMap(opt -> opt);
+        Optional<ActiveShift> activeShift = Optional.ofNullable(join(shiftF, SHIFT, failed)).flatMap(opt -> opt);
+        PassContext ctx = new PassContext(pending.direction(), pending.deviceId(), null, profile.orElse(null), faceResult,
+                activeShift.orElse(null), failed.isEmpty() ? null : String.join(",", failed),
+                LocalDate.ofInstant(now, props.siteZone()));
+        DecisionResult decision = engine.decide(ctx);
+        Map<String, Object> details = new LinkedHashMap<>();
+        if (!failed.isEmpty()) {
+            details.put(FAILED, failed);
+        }
+        if (faceResult != null) {
+            details.put("faceQuality", faceResult.quality());
+            details.put("faceReason", faceResult.reason());
+        }
+        PassRecord saved = recorder.finish(record(pending, now, decision, faceResult, details));
+        return outcome(saved, profile.map(WorkerPreview::of).orElse(null));
+    }
 
-        public static AttemptStartResult deny(UUID attemptId, ReasonCode reason,
-                                               Direction direction, String checkpointId, Instant startedAt) {
-            return new AttemptStartResult(attemptId, false, null, reason,
-                    direction, checkpointId, startedAt, null);
+    private static ReasonCode profileCode(Optional<WorkerProfile> profile, String deviceId) {
+        ReasonCode code = ReasonCode.OK;
+        if (profile.isEmpty() || !profile.get().isActive()) {
+            code = ReasonCode.WORKER_BLOCKED;
+        } else if (!profile.get().deviceIds().contains(deviceId)) {
+            code = ReasonCode.DEVICE_MISMATCH;
         }
+        return code;
+    }
+
+    private ReasonCode preCheck(String workerId, Instant now) {
+        ReasonCode code = ReasonCode.OK;
+        if (query.isBlocked(workerId)) {
+            code = ReasonCode.WORKER_BLOCKED;
+        } else if (query.faceFailuresSince(workerId, now.minus(props.tempLockWindow())) >= props.tempLockFailures()) {
+            code = ReasonCode.TEMP_LOCKED;
+        } else if (query.lastAllowAt(workerId).filter(last -> last.isAfter(now.minus(props.repeatScanCooldown()))).isPresent()) {
+            code = ReasonCode.REPEAT_SCAN;
+        }
+        return code;
+    }
+
+    private PassOutcome denyEarly(UUID id, Instant now, String checkpointId, Direction direction, QrCheckResult qrResult,
+                                  ReasonCode code, Map<String, Object> details, WorkerPreview worker) {
+        PassRecord rec = new PassRecord(id, now, checkpointId, direction, qrResult.workerId(), qrResult.deviceId(),
+                qrResult.deviceId() == null ? null : qrResult.window(), null, null, null, Decision.DENY, code,
+                latency(now), AttemptSource.KIOSK, details);
+        return outcome(recorder.deny(rec), worker);
+    }
+
+    private PassRecord record(PendingAttempt pending, Instant now, DecisionResult verdict, FaceResult faceResult,
+                              Map<String, Object> details) {
+        return new PassRecord(pending.token(), now, pending.checkpointId(), pending.direction(), pending.workerId(),
+                pending.deviceId(), pending.window(),
+                verdict.score(), faceResult == null ? null : faceResult.liveness(), pending.action(), verdict.decision(), verdict.code(),
+                latency(now), AttemptSource.KIOSK, details);
+    }
+
+    private static PassOutcome outcome(PassRecord rec, WorkerPreview worker) {
+        return new PassOutcome(rec.id(), rec.decision(), rec.code(), worker, rec.direction(), rec.faceScore(), rec.ts());
+    }
+
+    private <T> CompletableFuture<T> async(Supplier<T> call) {
+        return CompletableFuture.supplyAsync(call, executor).orTimeout(props.deps().timeout().toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    private static <T> T join(CompletableFuture<T> future, String name, List<String> failed) {
+        try {
+            return future.join();
+        } catch (CompletionException error) {
+            failed.add(name);
+            return null;
+        }
+    }
+
+    private long latency(Instant start) {
+        return Math.max(0, Duration.between(start, clock.instant()).toMillis());
+    }
+
+    private Instant now() {
+        return clock.instant().truncatedTo(ChronoUnit.MICROS);
     }
 }

@@ -1,17 +1,16 @@
 package ru.proxodnaya.access.api.constants;
 
 /**
- * Пути API access-сервиса.
+ * Пути API access (gateway добавляет префикс {@code /access}).
  */
 public final class PathConstants {
 
     public static final String API_V1 = "/api/v1";
-    public static final String KIOSK = API_V1 + "/kiosk";
-    public static final String KIOSK_ATTEMPTS = KIOSK + "/attempts";
-    public static final String INTERNAL = API_V1 + "/internal";
-    public static final String INTERNAL_STATS = INTERNAL + "/access/stats";
-    public static final String ATTEMPTS = API_V1 + "/attempts";
+    public static final String KIOSK_ATTEMPTS = API_V1 + "/kiosk/attempts";
+    public static final String FRAMES = "/{token}/frames";
     public static final String SECURITY = API_V1 + "/security";
+    public static final String JOURNAL_VERIFY = "/journal/verify";
 
-    private PathConstants() {}
+    private PathConstants() {
+    }
 }

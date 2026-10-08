@@ -3,20 +3,21 @@
 Память сервиса между сессиями и агентами. §1 — перезаписываемое текущее состояние (≤ 10 строк). §2 — карта, обновлять при новых пакетах/файлах. §3–4 — добавлять строки, неактуальное ~~зачёркивать~~. §5 — **только дописывать в конец** (`merge=union`). Решения для всей системы — ADR в `../../../docs/DECISIONS.md`.
 
 ## 1. Текущее состояние
-- Gradle-монорепа инициализирована (init-backend.sh), access-сервис создан (new-service.sh, порт 8082).
-- Готово: ACC-01 (миграции), ACC-02 (QrParser+QrVerifier), ACC-05 (KioskController), ACC-07 (DecisionEngine), ACC-08 (JournalService hash-chain).
-- libs/common: ErrorCode, DomainException, ProblemDetailFactory, CurrentUser, EventEnvelope, Topics, OutboxEntry.
-- Тесты: 36 unit (DecisionEngine 14, QrParser 9, QrVerifier 6, ArchitectureTest 7) — зелёные. Интеграционные требуют Docker.
-- Ветка: feat/ACC-01-access-skeleton. Далее: ACC-03 (гашение integration test), ACC-04 (проекции), ACC-06 (параллельные клиенты+CB).
+- Поток прохода работает end-to-end (PR #3): скан QR → челлендж → кадры → решение; гашение QR + журнал + присутствие + outbox в одной транзакции.
+- QR — 5 частей с `workerId`, подпись WebCrypto P1363. Ключи устройств — проекция `people.device.v1` (DeviceBound/DeviceRevoked), статус — `people.worker.v1`.
+- face/people/shift — RestClient, параллельно, таймаут `DEPS_TIMEOUT`, fail-closed → `SYSTEM_ERROR` с именем зависимости в `details`.
+- Нет: circuit breaker, service-токен на `/internal/**`, подпись киоска (ACC-12, пока `checkpointId` в теле), зона проходной, алерт TEMP_LOCKED.
+- Тесты: 53 unit (QrParser, крипто, QrCheck, DecisionEngine, PassService, роли, ArchUnit) + интеграционные (Testcontainers: гонка гашения, сквозной киоск, append-only).
 
 ## 2. Карта сервиса
 | Путь | Что |
 |---|---|
 | `docs/` | PRD, ARCHITECTURE, RULES, TASKS, MEMORY |
 | `src/main/java/.../shared/` | Direction, Decision, AttemptSource, ReasonCode, ReasonView, Challenge, ChallengeAction |
-| `src/main/java/.../features/qr/` | QrPayload, QrParser, QrVerifier |
-| `src/main/java/.../features/pass/` | PassContext, FaceResult, DecisionResult, DecisionEngine, PassService, JournalService |
-| `src/main/java/.../features/pass/gateway/` | FaceClient, PeopleClient, ShiftClient, AccessProfile, ActiveShift, FaceVerifyResult |
+| `src/main/java/.../features/qr/` | api: QrCheck, QrUses, DeviceKeyProjection; command: QrParser, EcdsaVerifier, PublicKeyCodec, QrCheckService, QrUseService, DeviceKeyService |
+| `src/main/java/.../features/pass/` | application: PassService, DecisionEngine, PassRecorder (транзакция); command: Challenge/Journal/Presence; query: PassQueryService |
+| `src/main/java/.../features/pass/gateway/` | FaceGateway, PeopleGateway, ShiftGateway (RestClient) |
+| `src/main/java/.../messaging/` | outbox (Outbox, OutboxRelay), consumer (PeopleEventsConsumer, IdempotentConsumer) |
 | `src/main/java/.../api/` | KioskController (+impl), DTO request/response, PathConstants |
 | `src/main/java/.../config/` | SecurityConfig |
 | `src/main/java/.../exception/` | DomainExceptionHandler |
@@ -34,8 +35,10 @@
 ## 4. Известные баги и ограничения
 | Дата | Что | Обход / статус |
 |---|---|---|
-| — | — | — |
+| 2026-10-08 | `window` — зарезервированное слово PostgreSQL, колонка `qr_window` | исправлено в #3 |
+| 2026-10-08 | функция триггера ломала Liquibase (`;` внутри `$$`) | отдельный changeset `splitStatements:false` |
 
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-08 · miroslavrov · docs: документы сервиса (ADR-034)
 - 2026-10-08 · KIRI4444 · feat: ACC-01/02/05/07/08 — Gradle-каркас, миграции, QrParser+QrVerifier, KioskController, DecisionEngine, JournalService (hash-chain), libs/common, 36 unit-тестов
+- 2026-10-08 · miroslavrov · fix(access): ревью #3 — QR по контракту (workerId, P1363), проверка подписи и гашение в пути прохода, челлендж в БД, направление сервером, REPEAT_SCAN, fail-closed, hash-chain под advisory lock, outbox + relay, проекции people, роли Keycloak, миграции чинятся, тесты

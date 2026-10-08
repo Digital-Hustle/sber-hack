@@ -1,110 +1,87 @@
 package ru.proxodnaya.access.features.pass.application;
 
-import java.time.LocalDate;
-import java.util.UUID;
+import java.util.Map;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import ru.proxodnaya.access.features.pass.model.DecisionResult;
 import ru.proxodnaya.access.features.pass.model.FaceResult;
 import ru.proxodnaya.access.features.pass.model.PassContext;
-import ru.proxodnaya.access.shared.Decision;
+import ru.proxodnaya.access.features.pass.model.WorkerProfile;
 import ru.proxodnaya.access.shared.Direction;
 import ru.proxodnaya.access.shared.ReasonCode;
 
 /**
- * Движок решений о проходе (FR-01). Пошаговая проверка по порядку из ARCHITECTURE.md:
- * fail-fast — первая проваленная проверка и есть причина отказа.
+ * Решение о проходе на шаге кадров (FR-01, FR-07). Fail-fast и fail-closed: нет данных — отказ.
  *
- * <p>Порядок проверок:</p>
- * <ol>
- *   <li>QR: формат → устройство → подпись → окно → гашение</li>
- *   <li>Рабочий существует и не заблокирован</li>
- *   <li>Лицо: качество → одно лицо → совпадение с эталоном</li>
- *   <li>Живость</li>
- *   <li>Смена: есть смена, время в окне</li>
- *   <li>Допуск: инструктаж/медосмотр не просрочен, допуск в зону</li>
- *   <li>Anti-passback: вход только снаружи, выход только изнутри</li>
- *   <li>Вместимость зоны (опционально)</li>
- * </ol>
- *
- * <p><b>Красная линия (rules.md §1.1):</b> решение принимается только здесь на сервере.
- * Клиент получает готовый ALLOW/DENY.</p>
+ * <p>Порядок: зависимость упала → рабочий → устройство → лицо (найдено, одно, эталон есть, качество, совпадение, живость)
+ * → для входа: смена, окно смены, допуск, зона. Выход не требует смены и допуска: человека не запираем на объекте.</p>
  */
-@Service
+@Component
 public class DecisionEngine {
 
-    private static final int MAX_RECENT_FAILURES = 5; // TEMP_LOCKED порог
-    private static final int MIN_FRAMES_QUALITY = 0; // минимальное качество (face определяет)
+    static final double MIN_QUALITY = 0.3;
+
+    private static final Map<String, ReasonCode> FACE_REASONS = Map.of(
+            "FACE_NOT_FOUND", ReasonCode.FACE_NOT_FOUND,
+            "FACE_MULTIPLE", ReasonCode.FACE_MULTIPLE,
+            "FACE_LOW_QUALITY", ReasonCode.FACE_LOW_QUALITY,
+            "FACE_NOT_ENROLLED", ReasonCode.FACE_NOT_ENROLLED,
+            "NOT_ENROLLED", ReasonCode.FACE_NOT_ENROLLED,
+            "LIVENESS_FAILED", ReasonCode.LIVENESS_FAILED);
 
     /**
-     * Принимает решение по контексту. Возвращает DecisionResult с кодом причины.
+     * Принимает решение.
      *
-     * @param ctx контекст со всеми собранными данными
-     * @return ALLOW / DENY / ERROR + ReasonCode
+     * @param ctx собранные данные
+     * @return ALLOW или DENY с причиной
      */
     public DecisionResult decide(PassContext ctx) {
-        UUID attemptId = ctx.attemptId();
-
-        // 0. TEMP_LOCKED: слишком много недавних неудач
-        if (ctx.recentFailures() >= MAX_RECENT_FAILURES) {
-            return DecisionResult.deny(attemptId, ReasonCode.TEMP_LOCKED, ctx.workerId(), null);
-        }
-
-        // 1. QR: формат уже проверен в QrParser; устройство → подпись → окно проверены в QrVerifier.
-        //    Здесь проверяем только что QR есть (парсер отдал null → QR_INVALID уже обработан в сервисе).
-
-        // 2. Рабочий заблокирован
-        if ("BLOCKED".equals(ctx.workerStatus())) {
-            return DecisionResult.deny(attemptId, ReasonCode.WORKER_BLOCKED, ctx.workerId(), null);
-        }
-
-        // 3. Лицо: качество → совпадение → живость
-        FaceResult face = ctx.faceResult();
-        if (face != null) {
-            if (!face.liveness()) {
-                return DecisionResult.deny(attemptId, ReasonCode.LIVENESS_FAILED, ctx.workerId(), face.score());
-            }
-            if (face.quality() < 0.3) {
-                return DecisionResult.deny(attemptId, ReasonCode.FACE_LOW_QUALITY, ctx.workerId(), face.score());
-            }
-            if (!face.match()) {
-                return DecisionResult.deny(attemptId, ReasonCode.FACE_MISMATCH, ctx.workerId(), face.score());
+        WorkerProfile profile = ctx.profile();
+        FaceResult face = ctx.face();
+        ReasonCode code;
+        if (ctx.failedDependency() != null || face == null) {
+            code = ReasonCode.SYSTEM_ERROR;
+        } else if (profile == null || !profile.isActive()) {
+            code = ReasonCode.WORKER_BLOCKED;
+        } else if (!profile.deviceIds().contains(ctx.deviceId())) {
+            code = ReasonCode.DEVICE_MISMATCH;
+        } else {
+            code = faceCode(face);
+            if (code == ReasonCode.OK && ctx.direction() == Direction.IN) {
+                code = entryCode(ctx);
             }
         }
+        Double score = face == null ? null : face.score();
+        return code == ReasonCode.OK ? DecisionResult.allow(score) : DecisionResult.deny(code, score);
+    }
 
-        // 4. Смена
-        if (!ctx.shiftActive()) {
-            return DecisionResult.deny(attemptId, ReasonCode.NO_SHIFT, ctx.workerId(), null);
+    private static ReasonCode faceCode(FaceResult face) {
+        ReasonCode code = ReasonCode.OK;
+        if (face.reason() != null && FACE_REASONS.containsKey(face.reason())) {
+            code = FACE_REASONS.get(face.reason());
+        } else if (face.quality() < MIN_QUALITY) {
+            code = ReasonCode.FACE_LOW_QUALITY;
+        } else if (!face.match()) {
+            code = ReasonCode.FACE_MISMATCH;
+        } else if (!face.liveness()) {
+            code = ReasonCode.LIVENESS_FAILED;
         }
-        if (!ctx.shiftWindowOk()) {
-            return DecisionResult.deny(attemptId, ReasonCode.OUTSIDE_SHIFT_WINDOW, ctx.workerId(), null);
-        }
+        return code;
+    }
 
-        // 5. Допуск
-        if (ctx.permitUntil() != null && ctx.permitUntil().isBefore(LocalDate.ofInstant(ctx.now(), java.time.ZoneOffset.UTC))) {
-            return DecisionResult.deny(attemptId, ReasonCode.PERMIT_EXPIRED, ctx.workerId(), null);
+    private static ReasonCode entryCode(PassContext ctx) {
+        WorkerProfile profile = ctx.profile();
+        ReasonCode code = ReasonCode.OK;
+        if (ctx.shift() == null) {
+            code = ReasonCode.NO_SHIFT;
+        } else if (!ctx.shift().windowOk()) {
+            code = ReasonCode.OUTSIDE_SHIFT_WINDOW;
+        } else if (profile.permitUntil() == null || profile.permitUntil().isBefore(ctx.today())) {
+            code = ReasonCode.PERMIT_EXPIRED;
+        } else if (ctx.zoneId() != null && !profile.zoneIds().contains(ctx.zoneId())) {
+            code = ReasonCode.NO_ZONE_PERMIT;
         }
-        if (ctx.zoneId() != null && !ctx.workerZoneIds().contains(ctx.zoneId())) {
-            return DecisionResult.deny(attemptId, ReasonCode.NO_ZONE_PERMIT, ctx.workerId(), null);
-        }
-
-        // 6. Anti-passback
-        if (ctx.direction() == Direction.IN && ctx.isInside()) {
-            return DecisionResult.deny(attemptId, ReasonCode.ALREADY_INSIDE, ctx.workerId(), null);
-        }
-        if (ctx.direction() == Direction.OUT && !ctx.isInside()) {
-            return DecisionResult.deny(attemptId, ReasonCode.NOT_INSIDE, ctx.workerId(), null);
-        }
-
-        // 7. Вместимость зоны (опционально, только для входа)
-        if (ctx.direction() == Direction.IN && ctx.zoneCapacity() > 0
-                && ctx.zoneOccupancy() >= ctx.zoneCapacity()) {
-            return DecisionResult.deny(attemptId, ReasonCode.ZONE_FULL, ctx.workerId(), null);
-        }
-
-        // 8. Всё ОК — ALLOW
-        Double score = face != null ? face.score() : null;
-        return DecisionResult.allow(attemptId, ctx.workerId(), score != null ? score : 0.0);
+        return code;
     }
 }

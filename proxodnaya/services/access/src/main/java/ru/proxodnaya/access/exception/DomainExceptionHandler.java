@@ -7,22 +7,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import ru.proxodnaya.common.exception.DomainException;
 import ru.proxodnaya.common.exception.NotFoundException;
+import ru.proxodnaya.common.exception.ProblemDetailFactory;
 
 /**
- * Обработчик доменных исключений → ProblemDetail (RFC 7807).
+ * Доменные исключения → {@code application/problem+json} с {@code code}. Отказ в проходе сюда не попадает — это 200.
  */
 @RestControllerAdvice
 public class DomainExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
-    public ProblemDetail handleNotFound(NotFoundException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    ProblemDetail notFound(NotFoundException error) {
+        return ProblemDetailFactory.of(error, HttpStatus.NOT_FOUND.value());
     }
 
     @ExceptionHandler(DomainException.class)
-    public ProblemDetail handleDomain(DomainException ex) {
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-        pd.setProperty("code", ex.code().code());
-        return pd;
+    ProblemDetail domain(DomainException error) {
+        return ProblemDetailFactory.of(error, HttpStatus.BAD_REQUEST.value());
     }
 }

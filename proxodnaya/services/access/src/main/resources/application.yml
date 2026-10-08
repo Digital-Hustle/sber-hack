@@ -23,12 +23,30 @@ spring:
       group-id: access
       auto-offset-reset: earliest
       enable-auto-commit: false
+  mvc:
+    problemdetails:
+      enabled: true
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: ${OIDC_ISSUER_URI}
           audiences: access
+
+access:
+  qr-tolerance: ${QR_WINDOW_TOLERANCE:90s}
+  repeat-scan-cooldown: ${REPEAT_SCAN_COOLDOWN:30s}
+  presence-ttl: ${PRESENCE_TTL:16h}
+  challenge-ttl: ${CHALLENGE_TTL:10s}
+  frames-required: 3
+  temp-lock-failures: 5
+  temp-lock-window: 10m
+  site-zone: ${SITE_ZONE:Europe/Moscow}
+  deps:
+    face-url: ${FACE_URL:http://face:8000}
+    people-url: ${PEOPLE_URL:http://people:8080}
+    shift-url: ${SHIFT_URL:http://shift:8080}
+    timeout: ${DEPS_TIMEOUT:1500ms}
 
 server:
   port: 8082

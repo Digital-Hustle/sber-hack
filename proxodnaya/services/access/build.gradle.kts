@@ -1,5 +1,5 @@
 plugins {
-    id("proxodnaya.service")
+    id("proxodnaya.jooq")
 }
 
 dependencies {
