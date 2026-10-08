@@ -15,7 +15,7 @@
 4. **Моки только в dev**: MSW подключается в `main.tsx` под `import.meta.env.DEV && env.USE_MOCKS`. В production-сборке моков нет (проверяет `guard.sh`). Заглушка в боевом пути = снятие (rules.md §1).
 5. **Решение о проходе не считается на клиенте.** Киоск показывает `decision / code / message / hint` из ответа access. Иконка и цвет по `code` — `entities/PassDecision/model/consts/reasonView.ts`.
 6. **Роли** — `RequireRole roles={[...]}` в `AppRouter` на группу маршрутов; роли из `session`-стора (claims Keycloak `realm_access.roles` или device-токен). Меню админки строится из той же конфигурации, без дублирования списка ролей.
-7. **Realtime**: `shared/api/sse.ts` — `EventSource` c `?ticket=` (короткий билет от `/api/stream/ticket`), переподключение с backoff; хук `useEventStream(topic, onEvent)` → `queryClient.invalidateQueries`.
+7. **Realtime**: `shared/api/sse.ts` — `EventSource` c `?ticket=` (короткий билет от `/shift/api/v1/stream/ticket`), переподключение с backoff; хук `useEventStream(topic, onEvent)` → `queryClient.invalidateQueries`.
 8. **Нет связи**: `shared/hooks/useOnline` + баннер в `app`-layout каждой зоны.
 
 ## Карта слайсов (стартовая)

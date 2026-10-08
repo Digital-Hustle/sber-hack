@@ -1,6 +1,6 @@
 ---
 name: proxodnaya-dev
-description: Use for ANY change in the «Проходная» case (folder proxodnaya/ of the sber-hack monorepo) (backend Java/Spring, frontend React apps kiosk/worker/admin, infra, Keycloak, LLM assistant, docs, CI). Covers picking a task, branching, implementing within module boundaries, running checks, writing Flyway migrations, updating the API contract, opening and reviewing pull requests, fixing CI, and deploying. Trigger on requests like "сделай FR-12", "добавь эндпоинт", "почини CI", "открой PR", "сделай ревью PR", "добавь миграцию", "задеплой".
+description: Use for ANY change in the «Проходная» case (folder proxodnaya/ of the sber-hack monorepo) (backend Java/Spring, frontend React FSD app with zones kiosk/worker/admin, Python face service, infra, Keycloak, LLM assistant, docs, CI). Covers picking a task, branching, implementing within module boundaries, running checks, writing Liquibase migrations, updating the API contract, opening and reviewing pull requests, fixing CI, and deploying. Trigger on requests like "сделай FR-12", "добавь эндпоинт", "почини CI", "открой PR", "сделай ревью PR", "добавь миграцию", "задеплой".
 ---
 
 # proxodnaya-dev
@@ -9,20 +9,22 @@ description: Use for ANY change in the «Проходная» case (folder proxo
 
 ## 0. Перед стартом (каждая сессия)
 1. Прочитай `AGENTS.md` и `rules.md`. Красные линии `rules.md §1` нарушать нельзя ни при каких условиях.
-2. Определи модуль и владельца по таблице в `AGENTS.md`. Чужой модуль трогай только через его `api`-пакет или с согласия владельца.
+2. Определи модуль и владельца по таблице в `AGENTS.md`. Чужой сервис трогай только через его API/события или с согласия владельца.
 3. `git fetch && git switch main && git pull --rebase`.
 
 ## 1. Задача → ветка
 - У задачи должен быть ID требования (`FR-xx`, `NFR-xx`, `B-xx`) из `docs/REQUIREMENTS.md`. Если ID нет — спроси человека, не придумывай.
-- Ветка: `<type>/<ID>-<slug>`, например `feat/FR-03-token-consume`. Типы: feat, fix, refactor, test, docs, ci, chore.
+- Ветка: `<type>/<ID>-<slug>`, например `feat/FR-03-qr-consume`. Типы: feat, fix, refactor, test, docs, ci, chore.
 - Для параллельной работы нескольких агентов на одной машине: `git worktree add ../gate-<slug> -b <branch>`.
 
 ## 2. Реализация
 Прочитай нужный reference — только его, не все:
 | Область | Файл |
 |---|---|
-| Backend: микросервисы, gateway, события/outbox, Flyway, тесты | `references/backend.md` |
-| Frontend (kiosk/worker/admin), API-клиент, OIDC | `references/frontend.md` |
+| Backend: общие правила Spring/Gradle/jOOQ/Liquibase/Kafka/тесты | скилл `backend-spring` |
+| Backend: сервисы кейса, инварианты access/face, обязательные тесты | `references/backend.md` |
+| Frontend: общие правила FSD | скилл `frontend-fsd` |
+| Frontend: зоны kiosk/worker/admin, ключ устройства, камера | `references/frontend.md` |
 | Keycloak, роли, токены, ключи устройств, шифрование, аудит | `references/security.md` |
 | LLM-слой, помощник, валидатор чисел | `references/llm-assistant.md` |
 | CI, docker compose, деплой | `references/ci-deploy.md` |
@@ -30,10 +32,10 @@ description: Use for ANY change in the «Проходная» case (folder proxo
 
 Правила реализации:
 - Сначала контракт: меняешь REST или событие → обнови `docs/API.md`, `contracts/openapi/<svc>.json` (`scripts/verify.sh contract`) или `contracts/events/`, и всех потребителей.
-- Новая миграция только через `scripts/new-migration.sh <svc> <slug>` (имя с меткой времени, чтобы у параллельных PR не было коллизий версий).
+- Новая миграция только через `scripts/new-migration.sh <svc> <slug>` (Liquibase formatted SQL, имя с меткой времени — без коллизий у параллельных PR).
 - Пиши тест вместе с кодом. Для движка решений и безопасности — сначала тест (red → green).
 - Никаких моков, заглушек, «TODO: потом» и заготовленных ответов в боевом пути. Если что-то не готово — feature-флаг `false` и честное сообщение в UI.
-- Маленькие коммиты в стиле Conventional Commits со ссылкой на ID: `feat(access): FR-03 атомарное гашение токена`.
+- Маленькие коммиты в стиле Conventional Commits со ссылкой на ID: `feat(access): FR-03 атомарное гашение QR`.
 
 ## 3. Проверка (обязательно до PR)
 ```bash
@@ -61,8 +63,8 @@ scripts/open-pr.sh "<ID>" "<короткий заголовок>"   # rebase н�
 
 ## Чего не делать никогда
 - Не коммить `.env`, ключи, токены, дампы БД, фото, модели.
-- Не редактировать уже смерженные миграции.
+- Не редактировать уже смерженные changeset-ы Liquibase.
 - Не отключать тесты, проверки CI, ArchUnit, CSP ради «чтобы прошло».
 - Не принимать решение о проходе во фронтенде, не хранить данные в памяти процесса, не возвращать заготовленный ответ модели.
-- Не ходить в чужую БД, не публиковать события мимо outbox, не выносить гашение токена из транзакции access-service.
+- Не ходить в чужую БД, не публиковать события мимо outbox, не выносить гашение QR (`qr_uses`) из транзакции access.
 - Не делать force-push в `main`, не мержить без CI.

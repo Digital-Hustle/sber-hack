@@ -6,10 +6,10 @@ src/test/java/ru/proxodnaya/<svc>/
   config/AbstractIntegrationTest.java
   fixture/WorkerFixture.java       # билдеры тестовых данных
   units/<feature>/WorkerCommandServiceTest.java
-  integrations/WorkerControllerIT.java
+  integrations/WorkerControllerIntegrationTest.java
 ```
 - `units/` — Mockito, без Spring-контекста. Сервисы с замоканными репозиториями/gateway/outbox. Обязательно: ветки ошибок и откатов.
-- `integrations/` — `*IT`, наследуют `AbstractIntegrationTest`. MockMvc + реальный Postgres и Kafka в Testcontainers (`@ServiceConnection`, контейнеры `static` и переиспользуются между классами). Внешние gateway (face, LLM, другие сервисы) — `@MockitoBean` в базовом классе.
+- `integrations/` — `*IntegrationTest` (суффикс `IT` запрещает checkstyle), наследуют `AbstractIntegrationTest`. MockMvc + реальный Postgres и Kafka в Testcontainers (`@ServiceConnection`, контейнеры `static` и переиспользуются между классами). Внешние gateway (face, LLM, другие сервисы) — `@MockitoBean` в базовом классе.
 - Формат: `// given / // when / // then`, имя `methodName_condition_expected` или `@DisplayName` на русском.
 - Время — `MutableClock` из `libs/common` (тестовый бин), не `Thread.sleep`.
 - JWT в тестах — `jwt().authorities(...)` из `spring-security-test` или `TestTokens.staff(Role.ADMIN)`.

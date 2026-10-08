@@ -193,7 +193,7 @@ class FaceHttpGateway implements FaceGateway {
 ```java
 public enum ErrorCode {                                  // в libs/common + свои в сервисе
     WORKER_NOT_FOUND(HttpStatus.NOT_FOUND, "Рабочий не найден"),
-    TOKEN_ALREADY_USED(HttpStatus.CONFLICT, "Пропуск уже использован");
+    QR_REUSED(HttpStatus.CONFLICT, "Этот QR уже использован — обновите код на телефоне");
     ...
 }
 public class DomainException extends RuntimeException { private final ErrorCode code; private final Object[] args; }

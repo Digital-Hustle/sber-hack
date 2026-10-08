@@ -1,33 +1,19 @@
-# Frontend
+# Frontend — специфика «Проходной»
 
-## Структура
-```
-frontend/
-  package.json, pnpm-workspace.yaml, tsconfig.base.json, eslint.config.js
-  apps/kiosk/      # киоск: полный экран, камера, QR-скан, челлендж (GUARD через Keycloak + ключ киоска)
-  apps/worker/     # PWA рабочего: активация по инвайту, ключ устройства, динамический QR
-  apps/admin/      # админка: Keycloak SSO, все разделы
-  packages/api/    # типы из contracts/openapi.json (openapi-typescript) + openapi-fetch клиент; генерится, не коммитится
-  packages/auth/   # react-oidc-context обёртка (admin, kiosk) + device-auth (worker)
-  packages/ui/     # Mantine-тема, общие компоненты: ErrorState, EmptyState, ReasonBanner, CameraView
-```
-Каждое приложение собирается с `base: '/kiosk/' | '/worker/' | '/admin/'` и отдаётся nginx.
+Общие правила FSD (слои, импорты, данные, UI, маршруты) — **скилл `frontend-fsd`** (`.agents/skills/frontend-fsd/SKILL.md`), адаптация под кейс — `frontend-fsd/references/adaptation.md`. Здесь только напоминания.
 
-## Правила
-- Данные с сервера — только через `packages/api` + TanStack Query. Ручной `fetch` запрещён.
-- Решение о проходе не вычисляется на клиенте. Киоск отображает `decision/code/message/hint` из ответа сервера.
-- Тексты отказов берём из ответа сервера; `packages/ui/reasons.ts` — только иконки и цвета по `code`.
-- Каждый экран: loading / empty / error (кнопка «Повторить») / data + баннер «Нет связи» (`navigator.onLine` + ошибки запросов).
-- Токены OIDC держим в памяти (`InMemoryWebStorage`), не в localStorage.
-- Ключ устройства: `crypto.subtle.generateKey({name:'ECDSA', namedCurve:'P-256'}, false, ['sign'])`, хранение в IndexedDB (неизвлекаемый).
-- Камера: `getUserMedia({video:{facingMode:'user', width:640, height:480}})`, кадры — JPEG 0.85 через canvas. Нужен HTTPS.
-- Realtime: `EventSource` с переподключением. Токен передаётся через короткоживущий `?ticket=` (выдаёт `/api/stream/ticket`), не через заголовок.
-- Доступность: контраст, крупные кнопки (киоск ≥ 64px, телефон ≥ 48px), всё на русском.
+- Одно приложение `frontend/` с зонами `/kiosk` (F1), `/worker` (F1), `/admin` (F2). `shared`, `entities`, `app` — ревью F2.
+- Решение о проходе не считается на клиенте: киоск показывает `decision / code / message / hint` из ответа access.
+- Данные — только через сгенерированный API-клиент + TanStack Query, без ручного `fetch`. MSW — только в dev.
+- worker: ключ устройства `crypto.subtle.generateKey({name:'ECDSA', namedCurve:'P-256'}, false, ['sign'])` в IndexedDB; QR `v1.<deviceId>.<window>.<sig>` подписывается на телефоне и работает без интернета.
+- kiosk: камера через `getUserMedia` (нужен HTTPS), сканирование QR, активный челлендж живости, баннер «Нет связи», офлайн-режим = ручное подтверждение охранника.
+- Каждый экран: loading / empty / error («Повторить») / data. Всё на русском, крупные кнопки (киоск ≥ 64px, телефон ≥ 48px).
 
 ## Команды
 ```bash
-pnpm install
-pnpm gen:api                 # из contracts/openapi.json
-pnpm --filter admin dev
-pnpm -r lint && pnpm -r typecheck && pnpm -r build
+cd frontend
+npm ci && npm run gen:api
+npm run dev
+npm run lint && npm run typecheck && npm run build
+node ../../.agents/skills/frontend-fsd/scripts/fsd-check.mjs src
 ```

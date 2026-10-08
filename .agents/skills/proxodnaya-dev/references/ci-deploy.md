@@ -1,6 +1,6 @@
 # CI и деплой (подробно: docs/DEPLOY.md)
 
-- CI: `.github/workflows/proxodnaya-ci.yml` (в корне репо) — jobs changes / backend / frontend / contract / security / smoke.
+- CI: `.github/workflows/proxodnaya-ci.yml` (в корне репо) — jobs changes / backend (матрица сервисов: Liquibase → jOOQ → `check`, be-check, exportOpenApi diff) / face (uv, ruff, mypy, pytest) / frontend (npm, fsd-check) / security / smoke.
 - Упал CI → `gh pr checks <n>` → `gh run view <id> --log-failed` → воспроизведи локально через `scripts/verify.sh <part>` → чини в той же ветке новым коммитом.
 - Не отключай job и не добавляй `continue-on-error` и `@Disabled`, чтобы обойти падение.
 - Gitleaks нашёл секрет → не коммить «удаление» поверх: сообщи человеку немедленно. Ключ надо ротировать, историю ветки — переписать (`git rebase -i`) до мержа.

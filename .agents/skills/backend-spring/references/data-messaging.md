@@ -1,8 +1,8 @@
 # Данные и события
 
 ## База
-- Database-per-service в одном PostgreSQL 16: БД `<svc>`, роль `<svc>_app` (DML) и `<svc>_migrator` (DDL, только Liquibase). Схема `public`, preliquibase не нужен.
-- `spring.liquibase.user/password` = migrator, `spring.datasource` = app. В access: `REVOKE UPDATE, DELETE ON pass_attempts FROM access_app` — журнал только на дозапись.
+- Database-per-service в одном PostgreSQL 16: БД `<svc>` и роль `<svc>` (владелец только своей БД, `CONNECT` к чужим отозван). Схема `public`, preliquibase не нужен.
+- Журнал проходов (access) — только дозапись: триггер `BEFORE UPDATE OR DELETE ON pass_attempts … RAISE EXCEPTION` в changeset. Работает независимо от роли и проверяется integration-тестом.
 - Деньги не храним; время — `timestamptz` + `OffsetDateTime`; id — `uuid` (генерирует приложение, `UuidCreator.getTimeOrderedEpoch()` / UUIDv7), enum — `text` + `CHECK`.
 
 ## Liquibase
@@ -45,12 +45,13 @@ create index workers_site_idx on workers (site_id);
 - Схема поменялась → `./gradlew :<svc>:update :<svc>:generateJooq`. Компиляция упала — это и есть проверка контракта с БД.
 - `DSLContext` только в `*Repository`. Наверх — модели фичи.
 - Блокировка под изменение — `selectFrom(...).where(...).forUpdate()`; оптимистичная — колонка `version`.
-- Атомарное гашение одноразового токена (access):
+- Атомарное гашение одноразового QR (access): уникальный ключ `(device_id, window)` + `ON CONFLICT DO NOTHING` — гонку решает БД:
 ```java
-int n = dsl.update(PASS_TOKENS).set(PASS_TOKENS.USED_AT, now)
-        .where(PASS_TOKENS.JTI.eq(jti), PASS_TOKENS.USED_AT.isNull(), PASS_TOKENS.EXPIRES_AT.gt(now))
+int n = dsl.insertInto(QR_USES)
+        .set(QR_USES.DEVICE_ID, deviceId).set(QR_USES.WINDOW, window).set(QR_USES.USED_AT, now)
+        .onConflictDoNothing()
         .execute();
-if (n == 0) throw new DomainException(ErrorCode.TOKEN_ALREADY_USED);
+if (n == 0) throw new DomainException(ErrorCode.QR_REUSED);
 ```
 
 ## Транзакции
