@@ -14,7 +14,7 @@
 - `GET /shift/api/v1/stream/ticket` → `{ticket}` одноразовый на 30 с для `EventSource`
 
 ## Worker (device-токен; профиль — people, смены и поток — shift, история — access)
-- **QR без запроса к серверу**: `v1.<deviceId>.<window>.<sig>`, `window = floor(unixTime / 30)`, `sig = base64url(ECDSA-P256-SHA256("v1|deviceId|window"))`. Телефон перерисовывает QR каждые 30 с с таймером; часы сверяет по `serverTime` при онлайне.
+- **QR без запроса к серверу**: `v1.<workerId>.<deviceId>.<window>.<sig>`, `window = floor(unixTime / 30)`, `sig = base64url(ECDSA-P256-SHA256("v1|workerId|deviceId|window"))` в формате WebCrypto (P1363, r‖s, 64 байта; DER тоже принимается). Как в BACKEND-CONTRACT.md и песочнице. Телефон перерисовывает QR каждые 30 с с таймером; часы сверяет по `serverTime` при онлайне.
 - `GET /worker/me` → статус: на объекте, зона, смена, отработано сегодня
 - `GET /worker/attempts?limit=` — история с причинами
 - `GET /worker/shifts?from&to`
@@ -24,8 +24,9 @@
 - `GET /stream/worker` (SSE): `attempt.result`, `reminder.exit`
 
 ## Kiosk (access: `/access/api/v1/kiosk/...`; роль GUARD + подпись ключом киоска)
-- `POST /kiosk/attempts` `{qr}` (направление выводит сервер, ADR-037 песочницы; `direction` больше не нужен) → `{attemptId, challenge: {action: TURN_LEFT|TURN_RIGHT|..., framesRequired, expiresAt}}` (если QR невалиден — сразу DENY)
-- `POST /kiosk/attempts/{id}/frames` `{frames: [base64 jpeg]}` → `{decision: ALLOW|DENY, code, message, hint, worker?: {name, photoThumb}}`
+- `POST /kiosk/attempts` `{qr, checkpointId}` → `ScanRs` = `{kind: "decision", result: DecisionRs}` | `{kind: "challenge", token, challenge: {kind: turn-left|turn-right|blink|nod, text, timeoutMs}, worker: {id, fullName, position, contractor}}`. Направление выводит сервер (ADR-037): внутри и вход моложе `PRESENCE_TTL` (16 ч) → OUT, иначе IN. Успешный проход того же человека меньше 30 с назад → `REPEAT_SCAN`. `checkpointId` в теле временно — до подписи запросов киоска (ACC-12), потом берётся из ключа киоска.
+- `POST /kiosk/attempts/{token}/frames` `{frames: [base64 jpeg]}` → `DecisionRs = {attemptId, decision: ALLOW|DENY, code, message, hint, worker?, direction, score?, ts}`. Токен одноразовый (повтор → 404). На этом шаге QR гасится при любом итоге (один QR — один челлендж); тот же QR, уже погашенный на другом киоске → `QR_REUSED`. Выход не требует смены и допуска.
+- `POST /security/journal/verify` (SECURITY_OFFICER, ADMIN) → `{ok, checked, brokenAt?}` — проверка hash-chain журнала.
 
 - `GET /kiosk/offline-snapshot` → `{issuedAt, expiresAt, workers: [{id, name, photoThumb, devices: [{deviceId, publicKeyJwk}], shiftWindow, permitsValidUntil}], codes?: {service?, guard?}, signature}` (ADR-029, только при `OFFLINE_MODE_ENABLED`; `codes` — PBKDF2-хэши кодов терминала `{salt, hash, iter, digits}`, чтобы код охранника проверялся без связи)
 - `POST /kiosk/identify` `{frames}` → решение (режим «Сначала лицо», 1:N со строгим порогом); `POST /kiosk/manual` `{workerId, note}` → `MANUAL_GUARD`

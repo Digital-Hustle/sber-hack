@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: access
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/access
+    username: access
+    password: ${ACCESS_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    contexts: ${LIQUIBASE_CONTEXTS:prod}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+    consumer:
+      group-id: access
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+  mvc:
+    problemdetails:
+      enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}
+          audiences: access
+
+access:
+  qr-tolerance: ${QR_WINDOW_TOLERANCE:90s}
+  repeat-scan-cooldown: ${REPEAT_SCAN_COOLDOWN:30s}
+  presence-ttl: ${PRESENCE_TTL:16h}
+  challenge-ttl: ${CHALLENGE_TTL:10s}
+  frames-required: 3
+  temp-lock-failures: 5
+  temp-lock-window: 10m
+  site-zone: ${SITE_ZONE:Europe/Moscow}
+  deps:
+    face-url: ${FACE_URL:http://face:8000}
+    people-url: ${PEOPLE_URL:http://people:8080}
+    shift-url: ${SHIFT_URL:http://shift:8080}
+    timeout: ${DEPS_TIMEOUT:1500ms}
+
+server:
+  port: 8082
+  shutdown: graceful
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://jaeger:4318/v1/traces}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs

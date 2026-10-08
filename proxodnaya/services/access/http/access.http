@@ -1,0 +1,6 @@
+### access: health (management-порт, внутри сети)
+GET http://localhost:8081/actuator/health
+
+### access: пример через gateway (токен из Keycloak: см. http/auth.http)
+GET {{gateway}}/access/api/v1/...
+Authorization: Bearer {{token}}
