@@ -1,0 +1,6 @@
+---
+description: Правила кейса «Проходная» (папка proxodnaya/)
+globs: proxodnaya/**
+alwaysApply: false
+---
+Перед любой задачей прочитай proxodnaya/AGENTS.md, proxodnaya/rules.md и .agents/skills/proxodnaya-dev/SKILL.md и следуй циклу из скилла: ID требования → ветка → реализация в границах модуля → proxodnaya/scripts/verify.sh + proxodnaya/scripts/guard.sh → proxodnaya/scripts/open-pr.sh. Красные линии rules.md §1 нарушать нельзя.
