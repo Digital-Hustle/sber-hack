@@ -55,7 +55,7 @@ tasks.named<Jar>("jar") { enabled = false }
 tasks.register<Test>("exportOpenApi") {
     group = "verification"
     description = "Выгружает OpenAPI сервиса в contracts/openapi"
-    val test = the<SourceSetContainer>()["test"]
+    val test = project.extensions.getByType<SourceSetContainer>()["test"]
     testClassesDirs = test.output.classesDirs
     classpath = test.runtimeClasspath
     useJUnitPlatform()
