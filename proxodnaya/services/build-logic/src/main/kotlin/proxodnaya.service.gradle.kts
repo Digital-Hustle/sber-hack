@@ -11,6 +11,9 @@ fun lib(alias: String) = catalog.findLibrary(alias).get()
 dependencyManagement {
     imports {
         mavenBom("org.springframework.cloud:spring-cloud-dependencies:${catalog.findVersion("spring-cloud").get()}")
+        // spring-cloud BOM тянет resilience4j 2.2.0, а стартер 2.4.0 ссылается на классы из spring6 2.4.0
+        // (RxJava3OnClasspathCondition) — без выравнивания контекст не поднимается.
+        mavenBom("io.github.resilience4j:resilience4j-bom:${catalog.findVersion("resilience4j").get()}")
     }
 }
 
