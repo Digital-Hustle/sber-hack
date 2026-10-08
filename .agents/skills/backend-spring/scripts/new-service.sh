@@ -6,7 +6,8 @@ SVC=${1:?usage: new-service.sh <svc> <port> <Owner> [--no-db|--gateway]}; PORT=$
 KIND=${4:-db}; KIND=${KIND#--}
 [[ "$SVC" =~ ^[a-z][a-z0-9]*$ ]] || { echo "имя сервиса: одно слово латиницей в нижнем регистре"; exit 1; }
 [ -f settings.gradle.kts ] || { echo "запусти из корня Gradle-монорепы"; exit 1; }
-[ -e "$SVC" ] && { echo "$SVC уже существует"; exit 1; }
+# папка может уже существовать с документами модуля (AGENTS.md, CLAUDE.md, docs/) — это не код
+{ [ -e "$SVC/build.gradle.kts" ] || [ -e "$SVC/src" ] || [ -e "$SVC/pyproject.toml" ]; } && { echo "$SVC уже существует"; exit 1; }
 ROOT_PKG=ru.proxodnaya; PKG=$ROOT_PKG.$SVC
 CLS="$(tr '[:lower:]' '[:upper:]' <<<"${SVC:0:1}")${SVC:1}"
 MAIN=$SVC/src/main/java/$(tr . / <<<"$PKG"); TEST=$SVC/src/test/java/$(tr . / <<<"$PKG")

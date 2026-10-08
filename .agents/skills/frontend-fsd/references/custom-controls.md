@@ -9,7 +9,7 @@
    - перенеси файл в `shared/ui/<Comp>/<Comp>.tsx`, экспорт именованный, `memo` для листовых компонентов;
    - замени цвета на токены, радиусы — на `rounded-lg/xl`, шрифт — `font-sans/display`;
    - убери `tw-animate-css`/`animate-in`/`data-[state=open]:animate-*` и `@keyframes` — анимации переписываются на `motion` с токенами из `shared/config/motion.ts`;
-   - если тянет `gsap/three/ogl/lenis` — **не ставь**, перепиши движение на motion или выбери другой вариант;
+   - тянет `gsap/three/ogl/lenis` — можно (ADR-036), но не смешивай с motion в одном компоненте и не тащи `framer-motion`/`react-spring`;
    - тексты — через `t()`, `aria-*` и фокус не трогай (их даёт примитив);
    - в шапке файла оставь комментарий-атрибуцию: `// основа: @react-bits/Stepper (MIT+Commons Clause), переработано`.
 4. Проверка: клавиатура (Tab/стрелки/Esc/Enter), скринридер (role/label), `prefers-reduced-motion`, тёмная тема, тач (цель ≥ 48 px).

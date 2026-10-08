@@ -1,17 +1,18 @@
 # Анимации: только Motion (`motion/react`)
 
 Motion — это бывший Framer Motion (MIT). Пакет `motion`, импорт `from "motion/react"`. Пакет `framer-motion` не ставим.
-**Запрещены** (проверяет `fsd-check`, правило `banned-import`): `gsap`, `@gsap/*`, `lenis`, `@studio-freight/lenis`, `react-spring`, `@react-spring/*`, `animejs`, `popmotion`, `framer-motion`, `tw-animate-css`, `tailwindcss-animate`. WebGL-фоны (`three`, `ogl`, `@react-three/*`, `postprocessing`) — только по ADR и не в зонах kiosk/worker.
-**CSS-анимации** (`@keyframes`, `animate-*`) не пишем. Допустим только `transition-colors` для hover-цвета.
+**Политика (ADR-036):** весь UI-моушн — `motion/react`. Разрешены и приветствуются там, где дают вау-эффект: WebGL (`three`, `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`, `postprocessing`, `ogl`) — фоны, 3D-пропуск, сканер лица, графики; GSAP — для компонентов из реестров на нём и сложных таймлайнов; Lenis — плавный скролл длинных страниц. Устройства мощные, «облегчать» ради слабых не нужно, но FPS проверяем. В одном компоненте — один движок.
+**Запрещены дубли** (`fsd-check`, `banned-import`): `framer-motion` (ставим `motion`), `react-spring`, `animejs`, `popmotion`. **CSS-анимации** (`@keyframes`, `animate-*`) — только внутри `shared/ui` в коде из реестров; в своём коде — motion. `transition-colors` для hover можно везде.
 
-Токены — `../assets/motion.ts`, кладём в `shared/config/motion.ts`. Свои числа длительностей и пружин в компонентах не пишем.
+Значения — единый источник `../assets/tokens.ts` (`motion.*`, ADR-033) → пресеты `../assets/motion.ts` (кладём в `shared/config/tokens.ts` и `shared/config/motion.ts`). Свои числа `duration/ease/stiffness/delay` в компонентах не пишем — `fsd-check` (правило `motion-literal`) это ловит. CSS-переходы — классами `duration-fast|base|slow` и `ease-out|in|in-out|emphasized` из той же темы.
 
 ## 1. Провайдер (app)
 ```tsx
 // app/providers/MotionProvider/MotionProvider.tsx
 import { MotionConfig } from "motion/react";
+import { tween } from "@/shared/config/motion";
 export const MotionProvider = ({ children }: { children: React.ReactNode }) => (
-  <MotionConfig reducedMotion="user" transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}>
+  <MotionConfig reducedMotion="user" transition={tween.base}>
     {children}
   </MotionConfig>
 );
@@ -35,10 +36,10 @@ export const MotionProvider = ({ children }: { children: React.ReactNode }) => (
 // Прогресс-бар чтения/прокрутки контейнера
 const ref = useRef<HTMLDivElement>(null);
 const { scrollYProgress } = useScroll({ container: ref });
-const scaleX = useSpring(scrollYProgress, { stiffness: 300, damping: 40 });
+const scaleX = useSpring(scrollYProgress, spring.soft);
 <motion.div style={{ scaleX }} className="fixed inset-x-0 top-0 h-1 origin-left bg-brand-gradient" />
 
-// Параллакс и «липкий стек» карточек без GSAP
+// Параллакс и «липкий стек» карточек на motion (GSAP ScrollTrigger — если нужен сложный пин-таймлайн)
 const target = useRef<HTMLDivElement>(null);
 const { scrollYProgress: p } = useScroll({ target, offset: ["start start", "end end"] });
 const y = useTransform(p, [0, 1], [0, -120]);
@@ -74,7 +75,7 @@ const progress = useTransform(x, [0, trackWidth - knob], [0, 1]);
 
 // Bottom sheet: тянется вниз и закрывается
 <motion.div drag="y" dragConstraints={{ top: 0 }} dragElastic={{ top: 0, bottom: 0.4 }}
-  onDragEnd={(_, i) => (i.offset.y > 120 || i.velocity.y > 600) && onClose()} transition={spring.sheet} />
+  onDragEnd={(_, i) => (i.offset.y > swipe.offset || i.velocity.y > swipe.velocity) && onClose()} transition={spring.sheet} />
 
 // Карусель со снапом (брифинги по технике безопасности): drag="x" + animate(x, -index*width, spring.soft)
 // Стопка карточек «смахни, если ознакомлен» — по образцу @react-bits/Stack (motion)

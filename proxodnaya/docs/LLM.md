@@ -23,6 +23,15 @@ LLM_TIMEOUT_SECONDS=30
 GIGACHAT_SCOPE=GIGACHAT_API_PERS
 ```
 
+## Два режима запуска: API (по умолчанию для разработки) и локально (для защиты, Д6)
+| Режим | Когда | Как включить |
+|---|---|---|
+| **API** | разработка, тесты, стенд, CI-smoke | `LLM_PROVIDER=openai` + `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` в `.env`; Ollama не поднимается |
+| **Локально** | показ судьям без интернета, проверка Д6 | `LLM_PROVIDER=ollama` + `docker compose --profile llm-local up -d` |
+| GigaChat | если дадут ключ на хакатоне | `LLM_PROVIDER=gigachat` |
+
+Адаптер `openai` — любой OpenAI-совместимый Chat Completions с function calling, поэтому подходят DeepSeek (`https://api.deepseek.com/v1`, `deepseek-chat`), Qwen через DashScope (`https://dashscope-intl.aliyuncs.com/compatible-mode/v1`, `qwen-plus`/`qwen3-*`), GLM через Z.ai (`https://api.z.ai/api/paas/v4`, `glm-4.6`). Требования к модели: русский язык, tool calling, контекст ≥ 32k; vision не нужна. Переключение — только переменными, код не меняется; обязательный локальный режим остаётся рабочим и проверяется перед защитой.
+
 ## Локальный провайдер — инструкция для судей
 1. `cp infra/.env.example infra/.env` и выставить `LLM_PROVIDER=ollama`.
 2. `docker compose --profile llm-local up -d` — поднимется `ollama`, init-контейнер скачает модель `qwen3:4b` (~2.5 ГБ).
