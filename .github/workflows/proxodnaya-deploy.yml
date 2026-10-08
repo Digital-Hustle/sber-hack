@@ -15,7 +15,16 @@ jobs:
   deploy:
     if: vars.DEPLOY_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
+      DB_HOST: localhost
+      DB_ADMIN_USER: postgres
+      DB_ADMIN_PASSWORD: postgres
       REF: ${{ inputs.ref || github.event.workflow_run.head_sha }}
       REG: ghcr.io/${{ github.repository_owner }}
     steps:
@@ -25,14 +34,28 @@ jobs:
         run: echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@v3
         with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
-      - name: build & push images (все сервисы + frontend)
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: jar-ы (jOOQ генерируется из БД, поэтому вне docker build)
+        working-directory: proxodnaya/services
+        run: |
+          for d in */src/main/resources/db/changelog; do svc=${d%%/*}
+            PGPASSWORD=postgres psql -h localhost -U postgres -c "create database $svc"
+            ./gradlew --no-daemon -q :$svc:update :$svc:generateJooq; done
+          ./gradlew --no-daemon -q bootJar
+      - name: build & push images (Java-сервисы, face, frontend)
         run: |
           TAG=${{ steps.v.outputs.tag }}
-          for svc in $(ls -d proxodnaya/services/*/ | xargs -n1 basename | grep -v '^libs$'); do
-            docker build -t $REG/gate-$svc:$TAG -f proxodnaya/services/$svc/Dockerfile proxodnaya/services
+          cd proxodnaya/services
+          for svc in $(for d in */; do [ -f "$d/build.gradle.kts" ] && [ -d "$d/src" ] && basename "$d"; done | grep -vE '^(libs|build-logic)$'); do
+            docker build -t $REG/gate-$svc:$TAG --build-arg SERVICE=$svc -f Dockerfile .
             docker push $REG/gate-$svc:$TAG
           done
-          docker build -t $REG/gate-frontend:$TAG proxodnaya/frontend && docker push $REG/gate-frontend:$TAG
+          for svc in $(for d in */; do [ -f "$d/pyproject.toml" ] && basename "$d"; done); do
+            docker build -t $REG/gate-$svc:$TAG $svc && docker push $REG/gate-$svc:$TAG
+          done
+          cd ../frontend && docker build -t $REG/gate-frontend:$TAG . && docker push $REG/gate-frontend:$TAG
       - name: deploy over ssh
         env:
           KEY: ${{ secrets.DEPLOY_SSH_KEY }}

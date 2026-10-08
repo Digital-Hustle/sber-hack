@@ -2,7 +2,7 @@
 
 ## Изоляция
 ```
-assistant-service: assistant ──► llm.api.ChatModelPort   (интерфейс: chat(messages, tools) → ChatResult)
+assistant-service: assistant ──► LlmGateway   (интерфейс: chat(messages, tools) → ChatResult)
                  ▲
    llm.infra.gigachat.GigaChatAdapter
    llm.infra.openai.OpenAiCompatAdapter

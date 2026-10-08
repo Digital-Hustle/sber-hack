@@ -1,11 +1,25 @@
 #!/usr/bin/env bash
-# Использование: scripts/new-migration.sh <service> <slug>   например: scripts/new-migration.sh access add_pass_tokens
+# Новый Liquibase changeset с меткой времени (параллельные PR не конфликтуют, includeAll сортирует по имени).
+# Использование: scripts/new-migration.sh <service> <slug>    например: scripts/new-migration.sh access create-qr-uses
 set -euo pipefail
-SVC="${1:?сервис: people|access|face|shift|assistant|notify}"; SLUG="${2:?slug, например add_pass_tokens}"
-[[ "$SLUG" =~ ^[a-z0-9_]+$ ]] || { echo "slug: только a-z0-9_"; exit 1; }
+SVC="${1:?сервис: people|access|face|shift|assistant}"; SLUG="${2:?slug, например create-qr-uses}"
+[[ "$SLUG" =~ ^[a-z0-9-]+$ ]] || { echo "slug: только a-z0-9-"; exit 1; }
 CASE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 [ -d "$CASE/services/$SVC" ] || { echo "нет сервиса services/$SVC"; exit 1; }
-DIR="$CASE/services/$SVC/src/main/resources/db/migration"; mkdir -p "$DIR"
-F="$DIR/V$(date -u +%Y%m%d%H%M%S)__${SLUG}.sql"
-printf -- "-- %s/%s\n-- автор: %s, требование: <FR-xx>\n\n" "$SVC" "$SLUG" "$(git config user.name)" > "$F"
+if [ -f "$CASE/services/$SVC/pyproject.toml" ]; then DIR="$CASE/services/$SVC/db/changelog/changesets"   # face: liquibase-контейнер
+else DIR="$CASE/services/$SVC/src/main/resources/db/changelog/changesets"; fi
+mkdir -p "$DIR"
+TS=$(date -u +%Y%m%d%H%M%S); ID="$TS-$SLUG"
+AUTHOR=$(git config user.name | tr '[:upper:] ' '[:lower:]-' || echo dev)
+F="$DIR/$ID.sql"
+cat > "$F" <<SQL
+--liquibase formatted sql
+
+--changeset $AUTHOR:$ID
+-- требование: <FR-xx>
+
+
+--rollback
+SQL
 echo "$F"
+echo "После правки: cd services && ./gradlew :$SVC:update :$SVC:generateJooq"

@@ -35,16 +35,19 @@ jobs:
             frontend: ['proxodnaya/frontend/**', 'proxodnaya/contracts/**']
             infra: ['proxodnaya/infra/**']
       - id: svc
-        name: изменённые сервисы (libs/common или parent pom → все)
+        name: изменённые сервисы (libs/, build-logic/, gradle/, config/ → все)
         run: |
           cd proxodnaya
-          all=$(ls -d services/*/ 2>/dev/null | xargs -rn1 basename | grep -v '^libs$' || true)
-          if [ -z "$all" ] || [ ! -f services/pom.xml ]; then echo 'list=[]' >> "$GITHUB_OUTPUT"; echo has=false >> "$GITHUB_OUTPUT"; exit 0; fi
+          all=$(for d in services/*/; do n=$(basename "$d"); case "$n" in libs|build-logic|gradle|config) continue;; esac
+                [ -f "$d/build.gradle.kts" ] || [ -f "$d/pyproject.toml" ] && echo "$n"; done 2>/dev/null || true)
+          if [ -z "$all" ]; then echo 'list=[]' >> "$GITHUB_OUTPUT"; echo has=false >> "$GITHUB_OUTPUT"; exit 0; fi
           base=${{ github.event.pull_request.base.sha || github.event.before }}
-          changed=$(git diff --relative --name-only "$base" HEAD 2>/dev/null || echo services/pom.xml)
-          if [ "${{ github.ref }}" = refs/heads/main ] || grep -qE '^services/(libs/|pom.xml)' <<<"$changed"; then list="$all"
-          else list=$(grep -oE '^services/[a-z-]+/' <<<"$changed" | cut -d/ -f2 | grep -v '^libs$' | sort -u || true); fi
-          json=$(printf '%s\n' $list | jq -R . | jq -sc 'map(select(length>0))')
+          changed=$(git diff --relative --name-only "$base" HEAD 2>/dev/null || echo services/libs/)
+          if [ "${{ github.ref }}" = refs/heads/main ] || grep -qE '^services/(libs/|build-logic/|gradle/|config/|settings.gradle.kts)' <<<"$changed"; then list="$all"
+          else list=$(grep -oE '^services/[a-z]+/' <<<"$changed" | cut -d/ -f2 | grep -xF "$all" | sort -u || true); fi
+          json=$(for n in $list; do kind=java; [ -f "services/$n/pyproject.toml" ] && kind=python
+                 db=false; [ -d "services/$n/src/main/resources/db/changelog" ] && db=true
+                 jq -nc --arg n "$n" --arg k "$kind" --argjson db $db '{name:$n,kind:$k,db:$db}'; done | jq -sc .)
           echo "list=$json" >> "$GITHUB_OUTPUT"
           if [ "$json" = "[]" ]; then echo has=false >> "$GITHUB_OUTPUT"; else echo has=true >> "$GITHUB_OUTPUT"; fi
 
@@ -52,22 +55,63 @@ jobs:
     needs: changes
     if: needs.changes.outputs.has_services == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         svc: ${{ fromJSON(needs.changes.outputs.services) }}
+    name: services (${{ matrix.svc.name }})
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env: { DB_HOST: localhost, DB_ADMIN_USER: postgres, DB_ADMIN_PASSWORD: postgres }
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '21', cache: maven }
-      - name: build + test
-        run: ./mvnw -B -pl ${{ matrix.svc }} -am verify
+      # ---- Java (Gradle) ----
+      - if: matrix.svc.kind == 'java'
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - if: matrix.svc.kind == 'java'
+        uses: gradle/actions/setup-gradle@v4
+      - name: БД сервиса + Liquibase + jOOQ
+        if: matrix.svc.kind == 'java' && matrix.svc.db
         working-directory: proxodnaya/services
-      - name: contract
         run: |
-          ./mvnw -B -q -pl ${{ matrix.svc }} -am -DskipTests verify -Pcontract
-          git diff --exit-code -- ../contracts/
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "create database ${{ matrix.svc.name }}"
+          ./gradlew --no-daemon :${{ matrix.svc.name }}:update :${{ matrix.svc.name }}:generateJooq
+      - name: check (компиляция, checkstyle, unit + integration, jacoco)
+        if: matrix.svc.kind == 'java'
         working-directory: proxodnaya/services
+        run: ./gradlew --no-daemon --continue :${{ matrix.svc.name }}:check
+      - name: be-check
+        if: matrix.svc.kind == 'java'
+        run: node .agents/skills/backend-spring/scripts/be-check.mjs proxodnaya/services
+      - name: контракт OpenAPI
+        if: matrix.svc.kind == 'java' && matrix.svc.db
+        working-directory: proxodnaya/services
+        run: |
+          ./gradlew --no-daemon :${{ matrix.svc.name }}:exportOpenApi
+          git diff --exit-code -- ../contracts/openapi/
+      - uses: mikepenz/action-junit-report@v5
+        if: always() && matrix.svc.kind == 'java'
+        with:
+          report_paths: proxodnaya/services/${{ matrix.svc.name }}/build/test-results/**/TEST-*.xml
+          check_name: tests (${{ matrix.svc.name }})
+          require_tests: false
+      # ---- Python (face) ----
+      - if: matrix.svc.kind == 'python'
+        uses: astral-sh/setup-uv@v6
+      - name: ruff, mypy, pytest
+        if: matrix.svc.kind == 'python'
+        working-directory: proxodnaya/services/${{ matrix.svc.name }}
+        run: |
+          uv sync --frozen
+          uv run ruff check . && uv run ruff format --check .
+          uv run mypy src
+          uv run pytest -q
 
   frontend:
     needs: changes
@@ -76,14 +120,15 @@ jobs:
     defaults: { run: { working-directory: proxodnaya/frontend } }
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: pnpm, cache-dependency-path: proxodnaya/frontend/pnpm-lock.yaml }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm gen:api
-      - run: pnpm -r lint
-      - run: pnpm -r typecheck
-      - run: pnpm -r build
+        with: { node-version: '22', cache: npm, cache-dependency-path: proxodnaya/frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run gen:api
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - name: fsd-check
+        run: node ../../.agents/skills/frontend-fsd/scripts/fsd-check.mjs src
 
   security:
     runs-on: ubuntu-latest
@@ -112,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cp .env.example .env && docker compose up -d --build --wait --wait-timeout 600
+      - run: ../scripts/gen-env.sh && docker compose up -d --build --wait --wait-timeout 600
         working-directory: proxodnaya/infra
       - run: proxodnaya/scripts/smoke.sh https://localhost
       - if: failure()

@@ -5,17 +5,17 @@
 ### ADR-001 Модульный монолит на Spring Boot — ЗАМЕНЕНО ADR-015
 Контекст: 1 день, 3 бэкендера. Решение: один сервис, модули — пакеты с `api`-границами, проверка ArchUnit. Альтернативы: микросервисы — отвергнуто (интеграционные риски). Последствия: один деплой, простой compose.
 
-### ADR-002 Сверка лица в JVM: OpenCV YuNet + SFace
+### ADR-002 Сверка лица в JVM: OpenCV YuNet + SFace — ЗАМЕНЕНО ADR-025
 Контекст: нужна настоящая сверка 1:1, без вирусных лицензий, без второго языка. Решение: `org.openpnp:opencv`, модели из opencv_zoo (YuNet — MIT, SFace — Apache-2.0). Порог cos — из настроек, калибруется на команде (стартовое значение 0.363 по документации OpenCV). Альтернативы: InsightFace (некоммерческие веса), Python-сервис (план Б), облачные API (ПДн уходят наружу).
 
-### ADR-003 Динамический пропуск: серверный одноразовый токен
+### ADR-003 Динамический пропуск: серверный одноразовый токен — ЗАМЕНЕНО ADR-028
 Решение: телефон получает от сервера токен `{nonce, workerId, deviceId, exp}` + HMAC, TTL 30 с, гасится атомарным UPDATE. Альтернативы: TOTP на устройстве (секрет на клиенте, сложнее отзыв), статичный QR (снятие с конкурса).
 
 ### ADR-004 Активная живость через случайный челлендж
 Решение: сервер выдаёт случайное действие, по 5 точкам YuNet оцениваем поворот головы (yaw) на кадрах и проверяем, что во всех кадрах тот же человек. Против распечатки и фото на экране. Ограничение: видео с поворотом головы не отсекается — честно говорим об этом на защите, улучшение — MiniFASNet.
 
 ### ADR-005 LLM за портом, три адаптера, локально Ollama
-Решение: `ChatModelPort`, адаптеры GigaChat / OpenAI-compatible / Ollama; выбор через `LLM_PROVIDER`. Локальная модель `qwen3:4b` (Apache-2.0) — компромисс скорости на CPU и качества function calling.
+Решение: `LlmGateway` (паттерн `...Gateway` из certis-api; было `ChatModelPort`), адаптеры GigaChat / OpenAI-compatible / Ollama; выбор через `LLM_PROVIDER`. Локальная модель `qwen3:4b` (Apache-2.0) — компромисс скорости на CPU и качества function calling.
 
 ### ADR-006 Помощник только через инструменты + валидатор чисел
 Решение: модель не видит БД, только результаты фиксированного набора серверных инструментов; ответ проверяется на числа. Против галлюцинаций (основание для снятия).
@@ -35,10 +35,10 @@
 ### ADR-011 Keycloak для персонала, ключ устройства для рабочих
 Решение: персонал (ADMIN/MANAGER/SECURITY_OFFICER/GUARD) — Keycloak SSO + TOTP; рабочие — беспарольный вход ключом ECDSA устройства, backend выпускает device-токены ES256; resource server принимает двух издателей. Альтернатива «все в Keycloak» — рабочим нужны пароли, которые на стройке передают друг другу.
 
-### ADR-012 Миграции с меткой времени
+### ADR-012 Миграции с меткой времени (Flyway) — ЗАМЕНЕНО ADR-023, идея метки времени сохранена
 Решение: `V<yyyyMMddHHmmss>__slug.sql` через `scripts/new-migration.sh <service> <slug>`, у каждого сервиса свои миграции, `flyway.out-of-order=true`. Причина: 3 бэкендера и агенты параллельно открывают PR — последовательные номера конфликтуют.
 
-### ADR-013 Контракт API — snapshot `contracts/openapi.json` в git
+### ADR-013 Контракт API — snapshot `contracts/openapi/<svc>.json` в git
 Решение: backend генерирует OpenAPI, snapshot коммитится и сверяется в CI; TS-клиент генерируется при сборке и не коммитится. Причина: изменения контракта видны в диффе PR, нет конфликтов сгенерированного кода.
 
 ### ADR-014 Агенты работают только через PR
@@ -47,7 +47,7 @@
 ### ADR-015 Микросервисы
 Контекст: команда хочет показать распределённую архитектуру. Решение: 6 сервисов + gateway (см. ARCHITECTURE.md). Гашение токена, решение и журнал не делим — они внутри access-service в одной транзакции. Синхронные вызовы только в пути прохода, с таймаутом и fail-closed; остальное — события. Риски: интеграция и отладка → смягчаем общей библиотекой `libs/common`, контрактами в `contracts/`, трейсингом Jaeger, интеграцией каждые 2 часа.
 
-### ADR-016 RabbitMQ + transactional outbox
+### ADR-016 RabbitMQ + transactional outbox — брокер ЗАМЕНЁН ADR-024, outbox сохранён
 Решение: RabbitMQ (MPL-2.0, ~150 МБ RAM) вместо Kafka (тяжелее) и Redis (лицензия AGPL/SSPL с 2024). Outbox-таблица в БД продюсера + публикатор по расписанию; потребители идемпотентны по `eventId`.
 
 ### ADR-017 Database-per-service в одном PostgreSQL
@@ -59,18 +59,53 @@
 ### ADR-019 Трейсинг OpenTelemetry + Jaeger
 Решение: Micrometer Tracing → OTLP → Jaeger all-in-one (Apache-2.0). Один проход = один трейс через все сервисы.
 
+### ADR-020 Фронтенд: одно приложение FSD с тремя зонами
+Дата: 08.10.2026. Решение: одно Vite-приложение по Feature-Sliced Design (эталон команды `MelevaTe/hackathon-spring-2026-frontend`), зоны `/kiosk`, `/worker`, `/admin` с ленивой загрузкой и ролевыми guard'ами. Контекст: два фронтенда, общий код (entities, ui, api) в трёх workspace-пакетах дублировал бы инфраструктуру. Альтернативы: pnpm workspaces с тремя приложениями — больше конфигов и сборок. Последствия: один бандл, один деплой, `fsd-check.mjs` в CI; PWA со `scope: /worker/`.
+
+### ADR-021 Фронтенд-стек по эталону команды
+Решение: npm, React 19, Tailwind 4 + shadcn/ui, axios, TanStack Query, zustand, react-hook-form + zod, i18next, react-hot-toast вместо Mantine/pnpm/openapi-fetch. Отличия от эталона: токены только в памяти (oidc-client-ts), MSW только в dev, тексты уведомлений через i18n, нет импортов из `app` в нижние слои. Причина: команда на этом стеке уже выиграла хакатон, агенты знают shadcn.
+
+### ADR-022 Сборка бэкенда: Gradle Kotlin DSL + version catalog + convention plugins
+Решение: `services/` — одна Gradle-сборка: авто-include папок (паттерн sueta-rnd-back), `gradle/libs.versions.toml`, `build-logic` с плагинами `proxodnaya.java/.service/.jooq/.gateway/.library`, один wrapper (Gradle 9.3), checkstyle из sueta. Альтернативы: Maven multi-module (команда пишет на Gradle), свой wrapper на сервис (как в sueta — разъезжаются версии). Проверено: скелет `init-backend.sh` + `new-service.sh` собирается (`check`, Liquibase update, jOOQ codegen, bootJar).
+
+### ADR-023 jOOQ + Liquibase вместо JPA + Flyway
+Решение: доступ к БД через jOOQ (codegen из живой схемы после `update`), миграции — Liquibase formatted SQL, `includeAll`, имена `<yyyyMMddHHmmss>-slug.sql`, `--rollback` обязателен, демо-данные `context:dev`. Причина: оба эталона команды (sueta, certis) на jOOQ + Liquibase; запросы журнала и аналитики проще в SQL. Последствия: компиляции нужна БД (локально compose, в CI — service container), поэтому Docker-образ упаковывает готовый jar.
+
+### ADR-024 Kafka вместо RabbitMQ
+Решение: Apache Kafka 3.9 в KRaft-режиме (без ZooKeeper), один брокер, Spring Kafka. Топики `<владелец>.<агрегат>.v<N>`, ключ = id агрегата, outbox-relay с `acks=all` и идемпотентным продюсером, потребители идемпотентны (`processed_events`), DLT после 3 повторов. Причина: решение команды; переигрываемый журнал событий (shift и assistant пересчитывают состояние с offset 0). Цена: ~1 ГБ RAM, укладывается в 32 ГБ сервера.
+
+### ADR-025 Сервис face на Python
+Решение: FastAPI + onnxruntime + opencv-python-headless; YuNet (MIT), SFace (Apache-2.0), MiniFASNet (Apache-2.0). Сверка 1:1: QR определяет рабочего, кадр сравнивается косинусом с 3–5 его эталонами (numpy), порог из конфига. Векторная БД (pgvector/Qdrant) не нужна: поиска 1:N нет, векторов сотни; pgvector — только если появится вход «только по лицу». Эмбеддинги шифруются AES-GCM. InsightFace запрещён (веса non-commercial). Причина: модели и CV на Python быстрее отлаживаются, чем OpenCV в JVM.
+
+### ADR-026 Внутреннее устройство сервиса по certis-api
+Решение: `api/controller` (интерфейс + `impl`), `api/dto/{request *Rq, response *Rs}`, `features/<f>/{command, query, application, api, spi, gateway, validator}`. Фичи общаются только через `api`/`spi`, внешние системы — через `...Gateway`, коллекции — в обёртках, `ResponseEntity` — только для динамических заголовков. Проверка: ArchUnit-тест из шаблона + `be-check.mjs`. Отличия от certis: Java, микросервисы, JWT Keycloak.
+
+### ADR-027 Без Spring Cloud Config Server и Vault
+Решение: конфиг в `application.yml` сервиса, секреты из env (`infra/.env` от `scripts/gen-env.sh`). Причина: в sueta Config Server с `fail-fast` — единая точка отказа старта, Vault в dev-режиме теряет секреты при рестарте и держит root-token в git. На одном сервере это лишние движущиеся части.
+
+### ADR-028 Офлайн-QR, подписанный ключом устройства
+Решение: телефон без сети раз в 30 с формирует `v1.<deviceId>.<window>.<sig>`, `sig = ECDSA P-256` неизвлекаемым ключом устройства (WebCrypto, IndexedDB). Access проверяет подпись по публичному ключу (проекция `people.device.v1`), окно ±90 с и гасит `(device_id, window)` вставкой с `on conflict do nothing` в одной транзакции с решением. Заменяет ADR-003. Альтернативы: серверный токен (телефону нужна сеть), TOTP/HMAC (общий секрет на сервере и киоске — утечка БД = подделка любых QR). Последствия: стройка без мобильного интернета не мешает проходу; скриншот живёт ≤ 30 с и одноразов; плюс сверка лица.
+
+### ADR-029 Офлайн-режим киоска = ручной проход охранника
+Решение: флаг `OFFLINE_MODE_ENABLED` (по умолчанию `false`). Киоск хранит подписанный сервером снимок допусков (TTL 12 ч); без связи с access проверяет подпись QR, показывает фото, а **решение принимает охранник** (ручной проход GUARD, `source=OFFLINE`). Журнал в IndexedDB с hash-chain досылается после восстановления связи, конфликты anti-passback — в админку. Причина: Д2 («решение принимает бэкенд») не нарушается — клиент не ставит `ALLOW` сам. На защите показываем только по запросу.
+
+### ADR-030 6 сервисов: notify влит в shift
+Решение: gateway, people, access, face, shift, assistant. SSE-хаб и правила оповещений — в shift (они и так строятся по интервалам). Причина: меньше контейнеров и контрактов при тех же границах данных; три бэка — по два сервиса.
+
 ## Лицензии зависимостей
 | Зависимость | Лицензия | Кто добавил |
 |---|---|---|
 | Spring Boot | Apache-2.0 | B1 |
 | PostgreSQL | PostgreSQL | B1 |
-| OpenCV / openpnp | Apache-2.0 | B2 |
+| onnxruntime / opencv-python-headless / FastAPI | MIT / Apache-2.0 / MIT | B2 |
 | YuNet / SFace | MIT / Apache-2.0 | B2 |
 | Ollama / Qwen3 | MIT / Apache-2.0 | B3 |
 | Apache POI | Apache-2.0 | B3 |
 | Keycloak | Apache-2.0 | B1 |
 | Spring Cloud Gateway | Apache-2.0 | B1 |
-| RabbitMQ / Spring AMQP | MPL-2.0 / Apache-2.0 | B1 |
+| Apache Kafka / Spring Kafka | Apache-2.0 | B1 |
+| jOOQ (OSS) / Liquibase / MapStruct | Apache-2.0 | B1 |
+| Gradle / checkstyle / ArchUnit | Apache-2.0 / LGPL-2.1 (инструмент) / Apache-2.0 | B1 |
 | Jaeger / OpenTelemetry | Apache-2.0 | B1 |
 | oidc-client-ts / react-oidc-context | Apache-2.0 / MIT | F1/F2 |
-| React / Mantine / TanStack | MIT | F1/F2 |
+| React / Tailwind / shadcn / Radix / TanStack / zustand / i18next | MIT | F1/F2 |

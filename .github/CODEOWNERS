@@ -1,20 +1,44 @@
-# Замените @b1 ... @f2 на GitHub-логины участников
-*                                   @b1
+# Замените @b1 ... @f2 на GitHub-логины участников (последнее совпадение побеждает)
+*                                              @b1
+/.github/                                      @b1
+/.agents/skills/                               @b1
 /proxodnaya/infra/                             @b1
-/proxodnaya/.github/                           @b1
-/proxodnaya/services/pom.xml                @b1
-/proxodnaya/services/libs/                  @b1
-/proxodnaya/services/gateway/               @b1
-/proxodnaya/services/people/                @b1
-/proxodnaya/services/access/                @b2
-/proxodnaya/services/face/                  @b2
-/proxodnaya/services/shift/                 @b3
-/proxodnaya/services/assistant/             @b3
-/proxodnaya/services/notify/                @b3
-/proxodnaya/contracts/events/               @b1 @b2 @b3
-/proxodnaya/contracts/                         @b1 @f2
-/proxodnaya/frontend/apps/kiosk/               @f1
-/proxodnaya/frontend/apps/worker/              @f1
-/proxodnaya/frontend/apps/admin/               @f2
-/proxodnaya/frontend/packages/                 @f2
+/proxodnaya/scripts/                           @b1
 /proxodnaya/docs/                              @b1
+
+# Бэкенд: сборка и общие части
+/proxodnaya/services/build-logic/              @b1
+/proxodnaya/services/gradle/                   @b1
+/proxodnaya/services/settings.gradle.kts       @b1
+/proxodnaya/services/config/                   @b1
+/proxodnaya/services/libs/                     @b1
+/proxodnaya/services/Dockerfile                @b1
+
+# Бэкенд: сервисы
+/proxodnaya/services/gateway/                  @b1
+/proxodnaya/services/people/                   @b1
+/proxodnaya/services/access/                   @b2
+/proxodnaya/services/face/                     @b2
+/proxodnaya/services/shift/                    @b3
+/proxodnaya/services/assistant/                @b3
+
+# Контракты
+/proxodnaya/contracts/                         @b1 @f2
+/proxodnaya/contracts/events/                  @b1 @b2 @b3
+
+# Фронтенд (одно FSD-приложение)
+/proxodnaya/frontend/                          @f2
+/proxodnaya/frontend/src/app/                  @f2
+/proxodnaya/frontend/src/shared/               @f2
+/proxodnaya/frontend/src/entities/             @f2
+# F1: зоны kiosk и worker (карта слайсов — .agents/skills/frontend-fsd/references/adaptation.md)
+/proxodnaya/frontend/src/pages/Kiosk*/         @f1
+/proxodnaya/frontend/src/pages/Worker*/        @f1
+/proxodnaya/frontend/src/widgets/KioskScanner/ @f1
+/proxodnaya/frontend/src/widgets/DecisionScreen/ @f1
+/proxodnaya/frontend/src/widgets/WorkerPassCard/ @f1
+/proxodnaya/frontend/src/features/activate-device/ @f1
+/proxodnaya/frontend/src/features/show-pass-qr/ @f1
+/proxodnaya/frontend/src/features/scan-pass/   @f1
+/proxodnaya/frontend/src/features/capture-face/ @f1
+/proxodnaya/frontend/src/features/confirm-manual-pass/ @f1

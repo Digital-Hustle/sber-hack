@@ -3,9 +3,10 @@
 ## До хакатона (8–9 октября) — без кода в репозитории проекта (п. 7.3)
 - [ ] Получить полный текст кейса (сценарии С1–С22, разд. 5.3, 5.5), сверить REQUIREMENTS
 - [ ] Каждый читает rules.md, ARCHITECTURE.md и свою строку в ROLES.md
-- [ ] Ноутбуки: JDK 21, Docker, Node 20 + pnpm, IDE, агент (Claude Code/Cursor), git с настроенным именем
-- [ ] **Скачать заранее** (интернет на площадке может быть слабым): образы `postgres:16`, `eclipse-temurin:21`, `node:20`, `nginx`, `caddy`, `ollama/ollama`; модель `ollama pull qwen3:4b`; ONNX YuNet и SFace из opencv_zoo; maven/npm кэш (прогнать пустой проект в песочнице)
-- [ ] B2: в отдельной песочнице (не в репо проекта) проверить, что `FaceDetectorYN`/`FaceRecognizerSF` работают из `org.openpnp:opencv` на ваших ОС. Это главный технический риск
+- [ ] Ноутбуки: JDK 21, Docker, Node 22 + npm, Python 3.12 + `uv` (B2), IDE, агент (Claude Code/Cursor), git с настроенным именем
+- [ ] **Скачать заранее** (интернет на площадке может быть слабым): образы `postgres:16-alpine`, `apache/kafka:3.9.1`, `eclipse-temurin:21-jre`, `node:22`, `python:3.12-slim`, `nginx`, `caddy`, `quay.io/keycloak/keycloak:26`, `jaegertracing/all-in-one`, `ollama/ollama`; модель `ollama pull qwen3:4b`; ONNX YuNet, SFace, MiniFASNet; кэш Gradle/npm/uv — прогнать `init-backend.sh` + `new-service.sh` в песочнице (НЕ в репо проекта)
+- [ ] B2: в отдельной песочнице (не в репо проекта) прогнать YuNet + SFace + MiniFASNet через onnxruntime/opencv-python на фото команды, прикинуть порог и время на кадр. Это главный технический риск
+- [ ] F1: в песочнице проверить WebCrypto ECDSA (неизвлекаемый ключ в IndexedDB) и `@zxing/browser` на iPhone Safari и Android Chrome по HTTPS
 - [ ] B1: арендовать сервер (DEPLOY.md), домен/sslip.io, проверить камеру на iPhone и Android по HTTPS; настроить branch protection и секреты деплоя в GitHub
 - [ ] B3: получить ключ GigaChat (если разрешено) и проверить авторизацию и сертификат НУЦ Минцифры
 - [ ] Положить этот комплект документов в личные заметки: в репо он попадёт первым коммитом на хакатоне
@@ -14,9 +15,9 @@
 ## День хакатона (10 октября). Т0 = старт
 | Время | B1 | B2 | B3 | F1 | F2 |
 |---|---|---|---|---|---|
-| Т0–0:45 | parent pom + `libs/common` + **шаблон сервиса**, compose (pg, keycloak, rabbit, jaeger, caddy), gateway | spike OpenCV в face-service | скелеты shift/assistant/notify из шаблона B1 | Vite workspace, 3 приложения, роутинг, камера | packages/ui, layout админки, логин |
+| Т0–0:45 | `init-backend.sh` + `new-service.sh` (gateway, people, access, shift, assistant), compose (pg, kafka, keycloak, jaeger, caddy), gateway-маршруты | face: FastAPI-скелет + модели | `libs/common`: Outbox, IdempotentConsumer, ProblemDetail | Vite + FSD-каркас, зоны /kiosk /worker, камера | `shared` (shadcn, `$api`, роутер), layout админки, логин |
 | 0:45–1:00 | **Синк контрактов**: API.md, внутренние API, схемы событий; OpenAPI → TS-клиент | | | | |
-| 1:00–3:00 | people-service (рабочие, устройства, инвайт, device-токены), service accounts, деплой на сервер | access (токены, DecisionEngine, журнал, outbox), face (эталоны, сверка 1:1) | shift (смены, слушатель pass.decided → интервалы), адаптеры Ollama + GigaChat | киоск: скан QR, кадры, результат; PWA: активация, QR | люди + заведение с вебкамеры, смены, журнал |
+| 1:00–3:00 | people (рабочие, устройства и ключи, инвайт, device-токены), service accounts, деплой на сервер | access (проверка и гашение офлайн-QR, DecisionEngine, журнал, outbox), face (эталоны, сверка 1:1) | shift (смены, слушатель `access.pass.v1` → интервалы), адаптеры Ollama + GigaChat | киоск: скан QR, кадры, результат; PWA: активация, офлайн-QR | люди + заведение с вебкамеры, смены, журнал |
 | **3:00** | **Интеграция №1: сквозной проход человека, заведённого через UI (Д9). Тег demo-1** | | | | |
 | 3:00–5:00 | подпись киоска, шифрование биометрии, hash-chain, аудит, TOTP | живость-челлендж, anti-passback, fail-closed, rate-limit, калибровка порога | analytics SQL, отчёты, помощник + инструменты + валидатор | челлендж в киоске, статус и история в PWA, ошибки | дашборд, фильтры, отчёты, чат помощника |
 | **5:00** | **Интеграция №2 + атака по чек-листу H. Тег demo-2. Код-фриз P0/P1** | | | | |
@@ -24,7 +25,8 @@
 | 6:30–7:30 | **Финальный фриз. Тег demo-final.** Docs, DECISIONS, слайды, матмодель, 2 репетиции защиты с таймером, каждый объясняет свой модуль | | | | |
 
 ## Срезы scope (если горим)
-0. Если микросервисы не собираются к Т+3:00: слить shift + notify + assistant в один сервис `ops-service` (события и контракты не меняются).
+0. Если микросервисы не собираются к Т+3:00: слить shift + assistant в один сервис `ops` (топики и контракты не меняются). Если face на Python не готов — сверка не отключается, а проход идёт через ручное подтверждение охранника (FR-14) с честной пометкой.
+0.1. Офлайн-режим киоска (FR-70) — P2, первым кандидатом на вырезание.
 1. Первыми режем P2-бонусы в обратном порядке: B-09, B-04, B-01, B-05, B-08.
 2. Живость: активный челлендж → упрощённый (2 кадра с разным yaw).
 3. Зоны: одна зона «площадка» + одна внутренняя.
