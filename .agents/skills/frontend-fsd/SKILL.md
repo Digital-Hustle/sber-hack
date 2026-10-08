@@ -1,6 +1,6 @@
 ---
 name: frontend-fsd
-description: Use for ANY frontend change in a React + TypeScript + Vite project organised by Feature-Sliced Design (layers app/pages/widgets/features/entities/shared), including proxodnaya/frontend. Covers where a file goes, how to name slices, entity API (dto → mapper → model → TanStack Query key factory), feature mutations with optimistic updates, pages with lazy loading and route config with role guards, i18n namespaces, shadcn/Tailwind UI, axios instance with refresh, zustand stores, and the fsd-check import linter. Trigger on "сделай экран", "добавь страницу", "новая фича", "добавь сущность", "подключи эндпоинт на фронте", "куда положить компонент", "почини импорты", "ревью фронта".
+description: Use for ANY frontend change in a React + TypeScript + Vite project organised by Feature-Sliced Design (layers app/pages/widgets/features/entities/shared), including proxodnaya/frontend. Covers where a file goes, how to name slices, entity API (dto → mapper → model → TanStack Query key factory), feature mutations with optimistic updates, pages with lazy loading and route config with role guards, i18n namespaces, shadcn/Tailwind UI, axios instance with refresh, zustand stores, and the fsd-check import linter; also the Sber visual identity (colors, SB Sans, logo/photo rules), Motion-only animations (scroll, swipe, layout, kiosk verdict), fully custom animated controls from shadcn registries (Animate UI, Magic UI, Aceternity, React Bits, Eldora, Animata, Motion Primitives, Cult UI, Smooth UI, 21st.dev) via the shadcn/magicui/21st MCP servers. Trigger on "сделай экран", "добавь страницу", "новая фича", "добавь сущность", "подключи эндпоинт на фронте", "куда положить компонент", "почини импорты", "ревью фронта", "сделай красиво", "добавь анимацию", "кастомный селект/дропдаун", "цвета Сбера", "дизайн экрана".
 ---
 
 # frontend-fsd
@@ -8,7 +8,7 @@ description: Use for ANY frontend change in a React + TypeScript + Vite project 
 Эталон — `MelevaTe/hackathon-spring-2026-frontend` (выигранный хакатон команды). Здесь его правила, очищенные от найденных там нарушений. Для «Проходной» поверх этого действуют `proxodnaya/rules.md` и `references/adaptation.md`.
 
 ## 0. Перед изменением
-1. `cat package.json` — убедись, что стек тот же (React 19, Vite, TS strict, Tailwind 4 + shadcn, axios, TanStack Query, zustand, react-hook-form, i18next). Если другой — не тащи эти правила вслепую.
+1. `cat package.json` — убедись, что стек тот же (React 19, Vite, TS strict, Tailwind 4 + shadcn, motion, axios, TanStack Query, zustand, react-hook-form, i18next). Если другой — не тащи эти правила вслепую.
 2. Определи **слой** и **слайс** по таблице ниже. Сомневаешься между слоями — бери нижний (entities < features < widgets), поднимешь позже.
 3. Шаблоны файлов — `references/templates.md`. Копируй их, не изобретай форму.
 
@@ -22,11 +22,12 @@ description: Use for ANY frontend change in a React + TypeScript + Vite project 
 | `entities/` | бизнес-сущность: тип, загрузка, отображение без действий | `PascalCase` ед. ч. (`Worker`, `PassAttempt`) | `api/dto.ts`, `api/<x>Api.ts`, `api/queries.ts`, `lib/mappers.ts`, `model/types`, `model/consts`, `ui/`, `index.ts` |
 | `shared/` | без бизнес-смысла: ui-кит, axios, конфиг, утилиты, роуты-константы | сегменты, не слайсы | `api/`, `config/`, `const/`, `hooks/`, `lib/`, `types/`, `ui/<Comp>/<Comp>.tsx` |
 
-## 2. Правила импортов (проверяет `scripts/fsd-check.mjs`)
+## 2. Правила импортов и анимаций (проверяет `scripts/fsd-check.mjs`)
 - **layer-direction**: только вниз. `shared` не импортирует ничего, `entities` — только `shared`, …, `app` — всё. Нужна тема/роутер в виджете — значит это `shared` (`shared/lib/theme`, `shared/const/router`), а не `app`.
 - **cross-slice**: слайс не импортирует соседа по слою. Два виджета нужны вместе → собирает страница. Две сущности связаны → передавай данные пропсами или вынеси общий тип в `shared/types` (`@x`-нотацию FSD не используем).
 - **public-api**: чужой слайс — только через `@/layer/Slice` (его `index.ts`). Глубокий импорт `@/entities/Worker/ui/WorkerCard` запрещён. Исключение: `shared/*` импортируется по сегментам (`@/shared/ui/Button/Button`).
 - **relative-inside-slice**: внутри своего слайса — только относительные пути (`../model/types`), не `@/features/same-slice/...`.
+- **banned-import** / **css-animation**: анимации только `motion/react`. GSAP, Lenis, react-spring, anime.js, `framer-motion`, `tw-animate-css`, CSS `@keyframes`/`animate-*` запрещены; WebGL (`three`, `ogl`, `@react-three/*`) — только по ADR (ADR-031).
 - **no-public-api**: у каждого слайса `entities|features|widgets|pages` есть `index.ts`, экспортирующий только нужное снаружи.
 
 ```bash
@@ -62,3 +63,18 @@ Prettier (printWidth 90, двойные кавычки, один атрибут 
 
 ## 7. Частые ошибки эталона (не повторять)
 Найдено `fsd-check` в эталоне (8 на 250 файлов): `widgets/ThemeSwitcher` и `widgets/MindMapCanvas` импортируют из `app` (тема/провайдер → перенести в `shared`); `widgets/AppShell` импортирует соседний виджет `Navbar` (композицию — в странице или в `app`-layout); 4 alias-импорта внутри собственного слайса. Плюс: токены в `localStorage`, нефиксированные тексты в `toast`, смешанные имена слайсов фич (PascalCase и kebab-case) — у нас только kebab-case.
+
+## 8. Дизайн, бренд и анимации (ADR-031)
+Цель — интерфейс уровня продукта Сбера, а не «дефолтный shadcn». Перед версткой экрана прочитай:
+1. `references/sber-brand.md` — цвета, SB Sans, градиент, правила логотипа и фото. Тема — `assets/theme.css`, копировать как есть.
+2. `references/motion.md` — анимации только на Motion (`motion/react`): токены `assets/motion.ts` → `shared/config/motion.ts`, паттерны прокрутки, свайпов, layout, сценарии киоска и телефона.
+3. `references/custom-controls.md` — каждый контрол кастомный: поведение от Radix/cmdk, вид и движение — наши. Чек-лист «после установки».
+4. `references/component-catalog.md` — что брать из Magic UI, Aceternity, React Bits, Animate UI, Motion Primitives, Eldora, Animata, Cult UI, Smooth UI, Uiverse, 21st.dev и где искать референсы (Designeer). Подбор по экранам.
+
+Жёсткие правила:
+- **Сначала найди, потом пиши.** Ищи компонент через MCP `shadcn` (реестры из `assets/components.json`), `magicui` или `21st`, смотри `dependencies`, ставь через `npx shadcn@latest add @ns/name` и доводи по чек-листу. С нуля пишем, только если в каталоге нет подходящего.
+- **Картинки и логотипы — только по запросу к человеку.** Спроси, какие нужны: реальные (пришлёт сам) или сгенерированные. Ничего не скачивай со стоков. Фото рабочих и лиц в git и `public/` не кладём никогда.
+- В пути прохода (киоск) анимация не задерживает вердикт, а цвет и иконка берутся из `code` ответа сервера.
+- Перед PR с UI прогони скиллы `review-animations` и `webapp-testing` (скриншоты трёх зон, mobile 390×844 для `/worker`).
+
+Вспомогательные скиллы (лежат рядом в `.agents/skills/`): `shadcn` (CLI и реестры), `frontend-design` и `design-taste-frontend` (визуальный уровень), `emil-design-eng`, `animate`, `improve-animations`, `review-animations`, `find-animation-opportunities` (качество движения), `webapp-testing` (Playwright). При конфликте этот скилл и `proxodnaya/rules.md` важнее.

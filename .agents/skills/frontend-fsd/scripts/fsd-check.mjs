@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Проверка архитектуры Feature-Sliced Design (эталон: MelevaTe/hackathon-spring-2026-frontend).
+// Плюс: анимации только motion/react (banned-import, css-animation — ADR-031).
 // Использование: node fsd-check.mjs [путь/к/src] [--warn-only]
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, dirname, sep } from "node:path";
@@ -16,7 +17,7 @@ const files = [];
   for (const n of readdirSync(d)) {
     const p = join(d, n);
     if (statSync(p).isDirectory()) walk(p);
-    else if (/\.(ts|tsx)$/.test(n) && !/\.d\.ts$/.test(n)) files.push(p);
+    else if (/\.(ts|tsx|css)$/.test(n) && !/\.d\.ts$/.test(n)) files.push(p);
   }
 })(SRC);
 
@@ -33,7 +34,18 @@ const problems = [];
 const add = (file, line, rule, msg) =>
   problems.push(`${relative(process.cwd(), file)}:${line}  [${rule}] ${msg}`);
 
-const IMPORT_RE = /(?:import|export)\s[^"']*?from\s*["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
+// 0. Анимации только motion/react (ADR-031); WebGL — только по ADR
+const BANNED = [
+  [/^(gsap|@gsap\/.*)$/, "GSAP запрещён — анимации только motion/react (ADR-031)"],
+  [/^(lenis|@studio-freight\/lenis)$/, "Lenis запрещён — прокрутка через useScroll из motion/react (ADR-031)"],
+  [/^(react-spring|@react-spring\/.*)$/, "react-spring запрещён — используйте motion/react (ADR-031)"],
+  [/^(animejs|popmotion)$/, "сторонний движок анимаций запрещён — используйте motion/react (ADR-031)"],
+  [/^framer-motion(\/.*)?$/, "импортируйте из \"motion/react\", а не из framer-motion (ADR-031)"],
+  [/^(tw-animate-css|tailwindcss-animate)$/, "CSS-анимации запрещены — перепишите на motion/react (ADR-031)"],
+  [/^(three|ogl|postprocessing|@react-three\/.*)(\/.*)?$/, "WebGL-зависимость без ADR — уберите или оформите ADR (ADR-031)"],
+];
+const CSS_ANIM_RE = /@keyframes\s|(?<![\w-])(?:[\w-]+:)*animate-(?:spin|ping|pulse|bounce|in|out|\[)/;
+const IMPORT_RE = /(?:import|export)\s[^"']*?from\s*["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)|^\s*import\s*["']([^"']+)["']|@import\s+["']([^"']+)["']/g;
 
 for (const file of files) {
   const src = readFileSync(file, "utf8");
@@ -41,13 +53,18 @@ for (const file of files) {
   if (!me.layer) continue;
   const lines = src.split("\n");
   lines.forEach((text, i) => {
+    if (CSS_ANIM_RE.test(text))
+      add(file, i + 1, "css-animation", "CSS-анимация (@keyframes / animate-*) — перепишите на motion/react (ADR-031)");
     for (const m of text.matchAll(IMPORT_RE)) {
-      const spec = m[1] ?? m[2];
+      const spec = m[1] ?? m[2] ?? m[3] ?? m[4];
       let targetAbs;
       const viaAlias = spec.startsWith("@/");
       if (viaAlias) targetAbs = join(SRC, spec.slice(2));
       else if (spec.startsWith(".")) targetAbs = resolve(dirname(file), spec);
-      else continue; // npm-пакет
+      else {
+        for (const [re, msg] of BANNED) if (re.test(spec)) add(file, i + 1, "banned-import", `"${spec}": ${msg}`);
+        continue; // npm-пакет
+      }
       const t = locate(targetAbs);
       if (!t.layer) continue;
       const ln = i + 1;
