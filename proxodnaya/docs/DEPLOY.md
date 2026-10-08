@@ -39,6 +39,9 @@
 push в `main` → CI зелёный → сборка образов `backend` и `frontend` с тегом `sha` → push в GHCR → SSH на сервер: `docker compose pull && docker compose up -d` → health-check → при провале откат на предыдущий тег.
 Секреты GitHub: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`. Секретов приложения в GitHub нет — они только в `.env` на сервере.
 
+## Включение деплоя
+Деплой выключен, пока в репозитории нет кода и сервера: в Settings → Variables задайте `DEPLOY_ENABLED=true` и секреты `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`.
+
 ## Branch protection для `main`
 - Merge только через PR, обязательны проверки `backend`, `frontend`, `contract`, `security`.
 - 1 approve от владельца модуля (CODEOWNERS). Агент не может апрувить свой PR.

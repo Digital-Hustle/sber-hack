@@ -17,8 +17,17 @@ jobs:
       backend: ${{ steps.f.outputs.backend }}
       frontend: ${{ steps.f.outputs.frontend }}
       infra: ${{ steps.f.outputs.infra }}
+      has_backend: ${{ steps.e.outputs.backend }}
+      has_frontend: ${{ steps.e.outputs.frontend }}
+      has_infra: ${{ steps.e.outputs.infra }}
     steps:
       - uses: actions/checkout@v4
+      - id: e
+        name: какие части уже существуют (до старта хакатона кода нет)
+        run: |
+          echo "backend=$([ -f proxodnaya/backend/pom.xml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "frontend=$([ -f proxodnaya/frontend/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "infra=$([ -f proxodnaya/infra/docker-compose.yml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - id: f
         uses: dorny/paths-filter@v3
         with:
@@ -29,7 +38,7 @@ jobs:
 
   backend:
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || github.ref == 'refs/heads/main'
+    if: needs.changes.outputs.has_backend == 'true' && (needs.changes.outputs.backend == 'true' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +49,7 @@ jobs:
 
   contract:
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    if: needs.changes.outputs.has_backend == 'true' && needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +61,7 @@ jobs:
 
   frontend:
     needs: changes
-    if: needs.changes.outputs.frontend == 'true' || github.ref == 'refs/heads/main'
+    if: needs.changes.outputs.has_frontend == 'true' && (needs.changes.outputs.frontend == 'true' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: proxodnaya/frontend } }
     steps:
@@ -81,7 +90,7 @@ jobs:
 
   infra:
     needs: changes
-    if: needs.changes.outputs.infra == 'true'
+    if: needs.changes.outputs.has_infra == 'true' && needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -89,8 +98,8 @@ jobs:
         working-directory: proxodnaya/infra
 
   smoke:
-    if: github.ref == 'refs/heads/main'
-    needs: [backend, frontend, security]
+    needs: [changes, backend, frontend, security]
+    if: always() && github.ref == 'refs/heads/main' && needs.changes.outputs.has_infra == 'true' && needs.backend.result == 'success' && needs.frontend.result == 'success' && needs.security.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
