@@ -1,4 +1,4 @@
-# DESIGN — дизайн-система «Проходной» (Сбер Nova)
+# DESIGN — дизайн-система «Проходной»
 
 **Главное правило: стиль задаётся в одном месте.** Все цвета, шрифты, размеры текста, отступы, радиусы, тени, слои и параметры анимаций живут в `src/shared/config/tokens.ts` (до хакатона — шаблон `.agents/skills/frontend-fsd/assets/tokens.ts`). Из него `npm run gen:tokens` генерирует `src/app/styles/theme.css` (Tailwind 4 + shadcn) и таблицы в разделе 2 этого файла. Motion читает те же значения через `src/shared/config/motion.ts`. Литералы в коде ловит `fsd-check`, устаревшую тему — `guard.sh`/`verify.sh` (ADR-033).
 
@@ -12,12 +12,13 @@
 
 Package-скрипт (добавить при скаффолдинге): `"gen:tokens": "node --experimental-strip-types --no-warnings ../../.agents/skills/frontend-fsd/scripts/gen-tokens.mjs src/shared/config/tokens.ts --css src/app/styles/theme.css --md docs/DESIGN.md"`.
 
-## 1. Характер (Nova)
+## 1. Характер
+От Сбера обязательны только **фирменный зелёный и SB Sans** (ADR-036). Публичная часть гайдлайна Nova — стартовая точка, не закон: полный брендбук закрыт для внешних, поэтому остальное (радиусы, вспомогательные цвета, глубина, движение) — наша современная система.
 - Светлые спокойные поверхности (`background`, `card`), много воздуха, крупная типографика SB Sans, мягкие радиусы.
 - **Один акцент — зелёный.** Действие = `primary` (кнопка Nova). «Зелёный СБЕР» = `brand` — плоскости, иконки, крупный текст, заливка ALLOW. Мелкий зелёный текст — только `text-accent-foreground`.
 - **Мастер-градиент** (`bg-brand-gradient`, `text-brand-gradient`, `bg-brand-gradient-conic`) — подпись бренда, дозированно: фон входа, кольцо таймера QR, бордер-бим активной карточки, пустые состояния. Не на кнопках, таблицах и тексте длиннее двух слов.
 - Нейтральные — только наши серые через семантику (`muted`, `secondary`, `border`). Дефолтная палитра Tailwind (`slate`, `red-500` …) выключена в теме — такие классы просто не сгенерируются.
-- Логотип Сбера и фото — только от человека (см. `frontend-fsd/references/sber-brand.md`).
+- Логотип — **заглушка** (`shared/ui/Logo`: знак-галочка в градиенте + слово «Проходная»), пока не будет официального. Фото — только от человека (см. `frontend-fsd/references/sber-brand.md`).
 
 ## 2. Токены (сгенерировано)
 <!-- tokens:begin -->
@@ -97,7 +98,7 @@ Package-скрипт (добавить при скаффолдинге): `"gen:t
 
 - Сетка 4 px. Для `p-* m-* gap-* space-* inset-*` разрешены шаги: `0` (0 px), `0.5` (2 px), `1` (4 px), `2` (8 px), `3` (12 px), `4` (16 px), `5` (20 px), `6` (24 px), `8` (32 px), `10` (40 px), `12` (48 px), `16` (64 px).
 - Высота контролов: `h-control-xs` 32, `h-control-sm` 40, `h-control-md` 48, `h-control-lg` 56, `h-control-xl` 64 px.
-- Радиусы: `rounded-xs` 4, `rounded-sm` 8, `rounded-md` 12, `rounded-lg` 16, `rounded-xl` 24, `rounded-2xl` 32 px, `rounded-full`.
+- Радиусы: `rounded-xs` 6, `rounded-sm` 10, `rounded-md` 14, `rounded-lg` 20, `rounded-xl` 28, `rounded-2xl` 36 px, `rounded-full`.
 - Тени: `shadow-xs`, `shadow-sm`, `shadow-card`, `shadow-pop` (свои значения в тёмной теме).
 - Safe-area телефона: `pt-safe`, `pb-safe`.
 - Слои: `z-base` 0, `z-sticky` 10, `z-dropdown` 40, `z-overlay` 50, `z-modal` 60, `z-toast` 70, `z-kiosk` 80.
@@ -170,11 +171,11 @@ Package-скрипт (добавить при скаффолдинге): `"gen:t
 | `/admin` | светлая + переключатель | `text-sm`, таблицы | сайдбар, фильтры в URL, «как посчитано» у метрик |
 
 ## 7. Иконки и изображения
-- `lucide-react`, `size-4` (в тексте), `size-5` (кнопки), `size-6` (навигация), `strokeWidth={1.75}`; анимированные — `@lucide-animated`.
+- Основной набор — **Plasma Icons** (открытые иконки Сбера, MIT): SVG из `@salutejs/plasma-icons` копируем в `shared/ui/Icon` (без styled-components), с атрибуцией. Чего нет — `lucide-react` со `strokeWidth={1.75}`; анимированные — `@lucide-animated`. Размеры: `size-4` в тексте, `size-5` в кнопках, `size-6` в навигации.
 - Картинки — только по запросу к человеку (реальные или генерация), webp ≤ 200 КБ, `loading="lazy"`; лица и ПДн никогда не в git/`public`.
 
 ## 8. Движение — как применять
-Значения — раздел 2, правила и рецепты — `frontend-fsd/references/motion.md`. Кратко: UI-переходы `duration.fast`/`base`, крупные — `slow`, `hero` только для лендинга и слайдов. Вход — `ease.out`, уход короче и `ease.in`. Пружины — для нажатий, поповеров, шторок. Анимируем `transform`/`opacity`, уважаем `prefers-reduced-motion` (`MotionConfig reducedMotion="user"`). Ничего не крутится бесконечно в пути прохода.
+Значения — раздел 2, правила и рецепты — `frontend-fsd/references/motion.md`. UI — motion; 3D, шейдеры и фоны — R3F/ogl (сканер лица, пропуск, вход, пустые состояния); сложные таймлайны — GSAP; один движок на компонент (ADR-036). Кратко: UI-переходы `duration.fast`/`base`, крупные — `slow`, `hero` только для лендинга и слайдов. Вход — `ease.out`, уход короче и `ease.in`. Пружины — для нажатий, поповеров, шторок. Анимируем `transform`/`opacity`, уважаем `prefers-reduced-motion` (`MotionConfig reducedMotion="user"`). Ничего не крутится бесконечно в пути прохода.
 
 ## 9. Доступность
 Контраст ≥ 4.5:1 проверяет генератор; фокус всегда виден (`ring-ring`); вся навигация с клавиатуры; `aria-label` у иконок-кнопок; цвет никогда не единственный носитель смысла (вердикт = цвет + иконка + текст).

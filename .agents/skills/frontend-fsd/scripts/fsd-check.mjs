@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Проверка архитектуры Feature-Sliced Design (эталон: MelevaTe/hackathon-spring-2026-frontend).
-// Плюс: анимации только motion/react (banned-import, css-animation — ADR-031)
+// Плюс: движки анимаций (banned-import, css-animation — ADR-036)
 // и стили только из токенов (hardcoded-color, arbitrary-value, spacing-scale, motion-literal, inline-style — ADR-033).
 // Использование: node fsd-check.mjs [путь/к/src] [--warn-only]
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -58,15 +58,12 @@ const STYLE_RULES = [
 ];
 const SPACING_RE = /(?<![\w-])-?(?:p|px|py|pt|pr|pb|pl|ps|pe|m|mx|my|mt|mr|mb|ml|ms|me|gap|gap-x|gap-y|space-x|space-y|inset|inset-x|inset-y|top|right|bottom|left|start|end)-(\d+(?:\.\d+)?)(?![\w.%\/-])/g;
 
-// 0. Анимации только motion/react (ADR-031); WebGL — только по ADR
+// 0. Движки анимаций (ADR-036): motion/react — основной; three/R3F/ogl/gsap/lenis — разрешены; дубли — нет
 const BANNED = [
-  [/^(gsap|@gsap\/.*)$/, "GSAP запрещён — анимации только motion/react (ADR-031)"],
-  [/^(lenis|@studio-freight\/lenis)$/, "Lenis запрещён — прокрутка через useScroll из motion/react (ADR-031)"],
-  [/^(react-spring|@react-spring\/.*)$/, "react-spring запрещён — используйте motion/react (ADR-031)"],
-  [/^(animejs|popmotion)$/, "сторонний движок анимаций запрещён — используйте motion/react (ADR-031)"],
-  [/^framer-motion(\/.*)?$/, "импортируйте из \"motion/react\", а не из framer-motion (ADR-031)"],
-  [/^(tw-animate-css|tailwindcss-animate)$/, "CSS-анимации запрещены — перепишите на motion/react (ADR-031)"],
-  [/^(three|ogl|postprocessing|@react-three\/.*)(\/.*)?$/, "WebGL-зависимость без ADR — уберите или оформите ADR (ADR-031)"],
+  [/^framer-motion(\/.*)?$/, "импортируйте из \"motion/react\" (пакет motion), а не из framer-motion (ADR-036)"],
+  [/^(react-spring|@react-spring\/.*)$/, "react-spring дублирует motion — используйте motion/react (ADR-036)"],
+  [/^(animejs|popmotion)$/, "дублирующий движок анимаций — используйте motion/react или gsap (ADR-036)"],
+  [/^(tw-animate-css|tailwindcss-animate)$/, "CSS-анимации Tailwind выключены в теме — анимируйте через motion/react (ADR-036)"],
 ];
 const CSS_ANIM_RE = /@keyframes\s|(?<![\w-])(?:[\w-]+:)*animate-(?:spin|ping|pulse|bounce|in|out|\[)/;
 const IMPORT_RE = /(?:import|export)\s[^"']*?from\s*["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)|^\s*import\s*["']([^"']+)["']|@import\s+["']([^"']+)["']/g;
@@ -88,7 +85,7 @@ for (const file of files) {
           report(file, i + 1, "spacing-scale", `"${m[0].trim()}" вне сетки — разрешены шаги ${SPACING.join(", ")} (tokens.ts → spacingSteps)`);
     }
     if (CSS_ANIM_RE.test(text))
-      add(file, i + 1, "css-animation", "CSS-анимация (@keyframes / animate-*) — перепишите на motion/react (ADR-031)");
+      (vendorUi ? warn : add)(file, i + 1, "css-animation", "CSS-анимация (@keyframes / animate-*) — в своём коде только motion/react (ADR-036)");
     for (const m of text.matchAll(IMPORT_RE)) {
       const spec = m[1] ?? m[2] ?? m[3] ?? m[4];
       let targetAbs;

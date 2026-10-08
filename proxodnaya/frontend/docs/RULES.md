@@ -9,7 +9,7 @@
 - Каждый экран: skeleton / empty / error с «Повторить» / data / offline-баннер.
 - Тексты — `t("key")`, ключи сразу в `public/locales/ru`.
 - Стили — только классы токенов из `docs/DESIGN.md`. Нужного токена нет → добавь его в `shared/config/tokens.ts`, `npm run gen:tokens`, опиши роль токена (PR с ревью F2).
-- Анимации — только `motion/react` и пресеты `@/shared/config/motion` (`tween.*`, `spring.*`, `fadeUp`, `press`, `inView`).
+- Анимации UI — `motion/react` и пресеты `@/shared/config/motion`; 3D/шейдеры — R3F/ogl, сложные таймлайны — GSAP, параметры тоже из токенов (`tween.*`, `spring.*`, `fadeUp`, `press`, `inView`).
 - Перед PR: `proxodnaya/scripts/ci-local.sh quick`, руками проверь экран в браузере (desktop + 390×844), опиши шаги в PR.
 
 ## Избегай
@@ -17,13 +17,13 @@
 - ⛔ Токенов в localStorage/sessionStorage; приватного ключа устройства в извлекаемом виде.
 - ⛔ Моковых данных и MSW вне `src/mocks` и `import.meta.env.DEV`; «красивых» графиков на пустой БД.
 - ⛔ hex/rgb в коде, `p-[13px]`/`text-[#fff]`/`w-[420px]`, отступов вне сетки, `duration: 0.3`/`ease: [...]` литералами, `style={{ padding: 12 }}` — правила `fsd-check` (ADR-033).
-- ⛔ GSAP, Lenis, react-spring, anime.js, `framer-motion`, `tw-animate-css`, CSS `@keyframes`/`animate-*`; WebGL (`three`, `ogl`) — только по ADR (ADR-031).
+- ⛔ Дублирующие движки: `framer-motion` (есть `motion`), `react-spring`, `anime.js`, `popmotion`; CSS `@keyframes`/`animate-*` вне `shared/ui`. WebGL (three/R3F/ogl), GSAP, Lenis — можно, один движок на компонент (ADR-036).
 - Ручного `fetch`/`axios` в компонентах; копирования серверных данных в zustand; `useEffect` для загрузки данных.
 - Глубоких импортов в чужой слайс, импортов вверх по слоям, `@x`-нотации.
 - Нативных `<select>`, `<input type=date>`, браузерных скроллбаров и `alert/confirm` — только кастомные контролы (`frontend-fsd/references/custom-controls.md`).
 
 ## Библиотеки
-Разрешены: из `docs/ARCHITECTURE.md §Стек` + компоненты из реестров `components.json` (Magic UI, Animate UI, Aceternity, React Bits без gsap/ogl, Motion Primitives, Eldora, Cult UI, Smooth UI, Evil Charts, Lucide Animated) — через `npx shadcn add`, с адаптацией под токены. Новая npm-зависимость → проверь лицензию (MIT/Apache/BSD/ISC; GPL/AGPL нельзя), строка в `../../docs/DECISIONS.md`, ревью F2 (`package.json` — его).
+Разрешены: из `docs/ARCHITECTURE.md §Стек` + компоненты из реестров `components.json` (Magic UI, Animate UI, Aceternity, React Bits (включая gsap/ogl/three), Motion Primitives, Eldora, Cult UI, Smooth UI, Evil Charts, Lucide Animated) — через `npx shadcn add`, с адаптацией под токены. Новая npm-зависимость → проверь лицензию (MIT/Apache/BSD/ISC; GPL/AGPL нельзя), строка в `../../docs/DECISIONS.md`, ревью F2 (`package.json` — его).
 
 ## Обработка ошибок
 - Ответ ошибки — `application/problem+json` (`shared/api/problem.ts` → `{code, detail, hint, errors[]}`); показываем `detail`/`hint` с бэка или `t("errors.<code>")`, никогда сырой stack/JSON.

@@ -1,8 +1,8 @@
 # Анимации: только Motion (`motion/react`)
 
 Motion — это бывший Framer Motion (MIT). Пакет `motion`, импорт `from "motion/react"`. Пакет `framer-motion` не ставим.
-**Запрещены** (проверяет `fsd-check`, правило `banned-import`): `gsap`, `@gsap/*`, `lenis`, `@studio-freight/lenis`, `react-spring`, `@react-spring/*`, `animejs`, `popmotion`, `framer-motion`, `tw-animate-css`, `tailwindcss-animate`. WebGL-фоны (`three`, `ogl`, `@react-three/*`, `postprocessing`) — только по ADR и не в зонах kiosk/worker.
-**CSS-анимации** (`@keyframes`, `animate-*`) не пишем. Допустим только `transition-colors` для hover-цвета.
+**Политика (ADR-036):** весь UI-моушн — `motion/react`. Разрешены и приветствуются там, где дают вау-эффект: WebGL (`three`, `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`, `postprocessing`, `ogl`) — фоны, 3D-пропуск, сканер лица, графики; GSAP — для компонентов из реестров на нём и сложных таймлайнов; Lenis — плавный скролл длинных страниц. Устройства мощные, «облегчать» ради слабых не нужно, но FPS проверяем. В одном компоненте — один движок.
+**Запрещены дубли** (`fsd-check`, `banned-import`): `framer-motion` (ставим `motion`), `react-spring`, `animejs`, `popmotion`. **CSS-анимации** (`@keyframes`, `animate-*`) — только внутри `shared/ui` в коде из реестров; в своём коде — motion. `transition-colors` для hover можно везде.
 
 Значения — единый источник `../assets/tokens.ts` (`motion.*`, ADR-033) → пресеты `../assets/motion.ts` (кладём в `shared/config/tokens.ts` и `shared/config/motion.ts`). Свои числа `duration/ease/stiffness/delay` в компонентах не пишем — `fsd-check` (правило `motion-literal`) это ловит. CSS-переходы — классами `duration-fast|base|slow` и `ease-out|in|in-out|emphasized` из той же темы.
 
@@ -39,7 +39,7 @@ const { scrollYProgress } = useScroll({ container: ref });
 const scaleX = useSpring(scrollYProgress, spring.soft);
 <motion.div style={{ scaleX }} className="fixed inset-x-0 top-0 h-1 origin-left bg-brand-gradient" />
 
-// Параллакс и «липкий стек» карточек без GSAP
+// Параллакс и «липкий стек» карточек на motion (GSAP ScrollTrigger — если нужен сложный пин-таймлайн)
 const target = useRef<HTMLDivElement>(null);
 const { scrollYProgress: p } = useScroll({ target, offset: ["start start", "end end"] });
 const y = useTransform(p, [0, 1], [0, -120]);

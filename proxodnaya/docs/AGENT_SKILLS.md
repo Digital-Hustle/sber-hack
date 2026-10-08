@@ -34,7 +34,7 @@
 |---|---|---|---|
 | `shadcn` | `.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml` | поиск, просмотр и команды `add` по всем реестрам из `proxodnaya/frontend/components.json` (Magic UI, Aceternity, React Bits, Animate UI, Motion Primitives, Eldora, Cult UI, Smooth UI, Evil Charts, Lucide Animated) | не нужен |
 | `magicui` | то же | каталог и код Magic UI | не нужен |
-| `21st` | то же | поиск по 21st.dev, `get_inspiration`, `search_logo`; `generate` — только с платным AI | `API_KEY_21ST` в окружении (ключ на 21st.dev/mcp). **Не в git** |
+
 
 Запуск: Claude Code подхватывает `.mcp.json` сам (подтвердить серверы при первом старте). Cursor — `.cursor/mcp.json`. Codex — `.codex/config.toml` (если версия не читает проектный конфиг, скопируйте в `~/.codex/config.toml`). Шаблон `components.json` с реестрами — `.agents/skills/frontend-fsd/assets/components.json`, кладётся в `proxodnaya/frontend/` при создании фронта.
 
@@ -48,3 +48,5 @@ npx skills add <owner/repo@skill> -a claude-code --copy -y   # в .claude/skills
 Дальше: проверить лицензию (MIT/Apache/BSD/ISC), дописать блок «Проходная» и `UPSTREAM.md`, добавить строку сюда и в таблицу лицензий `DECISIONS.md`.
 
 Процесс для всех ролей (draft PR, handoff, конфликты, локальный CI) — `WORKFLOW.md`; контекст модуля — его `AGENTS.md` и `docs/`.
+
+21st.dev без MCP (ключ платный): референсы с него и с любых демо агент разбирает скриншотами + vision (`frontend-fsd/references/component-catalog.md` §«Визуальные референсы»).

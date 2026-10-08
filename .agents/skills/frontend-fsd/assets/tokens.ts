@@ -5,8 +5,9 @@
 // (node --experimental-strip-types .../scripts/gen-tokens.mjs). Руками theme.css не правим.
 // Motion берёт значения отсюда же через src/shared/config/motion.ts.
 //
-// Значения: Сбер Nova (sberbank.ru/promo/nova — шкала цветов, кнопка #148F2B r12 h48,
-// радиус карточек 16, шкала типографики), брендбук Сбера (мастер-цвета), Plasma (MIT).
+// Обязательное от Сбера — фирменный зелёный и SB Sans (ADR-036). Остальное — наша современная система:
+// стартовые значения из публичной части Nova (шкала цветов, кнопка #148F2B, типографика), Plasma (MIT),
+// радиусы и прочее — свои. Меняем свободно, но только здесь.
 // Только синтаксис, который стирается при strip-types: никаких enum/namespace/импортов.
 
 /** Шкалы (сырые цвета). В компонентах НЕ используются — только через semantic. */
@@ -180,8 +181,8 @@ export const spacingSteps = [0, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16] as const; 
 /** Высоты контролов Nova → классы h-control-md, min-h-control-lg и т. п. */
 export const control = { xs: 32, sm: 40, md: 48, lg: 56, xl: 64 } as const;
 
-/** Радиусы (px): кнопки 12 и карточки 16 — как в Nova. */
-export const radius = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, "2xl": 32 } as const;
+/** Радиусы (px), современные: чипы 10, кнопки/инпуты 14, карточки 20, шторки/модалки 28, крупные плитки 36. */
+export const radius = { xs: 6, sm: 10, md: 14, lg: 20, xl: 28, "2xl": 36 } as const;
 
 export const shadow = {
   light: {

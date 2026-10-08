@@ -52,7 +52,7 @@
   --elev-sm: 0 2px 4px rgb(38 38 38 / 0.16), 0 1px 2px rgb(38 38 38 / 0.04);
   --elev-card: 0 1px 2px rgb(38 38 38 / 0.04), 0 8px 16px rgb(38 38 38 / 0.16);
   --elev-pop: 0 12px 40px -12px rgb(8 8 8 / 0.25);
-  --radius: 12px; /* для shadcn-компонентов, которые считают от --radius */
+  --radius: 14px; /* для shadcn-компонентов, которые считают от --radius */
 }
 
 .dark {
@@ -143,12 +143,12 @@
   --text-5xl--line-height: 56px;
   --text-6xl: 64px;
   --text-6xl--line-height: 72px;
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-2xl: 32px;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
   --radius-full: 9999px;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);

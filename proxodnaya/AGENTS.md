@@ -47,4 +47,5 @@ scripts/      task-start.sh, ci-local.sh, handoff.sh, open-pr.sh, verify.sh, gua
 - Финиш: `scripts/ci-local.sh full`, статус `review` в TASKS.md, затем `scripts/open-pr.sh <ID> "<заголовок>"` (draft → ready). Мержит человек.
 - Если меняешь контракт — обнови `docs/API.md`, `./gradlew :<svc>:exportOpenApi` и на фронте `npm run gen:api`.
 - Не придумывай данные, моки и «временные» заглушки в боевом пути. См. rules.md §1.
+- Просьбу человека понимай по смыслу, сверяй с документами, в коммиты/PR/UI пиши своими словами, без цитат (rules.md §7).
 - В конце ответа напиши человеку: что сделано, какие файлы, как проверить руками, что осталось.
