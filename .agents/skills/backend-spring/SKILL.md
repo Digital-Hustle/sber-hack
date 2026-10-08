@@ -74,5 +74,7 @@ FastAPI + onnxruntime, `uv`, `ruff`, `mypy --strict`, `pytest`. Структур
 | Gradle, version catalog, convention plugins, Docker, CI | `references/build.md` |
 | Liquibase, jOOQ, транзакции, Kafka, outbox | `references/data-messaging.md` |
 | Тесты, Testcontainers, ArchUnit | `references/testing.md` |
+| Что API отдаёт фронту: курсоры, options для комбобоксов, SSE с `Last-Event-ID`, `checks[]` киоска, `X-Server-Time`, `Idempotency-Key`, аватары | `references/frontend-contract.md` |
+| Безопасность Spring (сверка с практиками) | скилл `springboot-security` (приоритет у этого скилла и SECURITY.md) |
 | Python face-сервис | `references/python-service.md` |
 | Что взято из эталонов и что исправлено | `references/audit.md` |
