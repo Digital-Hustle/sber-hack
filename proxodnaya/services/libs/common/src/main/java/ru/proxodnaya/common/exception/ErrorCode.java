@@ -38,6 +38,14 @@ public enum ErrorCode {
     NOT_INSIDE,
     ZONE_FULL,
 
+    // People
+    WORKER_NOT_FOUND,
+    INVITE_INVALID,
+    INVITE_EXPIRED,
+    DEVICE_ALREADY_BOUND,
+    CHALLENGE_INVALID,
+    PAIRING_CODE_INVALID,
+
     // System
     SYSTEM_ERROR,
 
