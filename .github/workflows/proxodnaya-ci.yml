@@ -85,8 +85,7 @@ jobs:
       - name: guard (красные линии)
         run: proxodnaya/scripts/guard.sh
       - name: trivy (уязвимости зависимостей)
-        uses: aquasecurity/trivy-action@0.28.0
-        with: { scan-type: fs, scan-ref: proxodnaya, severity: 'HIGH,CRITICAL', exit-code: '1', ignore-unfixed: true }
+        run: docker run --rm -v "$PWD:/repo" aquasec/trivy:latest fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 /repo/proxodnaya
 
   infra:
     needs: changes
