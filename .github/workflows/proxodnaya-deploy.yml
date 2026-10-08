@@ -1,0 +1,49 @@
+name: proxodnaya-deploy
+on:
+  workflow_run:
+    workflows: [proxodnaya-ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref: { description: 'git ref / тег (например demo-2)', required: true, default: main }
+permissions:
+  contents: read
+  packages: write
+concurrency: { group: proxodnaya-deploy, cancel-in-progress: false }
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      REF: ${{ inputs.ref || github.event.workflow_run.head_sha }}
+      REG: ghcr.io/${{ github.repository_owner }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ env.REF }}' }
+      - id: v
+        run: echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
+      - run: |
+          docker build -t $REG/gate-backend:${{ steps.v.outputs.tag }} proxodnaya/backend
+          docker build -t $REG/gate-frontend:${{ steps.v.outputs.tag }} proxodnaya/frontend
+          docker push $REG/gate-backend:${{ steps.v.outputs.tag }}
+          docker push $REG/gate-frontend:${{ steps.v.outputs.tag }}
+      - name: deploy over ssh
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          TAG: ${{ steps.v.outputs.tag }}
+        run: |
+          install -m 600 /dev/null key && printf '%s\n' "$KEY" > key
+          ssh -i key -o StrictHostKeyChecking=accept-new "$USER@$HOST" "
+            set -e; cd /opt/gate/proxodnaya/infra
+            PREV=\$(grep '^IMAGE_TAG=' .env | cut -d= -f2)
+            sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/' .env
+            docker compose pull backend frontend && docker compose up -d backend frontend
+            for i in \$(seq 1 30); do curl -fsk https://localhost/api/actuator/health && exit 0; sleep 4; done
+            echo 'health failed, rollback to' \$PREV; sed -i \"s/^IMAGE_TAG=.*/IMAGE_TAG=\$PREV/\" .env
+            docker compose up -d backend frontend; exit 1"
+          rm -f key

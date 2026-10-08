@@ -1,0 +1,102 @@
+name: proxodnaya-ci
+on:
+  pull_request:
+    paths: ['proxodnaya/**', '.github/**']
+  push:
+    branches: [main]
+    paths: ['proxodnaya/**', '.github/**']
+concurrency:
+  group: proxodnaya-ci-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.f.outputs.backend }}
+      frontend: ${{ steps.f.outputs.frontend }}
+      infra: ${{ steps.f.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: f
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend: ['proxodnaya/backend/**', 'proxodnaya/contracts/**']
+            frontend: ['proxodnaya/frontend/**', 'proxodnaya/contracts/**']
+            infra: ['proxodnaya/infra/**']
+
+  backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21', cache: maven }
+      - run: ./mvnw -B verify
+        working-directory: proxodnaya/backend
+
+  contract:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21', cache: maven }
+      - run: ./mvnw -B -DskipTests verify -Pcontract
+        working-directory: proxodnaya/backend
+      - run: git diff --exit-code -- proxodnaya/contracts/openapi.json
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: proxodnaya/frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: pnpm, cache-dependency-path: proxodnaya/frontend/pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm gen:api
+      - run: pnpm -r lint
+      - run: pnpm -r typecheck
+      - run: pnpm -r build
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: gitleaks (вся история)
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --no-banner --redact -v
+      - name: guard (красные линии)
+        run: proxodnaya/scripts/guard.sh
+      - name: trivy (уязвимости зависимостей)
+        uses: aquasecurity/trivy-action@0.28.0
+        with: { scan-type: fs, scan-ref: proxodnaya, severity: 'HIGH,CRITICAL', exit-code: '1', ignore-unfixed: true }
+
+  infra:
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --env-file .env.example config -q
+        working-directory: proxodnaya/infra
+
+  smoke:
+    if: github.ref == 'refs/heads/main'
+    needs: [backend, frontend, security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env && docker compose up -d --build --wait
+        working-directory: proxodnaya/infra
+      - run: proxodnaya/scripts/smoke.sh https://localhost
+      - if: failure()
+        run: docker compose logs --tail=200
+        working-directory: proxodnaya/infra
