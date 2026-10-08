@@ -92,6 +92,12 @@
 ### ADR-030 6 сервисов: notify влит в shift
 Решение: gateway, people, access, face, shift, assistant. SSE-хаб и правила оповещений — в shift (они и так строятся по интервалам). Причина: меньше контейнеров и контрактов при тех же границах данных; три бэка — по два сервиса.
 
+### ADR-031 Дизайн-система: фирменный стиль Сбера + только Motion + кастомные контролы из shadcn-реестров
+Решение: тема на цветах брендбука Сбера (`#21A038`, мастер-градиент) и шкалах открытой Plasma (MIT), шрифты SB Sans Text/Display с CDN Сбера (в git не кладём). Все анимации — только `motion` (`motion/react`). GSAP, Lenis, react-spring, anime.js, `framer-motion`, `tw-animate-css` и CSS `@keyframes` запрещены, WebGL — только по отдельному ADR. Это проверяет `fsd-check` (правила `banned-import` и `css-animation`). Каждый контрол кастомный: поведение от Radix/cmdk, вид и движение из реестров Animate UI, Motion Primitives, Magic UI, Aceternity, React Bits (только motion-компоненты), Eldora, Animata, Cult UI, Smooth UI, Evil Charts, Lucide Animated, доводка по чек-листу `frontend-fsd/references/custom-controls.md`. Лицензии Aceternity License и MIT + Commons Clause (React Bits, Animate UI) допускаем для UI-компонентов внутри продукта: они не копилефтные и не запрещают публичный репозиторий, запрещают только продавать или распространять сами компоненты отдельно. Картинки только реальные или сгенерированные по запросу к человеку, логотип Сбера — только официальный файл с разрешения. Причина: единый движок анимаций (меньше бандл, одни токены, прерываемость), узнаваемый бренд организатора, «вау» без риска по лицензиям.
+
+### ADR-032 Сторонние скиллы и MCP для агентов в репозитории
+Решение: в `.agents/skills/` лежат копии проверенных скиллов (MIT/Apache) с блоком «Проходная» и `UPSTREAM.md`: shadcn, frontend-design, design-taste-frontend, скиллы анимаций Эмиля Ковальски, webapp-testing, TDD/отладка/проверка из superpowers, springboot-security, find-skills. MCP-серверы `shadcn`, `magicui`, `21st` прописаны в `.mcp.json`, `.cursor/mcp.json` и `.codex/config.toml`. Ключ 21st — только в окружении (`API_KEY_21ST`). Причина: агенты всей команды одинаково ищут и ставят компоненты, а не пишут их с нуля. Копия вместо ссылки — воспроизводимость в день хакатона без сети к skills.sh. Матрица «роль → скиллы» — `docs/AGENT_SKILLS.md`.
+
 ## Лицензии зависимостей
 | Зависимость | Лицензия | Кто добавил |
 |---|---|---|
@@ -109,3 +115,13 @@
 | Jaeger / OpenTelemetry | Apache-2.0 | B1 |
 | oidc-client-ts / react-oidc-context | Apache-2.0 / MIT | F1/F2 |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next | MIT | F1/F2 |
+| motion (бывший Framer Motion) | MIT | F1/F2 |
+| Компоненты Magic UI / Motion Primitives / Eldora UI / Animata / Cult UI / Smooth UI / Evil Charts / Lucide Animated | MIT | F1/F2 |
+| Компоненты React Bits / Animate UI | MIT + Commons Clause (ADR-031) | F1/F2 |
+| Компоненты Aceternity UI (free) | Aceternity License, бесплатно для конечных продуктов (ADR-031) | F1/F2 |
+| Компоненты Uiverse | MIT | F1/F2 |
+| input-otp / react-dropzone / react-day-picker / cmdk / @tanstack/react-table / @tanstack/react-virtual | MIT | F1/F2 |
+| Палитра Plasma (salute-developers/plasma) | MIT | F2 |
+| Шрифты SB Sans Text / Display (CDN Сбера, не в репо) | шрифт Сбера (ParaType), используем для продукта на хакатоне Сбера | F2 |
+| Скиллы агентов (shadcn, superpowers, emilkowalski, taste-skill, ecc, find-skills / anthropics) | MIT / Apache-2.0 | B1 |
+| MCP shadcn / @magicuidesign/mcp / 21st MCP | MIT / ISC / ISC | B1 |

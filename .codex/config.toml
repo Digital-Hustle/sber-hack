@@ -1,0 +1,12 @@
+# MCP для Codex CLI (проектный конфиг; если ваша версия Codex его не читает — скопируйте в ~/.codex/config.toml)
+[mcp_servers.shadcn]
+command = "sh"
+args = ["-c", "cd proxodnaya/frontend 2>/dev/null; exec npx -y shadcn@latest mcp"]
+
+[mcp_servers.magicui]
+command = "npx"
+args = ["-y", "@magicuidesign/mcp@latest"]
+
+[mcp_servers.21st]
+url = "https://21st.dev/api/mcp"
+env_http_headers = { "x-api-key" = "API_KEY_21ST" }

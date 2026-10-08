@@ -24,6 +24,9 @@ description: Use for ANY change in the «Проходная» case (folder proxo
 | Backend: общие правила Spring/Gradle/jOOQ/Liquibase/Kafka/тесты | скилл `backend-spring` |
 | Backend: сервисы кейса, инварианты access/face, обязательные тесты | `references/backend.md` |
 | Frontend: общие правила FSD | скилл `frontend-fsd` |
+| Frontend: бренд Сбера, анимации Motion, кастомные контролы, каталог UI-библиотек и MCP | скилл `frontend-fsd` §8 → `references/sber-brand.md`, `motion.md`, `custom-controls.md`, `component-catalog.md` |
+| Backend ↔ Frontend: курсоры, options, SSE, `checks[]`, idempotency | `backend-spring/references/frontend-contract.md` |
+| Какие ещё скиллы брать под роль (TDD, отладка, анимации, Playwright) | `proxodnaya/docs/AGENT_SKILLS.md` |
 | Frontend: зоны kiosk/worker/admin, ключ устройства, камера | `references/frontend.md` |
 | Keycloak, роли, токены, ключи устройств, шифрование, аудит | `references/security.md` |
 | LLM-слой, помощник, валидатор чисел | `references/llm-assistant.md` |
