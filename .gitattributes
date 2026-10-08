@@ -1,0 +1,6 @@
+# Журналы MEMORY.md только дописываются — параллельные ветки склеиваются без конфликта (docs/WORKFLOW.md §5)
+proxodnaya/**/MEMORY.md merge=union
+# Сгенерированные файлы: не мержим руками, а перегенерируем; в диффе PR свёрнуты
+proxodnaya/frontend/src/app/styles/theme.css linguist-generated=true
+proxodnaya/contracts/openapi/*.json linguist-generated=true
+.agents/skills/frontend-fsd/assets/theme.css linguist-generated=true

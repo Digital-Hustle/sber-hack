@@ -10,12 +10,15 @@ description: Use for ANY change in the «Проходная» case (folder proxo
 ## 0. Перед стартом (каждая сессия)
 1. Прочитай `AGENTS.md` и `rules.md`. Красные линии `rules.md §1` нарушать нельзя ни при каких условиях.
 2. Определи модуль и владельца по таблице в `AGENTS.md`. Чужой сервис трогай только через его API/события или с согласия владельца.
-3. `git fetch && git switch main && git pull --rebase`.
+3. Прочитай `AGENTS.md` модуля (`services/<svc>/`, `frontend/`) → его `docs/MEMORY.md` (состояние) → свою строку в `docs/TASKS.md`. Продолжаешь начатую задачу — сначала раздел Handoff в PR (`gh pr view --comments`).
+4. `git fetch && git switch main && git pull --rebase` (или `git rebase origin/main` в worktree задачи).
+5. Процесс параллельной работы, конфликты, локальный CI — `docs/WORKFLOW.md`.
 
 ## 1. Задача → ветка
 - У задачи должен быть ID требования (`FR-xx`, `NFR-xx`, `B-xx`) из `docs/REQUIREMENTS.md`. Если ID нет — спроси человека, не придумывай.
 - Ветка: `<type>/<ID>-<slug>`, например `feat/FR-03-qr-consume`. Типы: feat, fix, refactor, test, docs, ci, chore.
-- Для параллельной работы нескольких агентов на одной машине: `git worktree add ../gate-<slug> -b <branch>`.
+- Задача берётся из `TASKS.md` модуля (ID вида `ACC-03`). Старт одной командой: `scripts/task-start.sh ACC-03 FR-03 qr-consume` — ветка `feat/ACC-03-qr-consume`, worktree `../wt-ACC-03`, статус `doing` в TASKS.md, push и **draft PR сразу** (это заявка: двое не возьмут одну задачу).
+- Коммить и пушь после каждого зелёного шага: оборвётся сессия — работа уже на GitHub.
 
 ## 2. Реализация
 Прочитай нужный reference — только его, не все:
@@ -42,15 +45,18 @@ description: Use for ANY change in the «Проходная» case (folder proxo
 
 ## 3. Проверка (обязательно до PR)
 ```bash
-scripts/verify.sh          # сам определяет затронутые части и гоняет нужные проверки
-scripts/guard.sh           # сканер красных линий: секреты, решение на клиенте, in-memory хранилища, заглушки LLM
+scripts/ci-local.sh quick  # verify.sh (затронутые части) + guard.sh — после каждого шага
+scripts/ci-local.sh full   # verify all (Testcontainers, фронт, токены, контракты) + guard + gitleaks — перед ready
+scripts/ci-local.sh act    # весь GitHub workflow через nektos/act, если правишь .github/
 ```
-Не открывай PR, пока оба зелёные. Если проверка падает не из-за тебя — напиши об этом в PR, но не отключай проверку.
+Это те же скрипты, что в GitHub Actions: агент не ждёт CI. Нет docker в песочнице — `ci-local` пишет, что пропущено; напиши это в PR. Не переводи PR в ready, пока `full` не зелёный. Если проверка падает не из-за тебя — напиши об этом в PR, но не отключай проверку.
 
 ## 4. Pull request
 ```bash
-scripts/open-pr.sh "<ID>" "<короткий заголовок>"   # rebase на main, verify, guard, push, gh pr create по шаблону
+scripts/open-pr.sh "<ID>" "<короткий заголовок>"   # rebase на main, verify, guard, push, draft → ready (или gh pr create)
 ```
+- Перед ready: статус `review #PR` в `TASKS.md`, в `MEMORY.md` модуля — §1 состояние, §2 карта (новые файлы), §5 строка журнала.
+- Перед уходом из сессии (в любой момент работы): `scripts/handoff.sh > /tmp/h.md`, допиши, `scripts/handoff.sh --apply /tmp/h.md` — раздел Handoff в описании PR.
 - Один PR = одно требование, ≤ ~400 строк диффа без сгенерированных файлов.
 - Заполни шаблон честно: что сделано, как проверить руками через UI, какие риски.
 - Агент не мержит и не апрувит свои PR. Мерж делает человек-владелец после зелёного CI.
@@ -71,3 +77,5 @@ scripts/open-pr.sh "<ID>" "<короткий заголовок>"   # rebase н�
 - Не принимать решение о проходе во фронтенде, не хранить данные в памяти процесса, не возвращать заготовленный ответ модели.
 - Не ходить в чужую БД, не публиковать события мимо outbox, не выносить гашение QR (`qr_uses`) из транзакции access.
 - Не делать force-push в `main`, не мержить без CI.
+- Не править руками сгенерированное (`theme.css`, `contracts/openapi/*.json`, `schema.ts`, lockfile при конфликте) — перегенерируй.
+- Не «решать» конфликт в чужом модуле удалением чужих изменений — остановись и спроси человека.

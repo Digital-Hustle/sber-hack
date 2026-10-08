@@ -98,6 +98,15 @@
 ### ADR-032 Сторонние скиллы и MCP для агентов в репозитории
 Решение: в `.agents/skills/` лежат копии проверенных скиллов (MIT/Apache) с блоком «Проходная» и `UPSTREAM.md`: shadcn, frontend-design, design-taste-frontend, скиллы анимаций Эмиля Ковальски, webapp-testing, TDD/отладка/проверка из superpowers, springboot-security, find-skills. MCP-серверы `shadcn`, `magicui`, `21st` прописаны в `.mcp.json`, `.cursor/mcp.json` и `.codex/config.toml`. Ключ 21st — только в окружении (`API_KEY_21ST`). Причина: агенты всей команды одинаково ищут и ставят компоненты, а не пишут их с нуля. Копия вместо ссылки — воспроизводимость в день хакатона без сети к skills.sh. Матрица «роль → скиллы» — `docs/AGENT_SKILLS.md`.
 
+### ADR-033 Единый источник дизайн-токенов + запрет хардкода стилей
+Решение: все цвета, шрифты, размеры текста, отступы, высоты контролов, радиусы, тени, z-слои и параметры движения задаются в одном typed-файле `frontend/src/shared/config/tokens.ts` (шаблон — `.agents/skills/frontend-fsd/assets/tokens.ts`). `gen-tokens.mjs` генерирует из него `src/app/styles/theme.css` (Tailwind 4 `@theme` + shadcn-переменные, дефолтные палитра/размеры/анимации Tailwind выключены) и таблицы в `frontend/docs/DESIGN.md`, проверяя контраст WCAG. Motion берёт значения через `shared/config/motion.ts`. `fsd-check` запрещает hex/rgb, произвольные значения Tailwind, отступы вне сетки, числа в `transition` и размеры в `style`; `guard.sh`/`verify.sh` падают, если тема устарела. Значения — Сбер Nova (кнопка `#148F2B`, радиусы 12/16, шкала 13/16…37/44) + брендбук + Plasma. Причина: пять человек и их агенты иначе разъезжаются по оттенкам и отступам; одна правка токена меняет всё приложение и документацию. Компромисс: `primary` как в Nova даёт 4.2:1 с белым — текст кнопок semibold 16+, мелкий зелёный текст только `accent-foreground` (зафиксировано в `contrastLargeTextOnly`).
+
+### ADR-034 Документы и память на каждый модуль
+Решение: у каждого сервиса и фронтенда свой `AGENTS.md` (короткий, важнее корневого для файлов модуля; `CLAUDE.md → @AGENTS.md`) и `docs/PRD.md`, `ARCHITECTURE.md`, `RULES.md`, `TASKS.md`, `MEMORY.md` (у фронта ещё `DESIGN.md`). Модульные документы не повторяют общие, а ссылаются на них. `MEMORY.md` по мотивам Cline Memory Bank: перезаписываемое «текущее состояние», карта, решения, баги и append-only журнал (`merge=union` в `.gitattributes`). Корневые `docs/PRD.md`, `TASKS.md` (вехи, платформа, совместные задачи), `MEMORY.md` ведёт B1. Причина: агенты меняются между сессиями, а git — единственная общая память команды; узкий контекст модуля дешевле и точнее общего.
+
+### ADR-035 Мультиагентный процесс: draft PR как заявка и handoff, локальный CI
+Решение: одна задача = ветка = worktree = draft PR, открытый сразу (`scripts/task-start.sh`); статус задачи меняется в той же ветке. Коммиты и push после каждого зелёного шага, раздел Handoff в описании PR перед сменой сессии (`scripts/handoff.sh`), финиш — `scripts/open-pr.sh` (draft → ready). Ревью — отдельная сессия/другой агент + человек; мержит только человек, по одному PR. Сгенерированные файлы при конфликте перегенерируются. `scripts/ci-local.sh quick|full|act` запускает те же проверки, что GitHub Actions (Testcontainers, gitleaks в docker, опционально nektos/act). Причина: 5 человек × 1–2 агента без явного протокола теряют работу при обрыве сессии, дублируют задачи и ждут CI. Подробно — `docs/WORKFLOW.md`, роли и need — `docs/ROLES.md`.
+
 ## Лицензии зависимостей
 | Зависимость | Лицензия | Кто добавил |
 |---|---|---|
@@ -125,3 +134,4 @@
 | Шрифты SB Sans Text / Display (CDN Сбера, не в репо) | шрифт Сбера (ParaType), используем для продукта на хакатоне Сбера | F2 |
 | Скиллы агентов (shadcn, superpowers, emilkowalski, taste-skill, ecc, find-skills / anthropics) | MIT / Apache-2.0 | B1 |
 | MCP shadcn / @magicuidesign/mcp / 21st MCP | MIT / ISC / ISC | B1 |
+| nektos/act (локальный прогон GitHub Actions, инструмент разработчика, не поставляется) | MIT | B1 |

@@ -1,14 +1,16 @@
 # PR workflow
 
 ## Автор (агент)
-1. Ветка от свежего `main`, один ID требования.
-2. `scripts/verify.sh && scripts/guard.sh` зелёные.
-3. `scripts/open-pr.sh <ID> "<заголовок>"` — создаст PR по `../.github/PULL_REQUEST_TEMPLATE.md`; заполни разделы в теле.
+1. `scripts/task-start.sh <TASK> <FR> <slug>` — ветка от свежего `main`, worktree, draft PR сразу (docs/WORKFLOW.md §2).
+2. По ходу `scripts/ci-local.sh quick`, коммит + push; перед уходом — раздел Handoff (`scripts/handoff.sh`).
+3. Финиш: `scripts/ci-local.sh full` зелёный, TASKS/MEMORY обновлены, `scripts/open-pr.sh <ID> "<заголовок>"` — draft → ready; заполни разделы шаблона.
 4. Заголовок PR = Conventional Commit: `feat(access): FR-03 атомарное гашение токена` (станет сообщением squash-коммита).
 5. Конфликт с `main` → `git fetch && git rebase origin/main`, конфликты в миграциях не правь чужие файлы — переименуй свою миграцию новой меткой.
-6. Конфликт в `contracts/openapi.json` → перегенерируй (`scripts/verify.sh contract`), не правь руками.
+6. Конфликт в `contracts/openapi.json` → перегенерируй (`scripts/verify.sh contract`), не правь руками. То же для `theme.css`/DESIGN.md (`npm run gen:tokens`) и `package-lock.json` (`git checkout --theirs package-lock.json && npm install`).
+7. Конфликт в `MEMORY.md` не возникает (`merge=union`); в `TASKS.md` — оставь обе правки своих строк, чужие не трогай.
 
-## Ревьюер (человек-владелец, агент помогает)
+## Ревьюер (человек-владелец + агент в **отдельной** сессии, не тот, что писал)
+Агент-ревьюер начинает с чистого контекста: `gh pr checkout <n>` → читает PR (включая Handoff) и `MEMORY.md` модуля → `scripts/ci-local.sh full` → чек-лист ниже → `gh pr review --comment`. Не апрувит и не пушит в чужую ветку без просьбы.
 Чек-лист:
 - [ ] Красные линии `rules.md §1` не нарушены (guard.sh зелёный, но смотри глазами: решение на клиенте, заготовки, in-memory)
 - [ ] Границы модулей соблюдены, ArchUnit не ослаблен

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Использование (из proxodnaya/): scripts/open-pr.sh FR-03 "feat(access): атомарное гашение токена"
+# Финиш задачи: rebase, verify, guard, push, draft → ready (или создать PR). Старт — scripts/task-start.sh.
 set -euo pipefail
 ID="${1:?ID требования, например FR-03}"; TITLE="${2:?заголовок PR}"
 ROOT="$(git rev-parse --show-toplevel)"; CASE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$CASE"
@@ -17,7 +18,9 @@ BODY="$(mktemp)"
 sed "s/{{ID}}/$ID/g" "$ROOT/.github/PULL_REQUEST_TEMPLATE.md" > "$BODY"
 { echo; echo "### Коммиты"; git log --oneline origin/main..HEAD | sed 's/^/- /'; } >> "$BODY"
 if gh pr view "$BR" >/dev/null 2>&1; then
-  echo "PR уже существует:"; gh pr view "$BR" --json url -q .url
+  # draft PR из task-start.sh → переводим в ready (Handoff в описании не трогаем)
+  [ "$(gh pr view "$BR" --json isDraft -q .isDraft)" = "true" ] && gh pr ready "$BR"
+  echo "PR готов к ревью:"; gh pr view "$BR" --json url -q .url
 else
   gh pr create --base main --head "$BR" --title "$TITLE" --body-file "$BODY" --assignee @me
 fi
