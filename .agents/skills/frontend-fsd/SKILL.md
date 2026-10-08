@@ -28,6 +28,7 @@ description: Use for ANY frontend change in a React + TypeScript + Vite project 
 - **public-api**: чужой слайс — только через `@/layer/Slice` (его `index.ts`). Глубокий импорт `@/entities/Worker/ui/WorkerCard` запрещён. Исключение: `shared/*` импортируется по сегментам (`@/shared/ui/Button/Button`).
 - **relative-inside-slice**: внутри своего слайса — только относительные пути (`../model/types`), не `@/features/same-slice/...`.
 - **banned-import** / **css-animation**: анимации только `motion/react`. GSAP, Lenis, react-spring, anime.js, `framer-motion`, `tw-animate-css`, CSS `@keyframes`/`animate-*` запрещены; WebGL (`three`, `ogl`, `@react-three/*`) — только по ADR (ADR-031).
+- **hardcoded-color / arbitrary-value / spacing-scale / motion-literal / inline-style**: стиль только из токенов (ADR-033): без hex/rgb, без `p-[13px]`, отступы по сетке `spacingSteps`, без чисел в `transition`, без размеров в `style`. В `shared/ui/` (код shadcn/реестров) — предупреждения, F2 вычищает при адаптации.
 - **no-public-api**: у каждого слайса `entities|features|widgets|pages` есть `index.ts`, экспортирующий только нужное снаружи.
 
 ```bash
@@ -46,7 +47,7 @@ node .agents/skills/frontend-fsd/scripts/fsd-check.mjs <path/to/src> --warn-only
 ## 4. UI
 - Компоненты — `memo` + `interface XProps` + именованный экспорт; страницы — `default export` (для `lazy`).
 - Каждый список/экран: skeleton (loading) / empty (текст из i18n) / error (кнопка «Повторить» → `refetch`) / data.
-- shadcn-компоненты лежат в `shared/ui/<Comp>/<Comp>.tsx`, стили через `cn()` из `shared/lib/utils` и `cva`-варианты. Новые цвета — токены в CSS-переменных, не hex в className.
+- shadcn-компоненты лежат в `shared/ui/<Comp>/<Comp>.tsx`, стили через `cn()` из `shared/lib/utils` и `cva`-варианты. Цвета, размеры, отступы, радиусы, тени, длительности — только токены из `shared/config/tokens.ts` (новый токен → туда + `npm run gen:tokens`), не hex/`p-[13px]`/`duration: 0.3` в коде (ADR-033).
 - Формы: `react-hook-form` + схема (`zod` через `@hookform/resolvers`), маппер «форма → DTO» в `features/x/lib/`.
 - Тексты — только `t("key")`. Namespace = страница/фича (`public/locales/ru/workers.json`), общие — `common`. Ключи добавляй сразу в `ru` (и `en`, если есть).
 
@@ -66,7 +67,7 @@ Prettier (printWidth 90, двойные кавычки, один атрибут 
 
 ## 8. Дизайн, бренд и анимации (ADR-031)
 Цель — интерфейс уровня продукта Сбера, а не «дефолтный shadcn». Перед версткой экрана прочитай:
-1. `references/sber-brand.md` — цвета, SB Sans, градиент, правила логотипа и фото. Тема — `assets/theme.css`, копировать как есть.
+1. **`proxodnaya/frontend/docs/DESIGN.md`** — дизайн-система: токены (сгенерированные таблицы), типографика, отступы, спецификация компонентов, зоны. Единый источник значений — `assets/tokens.ts` → `scripts/gen-tokens.mjs` → `assets/theme.css` (ADR-033); `references/sber-brand.md` — откуда значения, логотип и фото.
 2. `references/motion.md` — анимации только на Motion (`motion/react`): токены `assets/motion.ts` → `shared/config/motion.ts`, паттерны прокрутки, свайпов, layout, сценарии киоска и телефона.
 3. `references/custom-controls.md` — каждый контрол кастомный: поведение от Radix/cmdk, вид и движение — наши. Чек-лист «после установки».
 4. `references/component-catalog.md` — что брать из Magic UI, Aceternity, React Bits, Animate UI, Motion Primitives, Eldora, Animata, Cult UI, Smooth UI, Uiverse, 21st.dev и где искать референсы (Designeer). Подбор по экранам.

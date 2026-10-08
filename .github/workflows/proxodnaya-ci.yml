@@ -125,6 +125,8 @@ jobs:
         with: { node-version: '22', cache: npm, cache-dependency-path: proxodnaya/frontend/package-lock.json }
       - run: npm ci
       - run: npm run gen:api
+      - name: дизайн-токены актуальны (ADR-033)
+        run: npm run gen:tokens -- --check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
@@ -138,6 +140,8 @@ jobs:
         with: { fetch-depth: 0 }
       - name: gitleaks (вся история)
         run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --no-banner --redact -v
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }   # guard проверяет дизайн-токены (gen-tokens --check, Node ≥ 22.6)
       - name: guard (красные линии)
         run: proxodnaya/scripts/guard.sh
       - name: trivy (уязвимости зависимостей)

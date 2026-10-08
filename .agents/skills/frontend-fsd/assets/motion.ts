@@ -1,52 +1,45 @@
-// Токены анимаций «Проходной». Кладётся в src/shared/config/motion.ts (во время хакатона).
-// Все анимации только через motion/react (ADR-031). Длительности в секундах.
+// Пресеты анимаций «Проходной». Кладётся в src/shared/config/motion.ts (во время хакатона).
+// Все числа — из ./tokens (ADR-033); здесь только сборка пресетов. Анимации только motion/react (ADR-031).
+// В компонентах: transition={spring.snappy}, variants={fadeUp}, {...press} — никаких литералов duration/ease.
 import type { Transition, Variants } from "motion/react";
+import { motion as m } from "./tokens";
 
-export const ease = {
-  out: [0.22, 1, 0.36, 1],       // вход элементов, раскрытие
-  in: [0.4, 0, 1, 1],            // уход элементов (короче входа)
-  inOut: [0.65, 0, 0.35, 1],     // перемещение между состояниями
-  emphasized: [0.2, 0, 0, 1],    // крупные переходы экранов
-} as const;
+export const ease = m.ease;
+export const duration = m.duration;
+export const spring = m.spring satisfies Record<string, Transition>;
+export const swipe = m.swipe;
 
-export const duration = {
-  instant: 0.08,  // нажатие
-  fast: 0.16,     // hover, тултип, чекбокс
-  base: 0.24,     // поповер, селект, тост
-  slow: 0.36,     // модалка, шторка, смена экрана
-  hero: 0.6,      // только лендинг/презентация, не в пути прохода
-} as const;
-
-export const spring = {
-  press: { type: "spring", stiffness: 600, damping: 30, mass: 0.6 },     // кнопки, свитчи
-  snappy: { type: "spring", stiffness: 420, damping: 34 },              // поповеры, индикатор табов
-  soft: { type: "spring", stiffness: 240, damping: 28 },                // карточки, layout
-  sheet: { type: "spring", stiffness: 320, damping: 36, mass: 0.9 },    // bottom sheet, drawer
-  bouncy: { type: "spring", bounce: 0.35, visualDuration: 0.45 },       // успех (галочка ALLOW)
+/** Готовые переходы по длительности: transition={tween.fast} */
+export const tween = {
+  instant: { duration: m.duration.instant, ease: m.ease.out },
+  fast: { duration: m.duration.fast, ease: m.ease.out },
+  base: { duration: m.duration.base, ease: m.ease.out },
+  slow: { duration: m.duration.slow, ease: m.ease.emphasized },
+  exit: { duration: m.duration.fast, ease: m.ease.in },
 } as const satisfies Record<string, Transition>;
 
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: duration.slow, ease: ease.out } },
-  exit: { opacity: 0, y: -8, transition: { duration: duration.fast, ease: ease.in } },
+  hidden: { opacity: 0, y: m.distance.enter, filter: `blur(${m.distance.blur}px)` },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: tween.slow },
+  exit: { opacity: 0, y: -m.distance.exit, transition: tween.exit },
 };
 
 export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.96 },
-  show: { opacity: 1, scale: 1, transition: spring.snappy },
-  exit: { opacity: 0, scale: 0.98, transition: { duration: duration.fast, ease: ease.in } },
+  hidden: { opacity: 0, scale: m.scale.popIn },
+  show: { opacity: 1, scale: 1, transition: m.spring.snappy },
+  exit: { opacity: 0, scale: m.scale.popOut, transition: tween.exit },
 };
 
-export const stagger = (step = 0.04, delay = 0): Variants => ({
+export const stagger = (step: number = m.stagger.step, delay = 0): Variants => ({
   hidden: {},
-  show: { transition: { staggerChildren: step, delayChildren: delay } },
+  show: { transition: { staggerChildren: Math.min(step, m.stagger.max), delayChildren: delay } },
 });
 
 /** Нажатие для любых кликабельных элементов: <motion.button {...press}> */
 export const press = {
-  whileHover: { scale: 1.02 },
-  whileTap: { scale: 0.97 },
-  transition: spring.press,
+  whileHover: { scale: m.scale.hover },
+  whileTap: { scale: m.scale.tap },
+  transition: m.spring.press,
 } as const;
 
 /** Появление при прокрутке: <motion.section {...inView}> */
@@ -56,6 +49,3 @@ export const inView = {
   viewport: { once: true, amount: 0.3 },
   variants: fadeUp,
 } as const;
-
-/** Пороги свайпов (px и px/s) — одинаковые во всём приложении */
-export const swipe = { offset: 80, velocity: 500, confirmRatio: 0.85 } as const;
