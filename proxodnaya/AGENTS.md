@@ -13,8 +13,10 @@
 
 ## Карта репозитория
 ```
-backend/      Java 21, Spring Boot 3, модульный монолит (пакеты = модули)
-contracts/    openapi.json — snapshot контракта (ADR-013)
+services/     Maven multi-module, Java 21, Spring Boot 3
+  libs/common/   security, ошибки, outbox, crypto, конверт событий
+  gateway/ people/ access/ face/ shift/ assistant/ notify/
+contracts/    openapi/<service>.json, events/*.schema.json
 frontend/     pnpm workspace: apps/kiosk, apps/worker (PWA), apps/admin, packages/api, packages/ui
 infra/        docker-compose.yml, Caddyfile, keycloak/realm-gate.json, ollama/, .env.example
 docs/         вся документация (требование допуска Д8)
@@ -24,9 +26,9 @@ scripts/      verify.sh, guard.sh, open-pr.sh, new-migration.sh, smoke.sh, insta
 ## Владельцы модулей (спрашивай владельца, не трогай чужое без нужды)
 | Модуль | Владелец |
 |---|---|
-| security (Keycloak, device-токены), tokens, audit, infra, CI | B1 |
-| access (DecisionEngine), journal, face, liveness, people, devices | B2 |
-| shifts, intervals, analytics, reports, presence/SSE, alerts, llm, assistant | B3 |
+| gateway, people, libs/common, infra, CI | B1 |
+| access, face | B2 |
+| shift, assistant, notify | B3 |
 | frontend/apps/kiosk, frontend/apps/worker, packages/auth | F1 |
 | frontend/apps/admin, packages/ui, packages/api | F2 |
 

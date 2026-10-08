@@ -1,8 +1,8 @@
 # Контракт API (черновик, финализировать на синке в Т0+0:45)
 
-Базовый путь `/api`. Аутентификация: `Authorization: Bearer <JWT>`. Ошибки — `application/problem+json`: `{type, title, status, code, message, details?}`.
+Все запросы идут через gateway: `/api/<service>/...` (`people`, `access`, `shift`, `assistant`, `notify`). Ниже префикс сервиса указан в заголовках разделов. Внутренние вызовы между сервисами — `/internal/**`, наружу gateway их не пропускает. Аутентификация: `Authorization: Bearer <JWT>`. Ошибки — `application/problem+json`: `{type, title, status, code, message, details?}`.
 
-## Auth
+## Auth (people-service: `/api/people/auth/...`)
 Персонал: OIDC через Keycloak (`https://auth.<host>/realms/gate`), backend проверяет JWT по JWKS. Своих логинов для персонала в API нет.
 - `POST /auth/worker/activate` `{inviteCode, deviceId, publicKeyJwk}` → `{workerId}` (привязка ключа устройства)
 - `POST /auth/device/challenge` `{deviceId}` → `{challenge, expiresAt}`
@@ -10,7 +10,7 @@
 - `POST /auth/kiosk/pair` (GUARD) `{pairingCode, publicKeyJwk}` → `{kioskId, checkpoint}`; далее все `/kiosk/*` подписываются: `X-Kiosk-Id`, `X-Ts`, `X-Nonce`, `X-Signature`
 - `GET /stream/ticket` → `{ticket}` одноразовый на 30 с для `EventSource`
 
-## Worker (роль WORKER)
+## Worker (роль WORKER; токен — access, профиль и смены — people/shift, поток — notify)
 - `POST /worker/pass-token` → `{token, expiresAt, ttlSeconds}`
 - `GET /worker/me` → статус: на объекте, зона, смена, отработано сегодня
 - `GET /worker/attempts?limit=` — история с причинами
@@ -18,11 +18,11 @@
 - `POST /worker/heartbeat` `{lat, lon, accuracy}`
 - `GET /stream/worker` (SSE): `attempt.result`, `reminder.exit`
 
-## Kiosk (роль GUARD + подпись ключом киоска)
+## Kiosk (access-service: `/api/access/kiosk/...`; роль GUARD + подпись ключом киоска)
 - `POST /kiosk/attempts` `{token, direction: ENTRY|EXIT}` → `{attemptId, challenge: {action: TURN_LEFT|TURN_RIGHT|..., framesRequired, expiresAt}}` (если токен уже невалиден — сразу DENY)
 - `POST /kiosk/attempts/{id}/frames` `{frames: [base64 jpeg]}` → `{decision: ALLOW|DENY, code, message, hint, worker?: {name, photoThumb}}`
 
-## Admin / Manager
+## Admin / Manager (people: workers/zones/checkpoints/staff; access: attempts/security; shift: shifts/intervals/analytics/reports; assistant: assistant; notify: stream/alerts)
 - `GET|POST|PATCH /workers`, `POST /workers/{id}/face` (кадры) → `{quality, accepted}`, `POST /workers/{id}/invite` → `{inviteCode, qrPayload, expiresAt}`, `POST /workers/{id}/block`
 - `GET|DELETE /workers/{id}/devices`
 - `GET|POST /zones`, `GET|POST /checkpoints`, `POST /checkpoints/{id}/pairing-code`
@@ -63,3 +63,9 @@
 | TEMP_LOCKED | Слишком много неудачных попыток | Обратитесь к охране |
 | KIOSK_SIGNATURE_INVALID | Киоск не авторизован | Обратитесь к администратору |
 | SYSTEM_ERROR | Система недоступна, проход закрыт | Обратитесь к охране |
+
+## Внутренние API (только service accounts)
+- face: `POST /internal/face/verify` `{workerId, frames[], challenge}` → `{match, score, liveness, quality, reason?}`
+- people: `GET /internal/people/workers/{id}/access-profile` → `{status, deviceIds, permits[], zoneIds}`
+- shift: `GET /internal/shift/workers/{id}/active-shift?at=` → `{shiftId, start, end, windowOk}`
+- access: `GET /internal/access/stats?...` (для assistant)

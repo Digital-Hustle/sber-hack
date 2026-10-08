@@ -1,45 +1,75 @@
 # Архитектура
 
-## Контекст
+## Контекст: микросервисы
 ```mermaid
 flowchart LR
   subgraph Clients
-    K[Киоск проходной<br/>планшет/ноутбук + камера]
-    W[Телефон рабочего<br/>PWA]
-    A[Админка<br/>руководитель/админ]
+    K[Киоск проходной]
+    W[Телефон рабочего PWA]
+    A[Админка]
   end
-  subgraph Server[Backend Java — модульный монолит]
-    AUTH[auth] --> ACC[access<br/>DecisionEngine]
-    TOK[tokens] --> ACC
-    FACE[face + liveness] --> ACC
-    SH[shifts] --> ACC
-    ACC --> J[journal]
-    J --> INT[intervals]
-    INT --> AN[analytics]
-    J --> PR[presence + SSE]
-    PR --> AL[alerts]
-    AN --> AS[assistant]
-    AS --> LLM[llm port]
+  KC[Keycloak<br/>SSO, TOTP]
+  GW[gateway<br/>Spring Cloud Gateway<br/>JWT, rate-limit, CORS, trace]
+  subgraph Internal[внутренняя сеть docker, наружу не торчит]
+    ACC[access-service<br/>pass-токены, DecisionEngine,<br/>журнал, anti-passback]
+    FACE[face-service<br/>детекция, эмбеддинг,<br/>сверка 1:1, живость]
+    PPL[people-service<br/>рабочие, устройства, допуски,<br/>зоны, проходные, provisioning KC]
+    SH[shift-service<br/>смены, интервалы,<br/>аналитика, табель]
+    AS[assistant-service<br/>LLM-порт, инструменты,<br/>валидатор, аномалии]
+    NT[notify-service<br/>SSE, оповещения,<br/>heartbeat, напоминания]
+    MQ[(RabbitMQ)]
   end
-  K -- кадры + токен из QR --> ACC
-  W -- запрос динамического QR, heartbeat --> TOK
-  A -- CRUD, аналитика, помощник --> Server
-  A -- OIDC SSO --> KC[Keycloak]
-  K -- OIDC SSO охранника --> KC
+  DB[(PostgreSQL<br/>отдельная БД и роль<br/>на каждый сервис)]
+  LLM[GigaChat / Ollama]
+  K & W & A --> GW
+  A & K -. OIDC .-> KC
+  GW --> ACC & PPL & SH & AS & NT
+  ACC -- sync, таймаут 1.5 с, fail-closed --> FACE & PPL & SH
+  ACC -- outbox → pass.decided --> MQ
+  PPL -- worker.* --> MQ
+  MQ --> SH & NT & AS
+  SH -- interval.*, shift.* --> MQ
+  AS -- read-only API --> SH & ACC
+  AS --> LLM
+  ACC & FACE & PPL & SH & AS & NT --> DB
   KC --> DB
-  Server -- JWKS --> KC
-  Server --> DB[(PostgreSQL)]
-  LLM --> G[GigaChat / OpenAI-compat]
-  LLM --> O[Ollama local]
 ```
+
+### Сервисы
+| Сервис | Ответственность | Своя БД | Публикует | Слушает | Владелец |
+|---|---|---|---|---|---|
+| **gateway** | единая точка входа, проверка JWT (Keycloak + device-издатель), rate-limit, CORS, заголовки, `traceparent`, маршрутизация `/api/<service>/**` | — | — | — | B1 |
+| **people-service** | рабочие, подрядчики, допуски, устройства и инвайты, device-токены, зоны и проходные, сопряжение киоска, provisioning персонала в Keycloak | `people` | `worker.created/updated/blocked`, `device.bound` | — | B1 |
+| **access-service** | выдача и **гашение pass-токенов**, `DecisionEngine`, журнал попыток (hash-chain), anti-passback, состояние «внутри/снаружи», rate-limit попыток | `access` | `pass.decided` (через outbox) | `worker.blocked` | B2 |
+| **face-service** | эталоны (шифрованные), детекция YuNet, эмбеддинг SFace, сверка 1:1, челлендж живости. Без состояния, кроме эталонов | `face` | `face.enrolled` | `worker.deleted` | B2 |
+| **shift-service** | смены и шаблоны, интервалы присутствия по зонам, автозакрытие, аналитика, табель XLSX | `shift` | `interval.opened/closed`, `shift.missed_exit` | `pass.decided` | B3 |
+| **assistant-service** | LLM-порт + адаптеры (GigaChat/OpenAI/Ollama), инструменты (read-only вызовы shift/access), валидатор чисел, проактивные аномалии | `assistant` | `insight.created` | `pass.decided`, `interval.*` | B3 |
+| **notify-service** | SSE-хаб для админки, киоска и телефона, правила оповещений (скопления, ушёл с площадки, нет связи), heartbeat телефонов, напоминания о выходе | `notify` | `alert.created` | все события | B3 |
+
+### Почему так нарезано
+- **Атомарность прохода внутри access-service.** Гашение токена, решение, запись в журнал, состояние anti-passback и outbox-событие пишутся одной транзакцией. Повтор QR невозможен даже при гонке.
+- **Синхронные зависимости прохода** (face, people, shift) вызываются параллельно с таймаутом 1,5 с и circuit breaker. Любой отказ — `DENY SYSTEM_ERROR` (fail-closed) с указанием, какой сервис не ответил.
+- **Всё остальное асинхронно** через RabbitMQ: интервалы, обстановка, оповещения, аномалии. Падение shift- или notify-сервиса не мешает проходам; после подъёма они дочитывают очередь.
+- **Transactional outbox** (`outbox`-таблица + публикатор) в access и people: событие не теряется при рестарте (Д4) и не публикуется, если транзакция откатилась.
+- **Идемпотентные потребители**: таблица `processed_events(event_id)` в каждом слушающем сервисе.
+
+### Межсервисная безопасность (zero-trust)
+- Наружу открыт только `caddy → gateway` (+ Keycloak на `auth.`). Сервисы во внутренней docker-сети без проброшенных портов.
+- Каждый сервис **сам** проверяет JWT (не доверяет gateway вслепую): пользовательский токен прокидывается дальше; межсервисные вызовы — токен service account из Keycloak (client credentials) с `aud=<целевой сервис>`.
+- У каждого сервиса своя роль в PostgreSQL с доступом только к своей БД; у access роль без UPDATE/DELETE на журнал.
+- RabbitMQ: отдельный пользователь на сервис, права только на свои exchange/queue.
+
+### Наблюдаемость
+OpenTelemetry (Micrometer Tracing) во всех сервисах → **Jaeger**: один проход виден как трейс gateway → access → face/people/shift → rabbit → shift/notify. Метрики Prometheus, JSON-логи с `traceId`. На защите показываем трейс прохода — это сильный аргумент в «инженерной культуре».
 
 ## Сценарий прохода (ядро, 28 баллов + допуск)
 ```mermaid
 sequenceDiagram
   participant W as Телефон рабочего
   participant K as Киоск
-  participant B as Backend
-  participant DB as PostgreSQL
+  participant B as access-service (через gateway)
+  participant F as face / people / shift
+  participant DB as БД access
   W->>B: POST /api/worker/pass-token (JWT рабочего, deviceId)
   B->>DB: INSERT pass_tokens(nonce, exp=now+30s)
   B-->>W: подписанный токен → QR, обновление каждые 20 с
@@ -47,10 +77,14 @@ sequenceDiagram
   B-->>K: attemptId + случайный челлендж живости («поверните голову влево»)
   K->>B: POST /api/kiosk/attempts/{id}/frames (3–5 кадров)
   B->>B: подпись/срок токена → атомарное гашение → рабочий/устройство активны
-  B->>B: лицо: детекция → ровно одно лицо → эмбеддинг → cos(эталон) ≥ порог
-  B->>B: живость: движение по челленджу + тот же человек во всех кадрах
-  B->>B: правила: смена/окно, допуск в зону, anti-passback, вместимость зоны
-  B->>DB: INSERT pass_attempts(decision, reason, score...) + интервал присутствия (одна транзакция)
+  par параллельно, таймаут 1.5 с
+    B->>F: face: сверка 1:1 + живость
+    B->>F: people: статус рабочего, устройство, допуски
+    B->>F: shift: активная смена и окно
+  end
+  B->>B: anti-passback, вместимость зоны
+  B->>DB: гашение токена + pass_attempts + состояние + outbox (одна транзакция)
+  B-)F: pass.decided → RabbitMQ → shift (интервал), notify (SSE)
   B-->>K: ALLOW / DENY + код + человеческое сообщение
   B-->>W: SSE: «Вы прошли / отказ: причина»
 ```
@@ -66,25 +100,10 @@ sequenceDiagram
 8. Anti-passback: вход разрешён только из состояния «снаружи», выход только из «внутри».
 9. Вместимость зоны (опционально).
 
-## Модули backend
-| Модуль | Ответственность | Ключевые сущности |
-|---|---|---|
-| auth | логин, JWT, роли, сопряжение киоска | users, kiosk_devices |
-| people | рабочие, подрядчики, допуски | workers, contractors, permits |
-| devices | привязка телефона к рабочему, инвайт-коды | worker_devices, invites |
-| face | эталоны, эмбеддинги, сравнение, живость | face_templates |
-| tokens | выдача и гашение динамических пропусков | pass_tokens |
-| access | движок решений, проходные, зоны | checkpoints, zones, sites |
-| journal | неизменяемый журнал попыток, аудит действий админа | pass_attempts, audit_log |
-| shifts | плановые смены, шаблоны графика | shifts, shift_templates |
-| intervals | интервалы присутствия по зонам, автозакрытие | presence_intervals |
-| presence | текущая обстановка, SSE, heartbeat телефона | heartbeats |
-| alerts | правила оповещений, напоминания | alerts |
-| analytics | отчёты, метрики, табель, выгрузки | (views/SQL) |
-| llm | порт + адаптеры провайдеров | — |
-| assistant | инструменты, валидатор чисел, проактивные аномалии | assistant_log |
+## Внутреннее устройство сервиса
+Каждый сервис — Spring Boot 3, пакеты `api` (DTO, клиенты), `domain`, `infra`, `web`, `messaging`. Общее — в библиотеке `services/libs/common`: ProblemDetail-ошибки, конфиг resource server, конвертер ролей Keycloak, outbox, idempotent consumer, AES-GCM, схемы событий. Бизнес-логики в common нет.
 
-## Модель данных (минимум)
+## Модель данных (минимум; каждая таблица живёт в БД своего сервиса)
 ```mermaid
 erDiagram
   contractors ||--o{ workers : employs
@@ -123,5 +142,15 @@ erDiagram
 - Rate-limit: 5 неудачных сверок лица по рабочему за 10 мин → временная блокировка и оповещение.
 - Фото и эмбеддинги отдаются только ADMIN. Миниатюры в журнале — по отдельному эндпоинту с проверкой роли.
 
-## Почему не микросервисы (ADR-010)
-Монолит с модулями + отдельные инфраструктурные сервисы (Keycloak, PostgreSQL, Ollama, Caddy) — это уже 6–7 контейнеров, и условие Д2 «отдельный бэкенд» выполнено. Микросервисы на один день ломают главное свойство безопасности: **гашение токена, решение и запись в журнал идут в одной транзакции БД**. В микросервисах это превращается в распределённую транзакцию (saga), появляются межсервисная аутентификация, сетевые отказы и сложная отладка, а баллов за это нет. Границы модулей проверяются ArchUnit, поэтому любой модуль (например `face`) выносится в сервис без переписывания — так и отвечаем судьям.
+## Схема событий
+Exchange `gate.events` (topic). Конверт: `{eventId, type, occurredAt, producer, traceId, payload}`; JSON Schema в `contracts/events/`.
+| Событие | Producer | Payload |
+|---|---|---|
+| `pass.decided` | access | attemptId, workerId, checkpointId, zoneId, direction, decision, reasonCode, ts, source |
+| `worker.created / updated / blocked / deleted` | people | workerId, contractorId, status |
+| `device.bound` | people | workerId, deviceId |
+| `face.enrolled` | face | workerId, quality |
+| `interval.opened / closed` | shift | intervalId, workerId, zoneId, shiftId, closeReason |
+| `shift.missed_exit` | shift | workerId, shiftId |
+| `alert.created` | notify | type, severity, workerId?, zoneId?, details |
+| `insight.created` | assistant | text, numbers, sources |

@@ -6,7 +6,12 @@
 | Что | Выбор | Лицензия | Зачем |
 |---|---|---|---|
 | Язык | Java 21 (Temurin) | GPLv2+CPE (рантайм, не вирусный для приложения) | требование |
+| Архитектура | микросервисы: gateway + 6 сервисов, Maven multi-module (`services/`) | — | ADR-015 |
 | Фреймворк | Spring Boot 3.3+: Web, Security, Data JPA, Validation, Actuator | Apache-2.0 | стандарт, агенты знают |
+| Gateway | Spring Cloud Gateway | Apache-2.0 | единая точка входа |
+| Межсервисные вызовы | Spring `RestClient` + Resilience4j (таймаут, CB) | Apache-2.0 | fail-closed |
+| События | RabbitMQ 3.13 + Spring AMQP, transactional outbox | MPL-2.0 / Apache-2.0 | ADR-016 |
+| Трейсинг | Micrometer Tracing + OpenTelemetry → Jaeger | Apache-2.0 | ADR-019 |
 | БД | PostgreSQL 16 | PostgreSQL | Д4 |
 | Миграции | Flyway | Apache-2.0 | воспроизводимая схема |
 | Identity / SSO | **Keycloak 26** (OIDC, SSO, TOTP, brute-force защита, брокеринг внешних IdP) | Apache-2.0 | персонал: ADMIN / MANAGER / SECURITY_OFFICER / GUARD |
@@ -46,13 +51,13 @@
 Переключение: `LLM_PROVIDER=gigachat|openai|ollama` в `.env`. Код не меняется.
 
 ## Инфраструктура
-- `docker compose` с сервисами `postgres`, `keycloak`, `backend`, `frontend` (nginx со статикой трёх приложений), `caddy` (HTTPS), `ollama` (профиль `llm-local`), `prometheus` (опционально). Сервер и CI/CD — см. DEPLOY.md.
+- `docker compose`: `caddy`, `frontend`, `gateway`, `people`, `access`, `face`, `shift`, `assistant`, `notify`, `keycloak`, `postgres`, `rabbitmq`, `jaeger`, `ollama` (профиль `llm-local`), `prometheus` (опционально). Сервер и CI/CD — см. DEPLOY.md.
 - **HTTPS обязателен**: браузер даёт доступ к камере и геолокации только в secure context. Варианты по убыванию надёжности: (1) VPS + домен + Let's Encrypt через Caddy; (2) Caddy `tls internal` в локальной сети + корневой сертификат на телефоны; (3) туннель (cloudflared). Решить до хакатона, см. QUESTIONS.md.
 - Секреты: `.env` + `.env.example`; `gitleaks` в pre-commit и CI.
 - CI: GitHub Actions — `mvn verify`, `pnpm build`, `gitleaks`.
 
 ## Сознательно НЕ берём
-- Микросервисы, Kafka, Redis, Kubernetes: на один день это лишние риски (ADR-010).
+- Kafka (тяжёлая для ноутбука), Redis (AGPL/SSPL), Kubernetes и service mesh: на один день лишнее.
 - MinIO (AGPL), Grafana (AGPL), iText (AGPL): лицензии.
 - Python-сервис для лица: второй язык и ещё один контейнер. Это план Б, если OpenCV Java не взлетит за первый час (spike).
 - Хранить фото на диске: фото и эмбеддинги лежат в Postgres (`bytea`/`real[]`).

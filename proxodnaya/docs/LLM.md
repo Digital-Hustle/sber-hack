@@ -2,7 +2,7 @@
 
 ## Изоляция
 ```
-assistant ──► llm.api.ChatModelPort   (интерфейс: chat(messages, tools) → ChatResult)
+assistant-service: assistant ──► llm.api.ChatModelPort   (интерфейс: chat(messages, tools) → ChatResult)
                  ▲
    llm.infra.gigachat.GigaChatAdapter
    llm.infra.openai.OpenAiCompatAdapter
@@ -33,7 +33,7 @@ GIGACHAT_SCOPE=GIGACHAT_API_PERS
 
 ## Помощник: как устроен
 1. Системный промпт: роль, запрет придумывать числа, «отвечай только по результатам инструментов», язык — русский, `/no_think` для qwen3.
-2. Инструменты (числа считает сервер):
+2. Инструменты (числа считает сервер; это read-only вызовы shift-service и access-service через service account):
    `presence_now(zone?)`, `worker_find(query)`, `hours_worked(period, worker?|contractor?)`, `late_and_overtime(period)`, `attempts_stats(period, reason?)`, `load_by_hour(period)`, `alerts(period)`, `shift_status(worker)`.
 3. Цикл: модель → tool calls → сервер выполняет → модель формирует ответ (максимум 3 итерации).
 4. **Валидатор**: из ответа извлекаются числа и даты; каждое число должно встречаться в JSON-результатах инструментов (допускаются тривиальные суммы и проценты, пересчитанные сервером). Не прошёл → одна перегенерация с замечанием → иначе «Не могу подтвердить ответ данными» + таблица сырых результатов.

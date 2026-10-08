@@ -6,5 +6,6 @@
 - Gitleaks нашёл секрет → не коммить «удаление» поверх: сообщи человеку немедленно. Ключ надо ротировать, историю ветки — переписать (`git rebase -i`) до мержа.
 - Деплой: автоматически из `main` (`proxodnaya-deploy.yml`). Руками: `gh workflow run proxodnaya-deploy.yml -f ref=<tag>`.
 - Откат: `gh workflow run proxodnaya-deploy.yml -f ref=demo-N`.
-- Локально весь стенд: `cd infra && docker compose --profile llm-local up -d --build`; логи: `docker compose logs -f backend`.
+- Локально весь стенд: `cd infra && docker compose --profile llm-local up -d --build`; логи: `docker compose logs -f access face`; трейсы: Jaeger UI (`docker compose port jaeger 16686` только локально).
+- Пересобрать один сервис: `docker compose up -d --build access`.
 - Смоук: `scripts/smoke.sh https://<host>`.

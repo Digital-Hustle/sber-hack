@@ -14,50 +14,60 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.f.outputs.backend }}
+      services: ${{ steps.svc.outputs.list }}
+      has_services: ${{ steps.svc.outputs.has }}
       frontend: ${{ steps.f.outputs.frontend }}
       infra: ${{ steps.f.outputs.infra }}
-      has_backend: ${{ steps.e.outputs.backend }}
       has_frontend: ${{ steps.e.outputs.frontend }}
       has_infra: ${{ steps.e.outputs.infra }}
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - id: e
         name: какие части уже существуют (до старта хакатона кода нет)
         run: |
-          echo "backend=$([ -f proxodnaya/backend/pom.xml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "frontend=$([ -f proxodnaya/frontend/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "infra=$([ -f proxodnaya/infra/docker-compose.yml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - id: f
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            backend: ['proxodnaya/backend/**', 'proxodnaya/contracts/**']
             frontend: ['proxodnaya/frontend/**', 'proxodnaya/contracts/**']
             infra: ['proxodnaya/infra/**']
+      - id: svc
+        name: изменённые сервисы (libs/common или parent pom → все)
+        run: |
+          cd proxodnaya
+          all=$(ls -d services/*/ 2>/dev/null | xargs -rn1 basename | grep -v '^libs$' || true)
+          if [ -z "$all" ] || [ ! -f services/pom.xml ]; then echo 'list=[]' >> "$GITHUB_OUTPUT"; echo has=false >> "$GITHUB_OUTPUT"; exit 0; fi
+          base=${{ github.event.pull_request.base.sha || github.event.before }}
+          changed=$(git diff --relative --name-only "$base" HEAD 2>/dev/null || echo services/pom.xml)
+          if [ "${{ github.ref }}" = refs/heads/main ] || grep -qE '^services/(libs/|pom.xml)' <<<"$changed"; then list="$all"
+          else list=$(grep -oE '^services/[a-z-]+/' <<<"$changed" | cut -d/ -f2 | grep -v '^libs$' | sort -u || true); fi
+          json=$(printf '%s\n' $list | jq -R . | jq -sc 'map(select(length>0))')
+          echo "list=$json" >> "$GITHUB_OUTPUT"
+          if [ "$json" = "[]" ]; then echo has=false >> "$GITHUB_OUTPUT"; else echo has=true >> "$GITHUB_OUTPUT"; fi
 
-  backend:
+  services:
     needs: changes
-    if: needs.changes.outputs.has_backend == 'true' && (needs.changes.outputs.backend == 'true' || github.ref == 'refs/heads/main')
+    if: needs.changes.outputs.has_services == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        svc: ${{ fromJSON(needs.changes.outputs.services) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '21', cache: maven }
-      - run: ./mvnw -B verify
-        working-directory: proxodnaya/backend
-
-  contract:
-    needs: changes
-    if: needs.changes.outputs.has_backend == 'true' && needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '21', cache: maven }
-      - run: ./mvnw -B -DskipTests verify -Pcontract
-        working-directory: proxodnaya/backend
-      - run: git diff --exit-code -- proxodnaya/contracts/openapi.json
+      - name: build + test
+        run: ./mvnw -B -pl ${{ matrix.svc }} -am verify
+        working-directory: proxodnaya/services
+      - name: contract
+        run: |
+          ./mvnw -B -q -pl ${{ matrix.svc }} -am -DskipTests verify -Pcontract
+          git diff --exit-code -- ../contracts/
+        working-directory: proxodnaya/services
 
   frontend:
     needs: changes
@@ -97,12 +107,12 @@ jobs:
         working-directory: proxodnaya/infra
 
   smoke:
-    needs: [changes, backend, frontend, security]
-    if: always() && github.ref == 'refs/heads/main' && needs.changes.outputs.has_infra == 'true' && needs.backend.result == 'success' && needs.frontend.result == 'success' && needs.security.result == 'success'
+    needs: [changes, services, frontend, security]
+    if: always() && github.ref == 'refs/heads/main' && needs.changes.outputs.has_infra == 'true' && (needs.services.result == 'success' || needs.services.result == 'skipped') && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') && needs.security.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cp .env.example .env && docker compose up -d --build --wait
+      - run: cp .env.example .env && docker compose up -d --build --wait --wait-timeout 600
         working-directory: proxodnaya/infra
       - run: proxodnaya/scripts/smoke.sh https://localhost
       - if: failure()

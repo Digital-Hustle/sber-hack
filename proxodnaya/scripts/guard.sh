@@ -20,28 +20,37 @@ g "(decision|result)\s*[:=]\s*['\"]ALLOW['\"]|setDecision\(\s*['\"]ALLOW" -- 'fr
   && F "фронтенд сам выставляет ALLOW — решение принимает только сервер"
 
 # 3. Хранилище только в памяти / в файле
-g 'h2database|sqlite|hsqldb' -- 'backend/pom.xml' && F "встраиваемая БД в зависимостях — данные только в PostgreSQL"
-g 'static\s+(final\s+)?(Map|List|Set)<' -- 'backend/src/main/**' ':!**/common/**' && W "статическая коллекция в main-коде — не используется ли как хранилище?"
-g 'new (FileWriter|FileOutputStream)\(|Files\.write' -- 'backend/src/main/**' ':!**/reports/**' && W "запись в файл — данные должны быть в БД"
+g 'h2database|sqlite|hsqldb' -- 'services/**/pom.xml' && F "встраиваемая БД в зависимостях — данные только в PostgreSQL"
+g 'static\s+(final\s+)?(Map|List|Set)<' -- 'services/*/src/main/**' ':!services/libs/**' && W "статическая коллекция в main-коде — не используется ли как хранилище?"
+g 'new (FileWriter|FileOutputStream)\(|Files\.write' -- 'services/*/src/main/**' ':!services/shift/**/reports/**' && W "запись в файл — данные должны быть в БД"
 
 # 4. Заглушки модели и аналитики
-g -i '(mock|stub|fake|canned|hardcoded)' -- 'backend/src/main/**/llm/**' 'backend/src/main/**/assistant/**' 'backend/src/main/**/analytics/**' \
+g -i '(mock|stub|fake|canned|hardcoded)' -- 'services/assistant/src/main/**' 'services/shift/src/main/**/analytics/**' \
   && F "mock/stub/fake в боевом коде LLM/помощника/аналитики"
-g "return\s+\"[^\"]{40,}\"" -- 'backend/src/main/**/assistant/**' 'backend/src/main/**/llm/**' && W "длинная строковая константа в ответе помощника — не заготовка ли?"
+g "return\s+\"[^\"]{40,}\"" -- 'services/assistant/src/main/**' && W "длинная строковая константа в ответе помощника — не заготовка ли?"
 g '(const|let)\s+\w*(mock|fake|demo)\w*\s*=\s*\[' -- 'frontend/apps/**' ':!*.test.*' ':!*.stories.*' && F "моковые данные во фронтенде"
 
 # 5. Обход проверок
-g '@Disabled|\.skip\(|xit\(' -- 'backend/src/test/**' 'frontend/**/*.test.*' && W "отключённые тесты"
+g '@Disabled|\.skip\(|xit\(' -- 'services/*/src/test/**' 'frontend/**/*.test.*' && W "отключённые тесты"
 g 'continue-on-error:\s*true' -- "$(git rev-parse --show-toplevel)/.github" && F "continue-on-error в CI"
-g 'permitAll\(\)' -- 'backend/src/main/**' && W "permitAll — убедись, что это только health/openid"
+g 'permitAll\(\)' -- 'services/*/src/main/**' && W "permitAll — убедись, что это только health/openid"
 
 # 6. Токены в localStorage, время без Clock
 g -i 'localStorage\.setItem\([^)]*(token|jwt)' -- 'frontend/**' && F "токены в localStorage"
-g 'Instant\.now\(\)|LocalDateTime\.now\(\)' -- 'backend/src/main/**' && W "время без Clock — используй внедрённый Clock"
+g 'Instant\.now\(\)|LocalDateTime\.now\(\)' -- 'services/*/src/main/**' && W "время без Clock — используй внедрённый Clock"
+
+# 6.1 Микросервисные границы
+g 'rabbitTemplate\.(convertAndSend|send)\(' -- 'services/*/src/main/**' ':!services/libs/**' && F "публикация события мимо outbox"
+for svc in $(ls services 2>/dev/null | grep -vE 'libs|pom.xml|mvnw'); do
+  others=$(ls services | grep -vE "libs|pom.xml|mvnw|^$svc$" | paste -sd'|' -)
+  [ -n "$others" ] && g "jdbc:postgresql://[^\"]*/($others)\b" -- "services/$svc/src/main/**" && F "$svc подключается к чужой БД"
+done
+[ -f infra/docker-compose.yml ] && awk '/^  [a-z-]+:$/{svc=$1} /^    ports:/{print svc}' infra/docker-compose.yml | grep -vE '^(caddy|ollama):$' && W "сервисы с проброшенными портами — наружу только caddy"
+g 'org\.opencv' -- 'services/*/src/main/**' ':!services/face/**' && F "OpenCV вне face-service"
 
 # 7. Правка смерженных миграций
 if git rev-parse --verify -q origin/main >/dev/null; then
-  git diff --name-status origin/main...HEAD -- 'backend/src/main/resources/db/migration/' | grep -E '^(M|D|R)' \
+  git diff --name-status origin/main...HEAD -- 'services/*/src/main/resources/db/migration/' | grep -E '^(M|D|R)' \
     && F "изменена/удалена существующая миграция — создай новую"
 fi
 

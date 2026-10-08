@@ -21,7 +21,7 @@ description: Use for ANY change in the «Проходная» case (folder proxo
 Прочитай нужный reference — только его, не все:
 | Область | Файл |
 |---|---|
-| Backend Java/Spring, модули, Flyway, тесты | `references/backend.md` |
+| Backend: микросервисы, gateway, события/outbox, Flyway, тесты | `references/backend.md` |
 | Frontend (kiosk/worker/admin), API-клиент, OIDC | `references/frontend.md` |
 | Keycloak, роли, токены, ключи устройств, шифрование, аудит | `references/security.md` |
 | LLM-слой, помощник, валидатор чисел | `references/llm-assistant.md` |
@@ -29,8 +29,8 @@ description: Use for ANY change in the «Проходная» case (folder proxo
 | Как оформить PR и делать ревью | `references/pr-workflow.md` |
 
 Правила реализации:
-- Сначала контракт: меняешь API → обнови `docs/API.md` и snapshot `contracts/openapi.json` (`scripts/verify.sh contract`).
-- Новая миграция только через `scripts/new-migration.sh <slug>` (имя с меткой времени, чтобы у параллельных PR не было коллизий версий).
+- Сначала контракт: меняешь REST или событие → обнови `docs/API.md`, `contracts/openapi/<svc>.json` (`scripts/verify.sh contract`) или `contracts/events/`, и всех потребителей.
+- Новая миграция только через `scripts/new-migration.sh <svc> <slug>` (имя с меткой времени, чтобы у параллельных PR не было коллизий версий).
 - Пиши тест вместе с кодом. Для движка решений и безопасности — сначала тест (red → green).
 - Никаких моков, заглушек, «TODO: потом» и заготовленных ответов в боевом пути. Если что-то не готово — feature-флаг `false` и честное сообщение в UI.
 - Маленькие коммиты в стиле Conventional Commits со ссылкой на ID: `feat(access): FR-03 атомарное гашение токена`.
@@ -64,4 +64,5 @@ scripts/open-pr.sh "<ID>" "<короткий заголовок>"   # rebase н�
 - Не редактировать уже смерженные миграции.
 - Не отключать тесты, проверки CI, ArchUnit, CSP ради «чтобы прошло».
 - Не принимать решение о проходе во фронтенде, не хранить данные в памяти процесса, не возвращать заготовленный ответ модели.
+- Не ходить в чужую БД, не публиковать события мимо outbox, не выносить гашение токена из транзакции access-service.
 - Не делать force-push в `main`, не мержить без CI.

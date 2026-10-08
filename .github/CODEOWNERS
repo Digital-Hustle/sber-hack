@@ -2,23 +2,16 @@
 *                                   @b1
 /proxodnaya/infra/                             @b1
 /proxodnaya/.github/                           @b1
-/proxodnaya/backend/src/main/java/ru/team/gate/security/   @b1
-/proxodnaya/backend/src/main/java/ru/team/gate/tokens/     @b1
-/proxodnaya/backend/src/main/java/ru/team/gate/audit/      @b1
-/proxodnaya/backend/src/main/java/ru/team/gate/access/     @b2
-/proxodnaya/backend/src/main/java/ru/team/gate/journal/    @b2
-/proxodnaya/backend/src/main/java/ru/team/gate/face/       @b2
-/proxodnaya/backend/src/main/java/ru/team/gate/people/     @b2
-/proxodnaya/backend/src/main/java/ru/team/gate/devices/    @b2
-/proxodnaya/backend/src/main/java/ru/team/gate/shifts/     @b3
-/proxodnaya/backend/src/main/java/ru/team/gate/intervals/  @b3
-/proxodnaya/backend/src/main/java/ru/team/gate/analytics/  @b3
-/proxodnaya/backend/src/main/java/ru/team/gate/reports/    @b3
-/proxodnaya/backend/src/main/java/ru/team/gate/presence/   @b3
-/proxodnaya/backend/src/main/java/ru/team/gate/alerts/     @b3
-/proxodnaya/backend/src/main/java/ru/team/gate/llm/        @b3
-/proxodnaya/backend/src/main/java/ru/team/gate/assistant/  @b3
-/proxodnaya/backend/src/main/resources/db/migration/       @b1 @b2 @b3
+/proxodnaya/services/pom.xml                @b1
+/proxodnaya/services/libs/                  @b1
+/proxodnaya/services/gateway/               @b1
+/proxodnaya/services/people/                @b1
+/proxodnaya/services/access/                @b2
+/proxodnaya/services/face/                  @b2
+/proxodnaya/services/shift/                 @b3
+/proxodnaya/services/assistant/             @b3
+/proxodnaya/services/notify/                @b3
+/proxodnaya/contracts/events/               @b1 @b2 @b3
 /proxodnaya/contracts/                         @b1 @f2
 /proxodnaya/frontend/apps/kiosk/               @f1
 /proxodnaya/frontend/apps/worker/              @f1

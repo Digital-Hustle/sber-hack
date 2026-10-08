@@ -25,11 +25,14 @@ jobs:
         run: echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@v3
         with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
-      - run: |
-          docker build -t $REG/gate-backend:${{ steps.v.outputs.tag }} proxodnaya/backend
-          docker build -t $REG/gate-frontend:${{ steps.v.outputs.tag }} proxodnaya/frontend
-          docker push $REG/gate-backend:${{ steps.v.outputs.tag }}
-          docker push $REG/gate-frontend:${{ steps.v.outputs.tag }}
+      - name: build & push images (все сервисы + frontend)
+        run: |
+          TAG=${{ steps.v.outputs.tag }}
+          for svc in $(ls -d proxodnaya/services/*/ | xargs -n1 basename | grep -v '^libs$'); do
+            docker build -t $REG/gate-$svc:$TAG -f proxodnaya/services/$svc/Dockerfile proxodnaya/services
+            docker push $REG/gate-$svc:$TAG
+          done
+          docker build -t $REG/gate-frontend:$TAG proxodnaya/frontend && docker push $REG/gate-frontend:$TAG
       - name: deploy over ssh
         env:
           KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -42,8 +45,8 @@ jobs:
             set -e; cd /opt/gate/proxodnaya/infra
             PREV=\$(grep '^IMAGE_TAG=' .env | cut -d= -f2)
             sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/' .env
-            docker compose pull backend frontend && docker compose up -d backend frontend
-            for i in \$(seq 1 30); do curl -fsk https://localhost/api/actuator/health && exit 0; sleep 4; done
+            docker compose pull && docker compose up -d --remove-orphans
+            for i in \$(seq 1 30); do curl -fsk https://localhost/api/gateway/health && exit 0; sleep 4; done
             echo 'health failed, rollback to' \$PREV; sed -i \"s/^IMAGE_TAG=.*/IMAGE_TAG=\$PREV/\" .env
-            docker compose up -d backend frontend; exit 1"
+            docker compose up -d; exit 1"
           rm -f key

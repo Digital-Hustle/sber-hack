@@ -50,6 +50,13 @@
 | T16 | Отказ модели или лица | fail-closed для прохода, circuit breaker для LLM | выключить Ollama → проходы работают |
 | T17 | SQL-инъекции, XSS | JPA/параметры, React-экранирование, CSP без `unsafe-inline` | — |
 
+## 3.1 Межсервисная безопасность
+- Наружу только Caddy → gateway и Keycloak. Сервисы и RabbitMQ — во внутренней сети без проброса портов.
+- Каждый сервис валидирует JWT сам (defense in depth). Межсервисные вызовы — токены service account с `aud`.
+- `/internal/**` эндпоинты доступны только с ролью `SVC_<caller>`.
+- Отдельные роли PostgreSQL и пользователи RabbitMQ на сервис.
+- Угрозы: T18 — компрометация одного сервиса → доступ только к его БД и очередям; T19 — подделка события в шине → права publish только у владельца exchange, consumer проверяет `producer`.
+
 ## 4. Транспорт и заголовки
 - Только HTTPS (Caddy, Let's Encrypt), HSTS.
 - CSP: `default-src 'self'; connect-src 'self' https://auth.<host>; img-src 'self' blob: data:; frame-ancestors 'none'`.
