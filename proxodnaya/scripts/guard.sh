@@ -52,11 +52,23 @@ for svc in $SVCS; do
 done
 [ -f infra/docker-compose.yml ] && awk '/^  [a-z-]+:$/{svc=$1} /^    ports:/{print svc}' infra/docker-compose.yml | grep -vE '^(caddy|ollama):$' && W "сервисы с проброшенными портами — наружу только caddy"
 g 'org\.opencv' -- 'services/*/src/main/**' && F "OpenCV в Java — распознавание лиц только в Python-сервисе face"
-g -i 'insightface|buffalo_l|antelopev2' -- 'services/face/**' && F "InsightFace: веса только для некоммерческого использования"
+g -i 'insightface|buffalo_l|antelopev2' -- 'services/face/**' ':!*.md' && F "InsightFace: веса только для некоммерческого использования"
 
 # 6.2 Структура (скиллы backend-spring / frontend-fsd)
 REPO=$(git rev-parse --show-toplevel)
 [ -f services/settings.gradle.kts ] && { node "$REPO/.agents/skills/backend-spring/scripts/be-check.mjs" services >/dev/null || F "be-check: нарушены правила backend-spring (запусти его без >/dev/null)"; }
+# токены: theme.css и таблицы DESIGN.md сгенерированы из tokens.ts и не устарели (ADR-033)
+GEN="$REPO/.agents/skills/frontend-fsd/scripts/gen-tokens.mjs"
+if node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=6)?0:1)' 2>/dev/null; then
+  if [ -f frontend/src/shared/config/tokens.ts ]; then
+    (cd frontend && node --experimental-strip-types --no-warnings "$GEN" src/shared/config/tokens.ts --css src/app/styles/theme.css --md docs/DESIGN.md --check >/dev/null) \
+      || F "дизайн-токены: theme.css/DESIGN.md устарели или контраст < 4.5 — npm run gen:tokens"
+  else
+    A="$REPO/.agents/skills/frontend-fsd/assets"
+    node --experimental-strip-types --no-warnings "$GEN" "$A/tokens.ts" --css "$A/theme.css" --md frontend/docs/DESIGN.md --check >/dev/null \
+      || F "дизайн-токены скилла: assets/theme.css или frontend/docs/DESIGN.md устарели — см. frontend/docs/DESIGN.md §0"
+  fi
+else W "Node < 22.6 — проверка дизайн-токенов пропущена"; fi
 [ -d frontend/src ] && { node "$REPO/.agents/skills/frontend-fsd/scripts/fsd-check.mjs" frontend/src >/dev/null || F "fsd-check: нарушены правила FSD (запусти его без >/dev/null)"; }
 
 # 7. Правка смерженных миграций

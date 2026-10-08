@@ -19,6 +19,7 @@ docker compose --profile llm-local up -d --build
 |---|---|
 | [AGENTS.md](AGENTS.md) | вход для ИИ-агентов |
 | [rules.md](rules.md) | правила разработки и красные линии |
+| [docs/PRD.md](docs/PRD.md) | продукт: проблемы, цели, пользователи, MVP |
 | [docs/STACK.md](docs/STACK.md) | стек и лицензии |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | схемы, модули, модель данных, алгоритмы |
 | [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | FR/NFR и трассировка к критериям |
@@ -29,6 +30,8 @@ docker compose --profile llm-local up -d --build
 | [docs/DEPLOY.md](docs/DEPLOY.md) | сервер, CI/CD, откат |
 | [docs/AGENT_SKILLS.md](docs/AGENT_SKILLS.md) | скиллы агентов: наш и сторонние |
 | [docs/ROLES.md](docs/ROLES.md) · [docs/PLAN.md](docs/PLAN.md) · [docs/DEMO.md](docs/DEMO.md) | команда, план, защита |
+| [docs/WORKFLOW.md](docs/WORKFLOW.md) · [docs/TASKS.md](docs/TASKS.md) · [docs/MEMORY.md](docs/MEMORY.md) | как работаем параллельно, вехи и задачи, состояние проекта |
+| `services/<svc>/docs/`, [frontend/docs/](frontend/docs/) | PRD, ARCHITECTURE, RULES, TASKS, MEMORY каждого модуля; [frontend/docs/DESIGN.md](frontend/docs/DESIGN.md) — дизайн-система |
 
 ## Команда
 | Участник | Зона ответственности |

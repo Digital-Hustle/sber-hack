@@ -46,3 +46,5 @@ npx skills find <запрос>                         # поиск по skills.
 npx skills add <owner/repo@skill> -a claude-code --copy -y   # в .claude/skills = .agents/skills
 ```
 Дальше: проверить лицензию (MIT/Apache/BSD/ISC), дописать блок «Проходная» и `UPSTREAM.md`, добавить строку сюда и в таблицу лицензий `DECISIONS.md`.
+
+Процесс для всех ролей (draft PR, handoff, конфликты, локальный CI) — `WORKFLOW.md`; контекст модуля — его `AGENTS.md` и `docs/`.
