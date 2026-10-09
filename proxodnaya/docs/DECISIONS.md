@@ -116,6 +116,9 @@
 ### ADR-038 Rate-limit в gateway — окно в памяти
 Решение: перебор инвайтов (`/people/api/v1/auth/**`) и попытки киоска ограничивает собственный `WebFilter` gateway: фиксированное окно на адрес клиента (последний хоп `X-Forwarded-For` от Caddy), `RATE_LIMIT_CAPACITY` запросов за `RATE_LIMIT_WINDOW`, сверх — `429 RATE_LIMITED` + `Retry-After`. Без Redis, Bucket4j и Resilience4j. Причина: gateway один, счётчики при рестарте можно терять, лишняя инфраструктура не окупается. При нескольких экземплярах — перейти на `RequestRateLimiter` SCG с Redis.
 
+### ADR-039 Keycloak под `/auth` того же хоста, ключи — из внутренней сети
+Решение: Caddy отдаёт Keycloak по `https://<host>/auth` (`KC_HTTP_RELATIVE_PATH=/auth`, `KC_HOSTNAME=https://<host>/auth`), без поддомена `auth.`. `iss` в токенах — публичный адрес, а JWKS и токены client credentials сервисы берут напрямую `http://keycloak:8080/auth/...` (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), сверяя `iss` с `OIDC_ISSUER_URI`. Причина: один сертификат и один origin (нет CORS к Keycloak, проще CSP), стенд работает на `localhost` и на ноутбуке без DNS, контейнерам не нужен доступ к публичному адресу и доверие к сертификату Caddy.
+
 ## Лицензии зависимостей
 | Зависимость | Лицензия | Кто добавил |
 |---|---|---|

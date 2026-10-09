@@ -17,11 +17,11 @@
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
 | PLT-01 | NFR-15 | `init-backend.sh` → `services/` (build-logic, version catalog, checkstyle), `libs/common` | B1 | todo |
-| PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy | B1 | todo |
+| PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy | B1 | review #PR |
 | PLT-03 | NFR-13 | CI: матрица сервисов, фронт, gitleaks, guard, trivy; деплой на сервер | B1 | todo |
 | PLT-04 | — | Синк контрактов: API.md, `/internal/**`, `contracts/events/*.schema.json` | B1 + все | todo |
-| PLT-05 | FR-60/62 | Keycloak realm: клиенты admin/kiosk/api/provisioner, роли, TOTP, brute-force | B1 | todo |
-| PLT-06 | — | Service accounts и `aud` на каждый сервис, `ServiceClients` в `libs/common` | B1 | todo |
+| PLT-05 | FR-60/62 | Keycloak realm: клиенты admin/kiosk/api/provisioner, роли, TOTP, brute-force | B1 | review #PR |
+| PLT-06 | — | Service accounts и `aud` на каждый сервис, `ServiceClients` в `libs/common` | B1 | doing: service accounts и `aud` есть (#PR), `ServiceClients` в libs/common — нет |
 | PLT-07 | NFR-17 | Outbox relay + IdempotentConsumer + конверт события в `libs/common` | B3 (по просьбе B1) | todo |
 | PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | todo |
 

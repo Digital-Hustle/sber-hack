@@ -10,10 +10,10 @@ while IFS= read -r line; do
       *_SIGNING_KEY) v=$(openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt -outform DER | base64 -w0) ;;
       BIOMETRY_KEY)  v=$(openssl rand -base64 32) ;;
       KAFKA_CLUSTER_ID) v=$(openssl rand -base64 16 | tr '+/' '-_' | tr -d '=') ;;
-      PUBLIC_HOST|KC_HOSTNAME) v=localhost ;;
-      OIDC_ISSUER_URI) v=https://localhost/auth/realms/proxodnaya ;;
+      PUBLIC_HOST) v=localhost ;;
       KC_BOOTSTRAP_ADMIN_USERNAME) v=kcadmin ;;
       LLM_API_KEY|GIGACHAT_AUTH_KEY) v= ;;
+      INVITE_PEPPER) v=$(openssl rand -base64 48 | tr -d '/+=') ;;
       *) v=$(openssl rand -base64 24 | tr -d '/+=') ;;
     esac
     echo "$k=$v"

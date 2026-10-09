@@ -17,9 +17,10 @@
 - Клиенты:
   - `gate-admin` — public, PKCE, redirect `https://<host>/admin/*`;
   - `gate-kiosk` — public, PKCE, redirect `https://<host>/kiosk/*`;
-  - `gate-api` — audience для backend, bearer-only;
-  - `gate-provisioner` — confidential, service account с ролью `manage-users` (backend создаёт персонал из админки).
-- Роли realm: `ADMIN`, `MANAGER`, `SECURITY_OFFICER`, `GUARD`. Маппер ролей кладёт `realm_access.roles` в токен. Конвертер в Spring превращает их в `ROLE_*`.
+  - audience: у `gate-admin`/`gate-kiosk` мапперы `aud` = `people`, `access`, `shift`, `assistant` (каждый сервис требует свой `aud`);
+  - `svc-people` (`SVC_PEOPLE`, aud `face`), `svc-access` (`SVC_ACCESS`, aud `face`, `people`, `shift`), `svc-shift` (`SVC_SHIFT`, aud `people`), `svc-assistant` (`SVC_ASSISTANT`, aud `people`, `access`, `shift`) — confidential, client credentials, секреты `KC_SVC_*_SECRET` **[есть]**;
+  - `gate-provisioner` — confidential, service account с ролью `manage-users` (backend создаёт персонал из админки), секрет `KC_PROVISIONER_SECRET`.
+- Роли realm: `ADMIN`, `MANAGER`, `SECURITY_OFFICER`, `GUARD` (+ сервисные `SVC_*`). Демо-пользователь `admin` (пароль `KC_DEMO_ADMIN_PASSWORD`, при первом входе — настройка TOTP). Маппер ролей кладёт `realm_access.roles` в токен. Конвертер в Spring превращает их в `ROLE_*`.
 - Политики:
   - пароль от 12 символов, не равен логину;
   - **Brute Force Detection** включена;
@@ -60,7 +61,7 @@
 
 ## 4. Транспорт и заголовки
 - Только HTTPS (Caddy, Let's Encrypt), HSTS.
-- CSP: `default-src 'self'; connect-src 'self' https://auth.<host>; img-src 'self' blob: data:; frame-ancestors 'none'`.
+- CSP: `default-src 'self'; connect-src 'self'; img-src 'self' blob: data:; frame-ancestors 'none'`.
 - `X-Content-Type-Options`, `Referrer-Policy: no-referrer`, `Permissions-Policy: camera=(self), geolocation=(self)`.
 - CORS: только свои origin.
 
