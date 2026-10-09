@@ -26,6 +26,8 @@ public final class PathConstants {
     public static final String TIMESHEET = "/timesheet.xlsx";
     public static final String INTERNAL_WORKERS = "/internal/shift/workers";
     public static final String ACTIVE_SHIFT = "/{id}/active-shift";
+    public static final String REFUSALS = "/refusals";
+    public static final String LOAD_BY_HOUR = "/load-by-hour";
 
     private PathConstants() {
     }
