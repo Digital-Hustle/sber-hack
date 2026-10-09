@@ -1,0 +1,45 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: intake
+              uri: ${INTAKE_URL:http://localhost:8081}
+              predicates: [ "Path=/intake/api/**" ]
+              filters: [ "RewritePath=/intake/(?<rest>.*), /$\\{rest}" ]
+            - id: docproc
+              uri: ${DOCPROC_URL:http://localhost:8082}
+              predicates: [ "Path=/docproc/api/**" ]
+              filters: [ "RewritePath=/docproc/(?<rest>.*), /$\\{rest}" ]
+            - id: review
+              uri: ${REVIEW_URL:http://localhost:8083}
+              predicates: [ "Path=/review/api/**" ]
+              filters: [ "RewritePath=/review/(?<rest>.*), /$\\{rest}" ]
+app:
+  oidc:
+    issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/documents}
+    jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/documents/protocol/openid-connect/certs}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+logging:
+  structured:
+    format:
+      console: ecs
