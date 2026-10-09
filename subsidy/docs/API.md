@@ -14,7 +14,7 @@ OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `su
 - `DELETE /packages/{id}/files/{fileId}` → 204
 - `GET /packages/{id}` → `{status, org, program, files: [{fileId, version, mime, pages, stage, reasonCode?, documents: [{documentId, fromPage, toPage, type, typeConfidence, source, stage}]}]}`
 - `GET /files/{fileId}/content?version=` → оригинал (роль + аудит); `GET /files/{fileId}/pages/{n}.png` → превью страницы
-- `GET /packages/{id}/stream` (SSE) — `file.stage`, `document.parsed`, `package.checked`
+- `GET /stream?packageId=&ticket=` (SSE, билет из `GET /stream/ticket`) — `file.stage`, `document.parsed`, `package.checked`; heartbeat `: ping` каждые 15 с
 - `POST /packages/{id}/decision` `{decision: APPROVE|REJECT|RETURN, comment}` → только `SENIOR_SPECIALIST`, только при наличии протокола
 
 ## docproc (`/docproc/api/v1`)
