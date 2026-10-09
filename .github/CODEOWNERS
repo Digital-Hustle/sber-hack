@@ -42,3 +42,54 @@
 /proxodnaya/frontend/src/features/scan-pass/   @f1
 /proxodnaya/frontend/src/features/capture-face/ @f1
 /proxodnaya/frontend/src/features/confirm-manual-pass/ @f1
+
+# ---------- «Документы» (documents/) ----------
+/documents/                                    @b1
+/documents/services/gateway/                   @b1
+/documents/services/intake/                    @b1
+/documents/services/libs/common/               @b1
+/documents/services/docproc/                   @b2
+/documents/services/ocr/                       @b2
+/documents/eval/                               @b2
+/documents/services/review/                    @b3
+/documents/services/libs/llm/                  @b3
+/documents/contracts/                          @b1 @f2
+/documents/frontend/                           @f2
+/documents/frontend/src/pages/Apply*/          @f1
+/documents/frontend/src/widgets/DocumentChecklist/ @f1
+/documents/frontend/src/widgets/UploadSlot/    @f1
+/documents/frontend/src/widgets/DocumentStatusCard/ @f1
+/documents/frontend/src/widgets/CameraCapture/ @f1
+/documents/frontend/src/widgets/CompletenessSummary/ @f1
+/documents/frontend/src/features/start-application/ @f1
+/documents/frontend/src/features/fill-profile/ @f1
+/documents/frontend/src/features/upload-document/ @f1
+/documents/frontend/src/features/capture-document/ @f1
+/documents/frontend/src/features/replace-file/ @f1
+/documents/frontend/src/features/remove-file/  @f1
+
+# ---------- «Субсидии» (subsidy/) ----------
+/subsidy/                                      @b1
+/subsidy/services/gateway/                     @b1
+/subsidy/services/package/                     @b1
+/subsidy/services/libs/common/                 @b1
+/subsidy/services/docproc/                     @b2
+/subsidy/services/ocr/                         @b2
+/subsidy/eval/                                 @b2
+/subsidy/services/rules/                       @b3
+/subsidy/services/assistant/                   @b3
+/subsidy/services/libs/llm/                    @b3
+/subsidy/docs/RULES-CATALOG.md                 @b3
+/subsidy/contracts/                            @b1 @f2
+/subsidy/frontend/                             @f2
+/subsidy/frontend/src/pages/PackagePage/       @f1
+/subsidy/frontend/src/widgets/FileList/        @f1
+/subsidy/frontend/src/widgets/DocumentViewer/  @f1
+/subsidy/frontend/src/widgets/FieldsPanel/     @f1
+/subsidy/frontend/src/widgets/UploadDropzone/  @f1
+/subsidy/frontend/src/features/create-package/ @f1
+/subsidy/frontend/src/features/upload-files/   @f1
+/subsidy/frontend/src/features/replace-file/   @f1
+/subsidy/frontend/src/features/remove-file/    @f1
+/subsidy/frontend/src/features/change-type/    @f1
+/subsidy/frontend/src/features/correct-field/  @f1
