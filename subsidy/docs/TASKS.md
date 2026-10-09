@@ -18,7 +18,7 @@
 |---|---|---|---|---|
 | PLT-00 | — | Получить текст кейса: сверить С1–С21, разд. 5.3/5.5 с REQUIREMENTS, DOC-TYPES, RULES-CATALOG, DEMO; поправить гипотезы | B1 + все | todo |
 | PLT-01 | NFR-15 | `init-backend.sh services` (кейс subsidy), `libs/common` — перенести из «Проходной» (sed `proxodnaya` → `subsidy`), каркас `libs/llm` | B1 | done |
-| PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис, volume), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy, ollama + ollama-pull (профиль `llm-local`) | B1 | todo |
+| PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис, volume), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy, ollama + ollama-pull (профиль `llm-local`) | B1 | done |
 | PLT-03 | NFR-13 | CI `subsidy-ci.yml` уже есть — проверить на первом коде; включить деплой (`SUBS_DEPLOY_ENABLED`) | B1 | todo |
 | PLT-04 | — | Синк контрактов: API.md, `/internal/**`, `contracts/events/*.schema.json`, стадии, коды правил | B1 + все | todo |
 | PLT-05 | FR-60 | Keycloak realm `subsidy`: клиент, роли, TOTP, brute-force, демо-пользователи из `.env` | B1 | todo |
