@@ -16,7 +16,7 @@ export type Protocol = {
 };
 export type ProtocolSummary = { protocolId: string; version: number; status: Protocol["status"]; completeness: number; failed: number; warnings: number; needsReview: number; createdAt: string };
 export type HistoryEntry = { at: string; by: string | null; action: string; packageId: string | null; details: Record<string, unknown> | null };
-export type RuleStat = { rule: string; count: number; share: string };
+export type RuleStat = { rule: string; count: number; share: number | string };
 export type Stats = { items: RuleStat[]; packages: number; method: string };
 export type Expiring = { packageId: string; inn: string; documentId: string; type: string; title: string; date: string; expiresAt: string; daysLeft: number };
 export type ProgramChecklistItem = { item: string; title: string; kind: string; types: string[]; condition: string | null };
