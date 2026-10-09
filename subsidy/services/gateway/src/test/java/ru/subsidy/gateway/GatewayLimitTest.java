@@ -12,7 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-    "app.limits.uploads-per-minute=2", "app.limits.questions-per-minute=1", "app.limits.body-max-kb=1",
+    "app.limits.uploads-per-minute=2", "app.limits.questions-per-minute=1", "app.limits.body-max-kb=1", "app.limits.logins-per-minute=2",
     "PACKAGE_URL=http://127.0.0.1:1", "ASSISTANT_URL=http://127.0.0.1:1", "RULES_URL=http://127.0.0.1:1"})
 @AutoConfigureWebTestClient
 class GatewayLimitTest {
@@ -34,6 +34,18 @@ class GatewayLimitTest {
                 .expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .expectBody().jsonPath("$.code").isEqualTo("RATE_LIMITED");
         upload("u2").expectStatus().value(status -> assertThat(status).isNotEqualTo(429));
+    }
+
+    @Test
+    void loginAttemptsAreLimitedPerClientAddress() {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            web.post().uri("/package/api/v1/auth/code").header("X-Forwarded-For", "203.0.113.7").exchange()
+                    .expectStatus().value(status -> assertThat(status).isNotEqualTo(429));
+        }
+        web.post().uri("/package/api/v1/auth/verify").header("X-Forwarded-For", "203.0.113.7").exchange()
+                .expectStatus().isEqualTo(HttpStatus.TOO_MANY_REQUESTS).expectBody().jsonPath("$.code").isEqualTo("RATE_LIMITED");
+        web.post().uri("/package/api/v1/auth/code").header("X-Forwarded-For", "203.0.113.8").exchange()
+                .expectStatus().value(status -> assertThat(status).isNotEqualTo(429));
     }
 
     @Test

@@ -65,6 +65,11 @@ GitHub Actions не стартуют (биллинг аккаунта), поэт
 ### ADR-022 Вход на странице: форма Keycloak во фрейме того же origin (FE-UI-02)
 Форма входа — страница Keycloak (тема `infra/keycloak/themes/subsidy`) во фрейме внутри карточки фронта: пароль и код TOTP вводятся только в Keycloak, фронт их не видит. Запрос и PKCE — как у редиректа; callback во фрейме передаёт адрес родителю (`postMessage` с проверкой origin), токены — в памяти вкладки. После перезагрузки — тихий вход `prompt=none` по cookie сессии Keycloak. Для фрейма Caddy отдаёт `X-Frame-Options SAMEORIGIN` вместо `DENY`. Своя форма логина с паролем (ROPC) отвергнута: устаревший поток, ломает TOTP и brute-force защиту.
 
+### ADR-023 Вход сотрудников по коду из письма, два издателя токенов, режим стенда (FE-UI-04)
+Сотрудник входит по рабочей почте: `POST /package/api/v1/auth/code` → 6-значный код письмом, `verify` → access-токен в памяти вкладки и refresh в httpOnly-cookie `subsidy_session` (`SameSite=Strict`, путь `/package/api/v1/auth`, ротация при каждом обновлении). Сессии сотрудников выпускает `package` (ES256, `STAFF_TOKEN_SIGNING_KEY`, JWKS `/internal/staff/jwks`), Keycloak остаётся издателем только для межсервисных `svc-*`. Сервисы принимают оба издателя: декодер выбирается по `iss` (`IssuerJwtDecoder` в `libs/common`), токен сотрудника с `azp` отвергается. Keycloak во фрейме (ADR-022) больше не используется для сотрудников: пароль и TOTP не нужны, почта и так второй фактор, а форма входа одинакова во всех трёх кейсах.
+Коды хранятся только в виде хэша с солью `STAFF_CODE_PEPPER`, живут `STAFF_CODE_MINUTES`, 5 попыток, повторная отправка не чаще `STAFF_RESEND_SECONDS`; на gateway — лимит `RATE_LOGINS_PER_MINUTE` по IP. Войти может только заведённый сотрудник (`STAFF_BOOTSTRAP_EMAIL` — первый старший; дальше приглашения в «Сотрудниках»); у неизвестной почты ответ такой же, чтобы не раскрывать список.
+`STAND_MODE` переключает стенд: `demo` — демо-сотрудники, код `000000` и код в ответе API (видно на странице входа, как в песочнице); `prod` — демо-сотрудники отключаются при старте, код только письмом. Почта — общий ящик всех кейсов (корневой `MAIL.md`, `infra/mail.env`); без SMTP письмо не уходит, вход остаётся рабочим только в демо-режиме.
+
 ## Лицензии зависимостей
 | Зависимость | Лицензия | Кто добавил |
 |---|---|---|
@@ -85,6 +90,7 @@ GitHub Actions не стартуют (биллинг аккаунта), поэт
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
 | oidc-client-ts / pdfjs-dist / react-dropzone / recharts | Apache-2.0 / Apache-2.0 / MIT / MIT | F1/F2 |
 | @tanstack/react-query | MIT | F2 |
+| spring-boot-starter-mail, Jakarta Mail API / Angus Mail (письма с кодом входа) | Apache-2.0 / EPL-2.0, EDL-1.0 | B1 |
 | Liberation Sans (шрифт в PDF-экспорте протокола rules) | SIL OFL 1.1 | B3 |
 | Остальное фронта (компоненты реестров, иконки, шрифты) | как в `../../proxodnaya/docs/DECISIONS.md` | F2 |
 

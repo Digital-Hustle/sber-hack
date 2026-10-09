@@ -13,3 +13,4 @@ models/
 .idea/
 .vscode/
 .DS_Store
+mail.env

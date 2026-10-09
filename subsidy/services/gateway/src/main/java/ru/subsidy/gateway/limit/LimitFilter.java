@@ -37,6 +37,8 @@ public class LimitFilter implements WebFilter {
     private static final PathPattern FILES = PARSER.parse("/package/api/v1/packages/{id}/files");
     private static final PathPattern VERSIONS = PARSER.parse("/package/api/v1/packages/{id}/files/{fileId}/versions");
     private static final PathPattern ASSISTANT = PARSER.parse("/assistant/api/v1/**");
+    private static final PathPattern LOGIN = PARSER.parse("/package/api/v1/auth/{step:code|verify}");
+    private static final String FORWARDED = "X-Forwarded-For";
 
     private final LimitProperties props;
     private final Clock clock;
@@ -74,16 +76,28 @@ public class LimitFilter implements WebFilter {
             return reject(exchange, HttpStatus.PAYLOAD_TOO_LARGE, "PAYLOAD_TOO_LARGE",
                     "Запрос больше " + size, "Разделите загрузку на несколько частей", 0);
         }
-        if (kind == Kind.OTHER) {
-            return chain.filter(exchange);
-        }
-        int limit = kind == Kind.UPLOAD ? props.uploadsPerMinute() : props.questionsPerMinute();
-        return exchange.getPrincipal().map(Principal::getName).defaultIfEmpty("anonymous").flatMap(user -> {
+        return kind == Kind.OTHER ? chain.filter(exchange) : limited(exchange, chain, kind);
+    }
+
+    private Mono<Void> limited(ServerWebExchange exchange, WebFilterChain chain, Kind kind) {
+        // до входа пользователя нет — попытки входа считаем по адресу клиента (Caddy кладёт его первым в X-Forwarded-For)
+        Mono<String> key = kind == Kind.LOGIN ? Mono.just(client(exchange.getRequest()))
+                : exchange.getPrincipal().map(Principal::getName).defaultIfEmpty("anonymous");
+        int limit = switch (kind) {
+            case UPLOAD -> props.uploadsPerMinute();
+            case LOGIN -> props.loginsPerMinute();
+            default -> props.questionsPerMinute();
+        };
+        return key.flatMap(user -> {
             long waitMs = windows.acquire(kind + ":" + user, limit, clock.millis());
             if (waitMs == 0) {
                 return chain.filter(exchange);
             }
-            String detail = kind == Kind.UPLOAD ? "Слишком много загрузок подряд" : "Слишком много вопросов подряд";
+            String detail = switch (kind) {
+                case UPLOAD -> "Слишком много загрузок подряд";
+                case LOGIN -> "Слишком много попыток входа";
+                default -> "Слишком много вопросов подряд";
+            };
             return reject(exchange, HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", detail, "Подождите минуту",
                     (waitMs + SECOND_MS - 1) / SECOND_MS);
         });
@@ -94,10 +108,23 @@ public class LimitFilter implements WebFilter {
             return Kind.OTHER;
         }
         PathContainer path = request.getPath().pathWithinApplication();
+        Kind kind = Kind.OTHER;
         if (FILES.matches(path) || VERSIONS.matches(path)) {
-            return Kind.UPLOAD;
+            kind = Kind.UPLOAD;
+        } else if (LOGIN.matches(path)) {
+            kind = Kind.LOGIN;
+        } else if (ASSISTANT.matches(path)) {
+            kind = Kind.ASK;
         }
-        return ASSISTANT.matches(path) ? Kind.ASK : Kind.OTHER;
+        return kind;
+    }
+
+    private static String client(ServerHttpRequest request) {
+        String forwarded = request.getHeaders().getFirst(FORWARDED);
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].strip();
+        }
+        return request.getRemoteAddress() == null ? "unknown" : request.getRemoteAddress().getAddress().getHostAddress();
     }
 
     private static Mono<Void> reject(ServerWebExchange exchange, HttpStatus status, String code, String detail,
@@ -115,6 +142,6 @@ public class LimitFilter implements WebFilter {
     }
 
     private enum Kind {
-        UPLOAD, ASK, OTHER
+        UPLOAD, ASK, LOGIN, OTHER
     }
 }

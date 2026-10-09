@@ -30,6 +30,10 @@ app:
     questions-per-minute: ${RATE_QUESTIONS_PER_MINUTE:20}
     upload-max-mb: ${GATEWAY_UPLOAD_MAX_MB:512}
     body-max-kb: ${GATEWAY_BODY_MAX_KB:1024}
+    logins-per-minute: ${RATE_LOGINS_PER_MINUTE:20}
+  staff-token:
+    issuer: ${STAFF_TOKEN_ISSUER:https://localhost/package}
+    jwks-uri: ${STAFF_JWKS_URI:http://localhost:8081/internal/staff/jwks}
   oidc:
     issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/subsidy}
     jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/subsidy/protocol/openid-connect/certs}

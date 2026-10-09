@@ -27,6 +27,19 @@ spring:
       group-id: package
       auto-offset-reset: earliest
       enable-auto-commit: false
+  mail:
+    # общий ящик кейсов (корневой MAIL.md): SMTP_* одинаковы для «Субсидий», «Проходной» и «Документов»
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:465}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    protocol: ${SMTP_PROTOCOL:smtps}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
   security:
     oauth2:
       resourceserver:
@@ -59,3 +72,9 @@ management:
 springdoc:
   api-docs:
     path: /v3/api-docs
+
+app:
+  # ADR-023: токены сотрудников выпускает package; сервисы берут ключи по внутренней сети
+  staff-token:
+    issuer: ${STAFF_TOKEN_ISSUER:https://localhost/package}
+    jwks-uri: ${STAFF_JWKS_URI:http://localhost:8081/internal/staff/jwks}

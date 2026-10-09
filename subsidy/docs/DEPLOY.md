@@ -39,6 +39,11 @@ https://subsidy.digital-hustle.ru (сервер 217.12.40.215, за общим e
 Realm импортируется только в пустую БД Keycloak: на работающем стенде новые настройки realm (тема входа `subsidy`, «запомнить меня») ставит
 `docker compose exec keycloak /opt/keycloak/bin/kcadm.sh update realms/subsidy -s loginTheme=subsidy -s rememberMe=true --server http://localhost:8080/auth --realm master --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"` (после `up -d keycloak` с примонтированной темой).
 
+## Режим стенда и вход сотрудников (ADR-023)
+`STAND_MODE` в `infra/.env`: `demo` — демо-сотрудники (`specialist|senior|auditor@demo.subsidy.local`), код `000000` и код входа прямо на странице; `prod` — демо-сотрудники отключаются при старте package, код только письмом. Переключение: правка `.env` → `docker compose up -d package`.
+Обязательны `STAFF_TOKEN_SIGNING_KEY` (ES256, генерирует `scripts/gen-env.sh`) и `STAFF_CODE_PEPPER`. Первый живой старший специалист заводится из `STAFF_BOOTSTRAP_EMAIL` при старте package, дальше — приглашения в разделе «Сотрудники».
+Почта — общий ящик всех кейсов: `cp infra/mail.env.example infra/mail.env` и заполнить `SMTP_*` (или указать общий файл сервера через `MAIL_ENV_FILE=/root/shared/mail.env`); корневой [MAIL.md](../../MAIL.md). Без SMTP письма не уходят — вход работает только в демо-режиме (код виден в ответе API; `STAFF_LOG_CODES=true` пишет его в лог package).
+
 ## За общим edge (сервер на несколько кейсов)
 Порты 80/443 держит общий Caddy (`edge/`, TLS Let's Encrypt, маршрут по имени хоста). Кейс поднимается с
 `CADDY_SCHEME=http://`, `HTTP_BIND=127.0.0.1:8280`, `HTTPS_BIND=127.0.0.1:8643`, `PUBLIC_HOST=KC_HOSTNAME=subsidy.<домен>`,

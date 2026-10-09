@@ -3,7 +3,21 @@
 Все запросы идут через gateway: `/<service>/api/v1/...` (`package`, `docproc`, `rules`, `assistant`); gateway переписывает путь в `/api/v1/...` сервиса (как в «Проходной»). Коллекции — `{items: [...], page: {next, total}}`, request — `*Rq`, response — `*Rs`. Внутренние вызовы — `/internal/**`, наружу gateway их не пропускает. Ошибки — `application/problem+json`: `{type, title, status, detail, code, hint, traceId, errors?}` (`detail`/`hint` — по-русски). Курсоры, `options`, SSE, `Idempotency-Key` — `../../.agents/skills/backend-spring/references/frontend-contract.md`. Деньги в JSON — **строки** `"12345.67"` (без потерь точности), даты — `YYYY-MM-DD`.
 
 ## Аутентификация
-OIDC через Keycloak (`https://<host>/auth/realms/subsidy`, клиент `subsidy-specialist`, PKCE), `Authorization: Bearer <JWT>`. Роли: `SPECIALIST` (пакеты, загрузка, правки, протокол), `SENIOR_SPECIALIST` (+ решения, программы, переразбор; TOTP), `AUDITOR` (только чтение протоколов, истории, статистики). SSE: `GET /<svc>/api/v1/stream/ticket` → одноразовый `ticket` на 30 с.
+Сотрудники входят по коду из письма (ADR-023): токен сессии выпускает `package`, `Authorization: Bearer <JWT>`. Keycloak остаётся издателем только для межсервисных `svc-*` (`client_credentials`); сервисы принимают обоих издателей по `iss`. Роли: `SPECIALIST` (пакеты, загрузка, правки, протокол), `SENIOR_SPECIALIST` (+ решения, программы, переразбор; TOTP), `AUDITOR` (только чтение протоколов, истории, статистики). SSE: `GET /<svc>/api/v1/stream/ticket` → одноразовый `ticket` на 30 с.
+
+### Вход сотрудников (`/package/api/v1/auth`, без токена)
+- `GET /auth/mode` → `{mode: demo|prod, demo: [сотрудник], demoCode}` — в `prod` список пуст, `demoCode` = null
+- `POST /auth/code` `{email}` → `{sentTo, expiresAt, resendAt, demoCode}` — письмо с 6-значным кодом; `demoCode` приходит только в демо-режиме. Неизвестная почта даёт такой же ответ (список сотрудников не раскрываем). Ошибки: 429 `LOGIN_RESEND_TOO_SOON`, 429 `RATE_LIMITED` (лимит gateway `RATE_LOGINS_PER_MINUTE`=20 по IP), 503 `MAIL_UNAVAILABLE`
+- `POST /auth/verify` `{email, code}` → `{accessToken, expiresAt, sessionExpiresAt, user}` + httpOnly-cookie `subsidy_session` (refresh, `SameSite=Strict`, путь `/package/api/v1/auth`). Ошибки: 400 `LOGIN_CODE_INVALID`, 410 `LOGIN_CODE_EXPIRED`, 429 `LOGIN_CODE_LOCKED` (5 попыток)
+- `POST /auth/refresh` (cookie) → новая пара, cookie ротируется; 401 `SESSION_EXPIRED`
+- `POST /auth/logout` (cookie) → 204, сессия закрыта
+- `GET /auth/me` → текущий сотрудник `{id, name, email, role, status, demo, lastSeen}`
+
+### Сотрудники (`/package/api/v1/staff`, только `SENIOR_SPECIALIST`)
+- `GET /staff` → `{items: [сотрудник]}`
+- `POST /staff` `{name, email, role}` → 201, сотрудник в статусе `INVITED` (войдёт по коду на эту почту)
+- `PATCH /staff/{id}` `{role?, active?}` → сотрудник; снятие последнего старшего → 409 `STAFF_LAST_SENIOR`
+- `GET /package/internal/staff/jwks` — публичные ключи для проверки токенов сотрудников (внутри сети, наружу gateway не пропускает)
 
 ## package (`/package/api/v1`)
 - `GET /organizations?inn=` → организация или 404; `POST /organizations` `{inn}` → 201 (ИНН проверяется контрольной суммой, `INN_INVALID`)
@@ -70,6 +84,13 @@ OIDC через Keycloak (`https://<host>/auth/realms/subsidy`, клиент `su
 | INN_INVALID | 400 | ИНН не прошёл проверку контрольной суммы | Проверьте цифры ИНН |
 | PACKAGE_DECIDED | 409 | По пакету уже принято решение | Создайте новый пакет |
 | RATE_LIMITED | 429 | Слишком много загрузок подряд (помощник: «вопросов подряд») | Подождите минуту; заголовок `Retry-After` — сколько секунд. Лимиты gateway: `RATE_UPLOADS_PER_MINUTE`=30, `RATE_QUESTIONS_PER_MINUTE`=20 на пользователя |
+| LOGIN_CODE_INVALID | 400 | Код не подошёл | Проверьте код из письма — осталось попыток: N |
+| LOGIN_CODE_EXPIRED | 410 | Срок кода истёк | Запросите новый код |
+| LOGIN_CODE_LOCKED | 429 | Слишком много попыток | Запросите новый код |
+| LOGIN_RESEND_TOO_SOON | 429 | Код уже отправлен | Повторная отправка через N секунд |
+| SESSION_EXPIRED | 401 | Сессия истекла | Войдите снова |
+| STAFF_LAST_SENIOR | 409 | Это последний старший специалист | Назначьте другого старшего, потом меняйте роль |
+| MAIL_UNAVAILABLE | 503 | Не удалось отправить письмо | Повторите позже или обратитесь к администратору стенда |
 | PAYLOAD_TOO_LARGE | 413 | Запрос больше {max} | Загрузка ≤ `GATEWAY_UPLOAD_MAX_MB` (512), прочие запросы ≤ `GATEWAY_BODY_MAX_KB` (1024); лимит на файл — `FILE_TOO_LARGE` в package |
 
 ## Причины непригодности и замечания (в результате, не HTTP)
