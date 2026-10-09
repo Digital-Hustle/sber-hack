@@ -86,6 +86,7 @@
 | KIOSK_NOT_PAIRED | Терминал не подключён | Обратитесь к инженеру |
 
 ## Внутренние API (только service accounts)
+Вызывающий сервис получает токен по OAuth2 client-credentials (Keycloak, клиент `svc-<service>` с service account и ролью `SVC_<SERVICE>`); access **[есть]**: клиент `svc-access`, секрет `KC_SVC_ACCESS_SECRET`, токен навешивается на все клиенты face/people/shift. access берёт зону пункта пропуска из people: неизвестный пункт → 404 без записи в журнал, зона вне `zoneIds` → `NO_ZONE_PERMIT`.
 - face: `POST /internal/face/verify` `{workerId, frames[], challenge}` → `{match, score, liveness, quality, reason?}`
 - people **[есть]** (роль `SVC_ACCESS`): `GET /internal/people/workers/{id}/access-profile` → `{status, fullName, position, contractor, deviceIds (действующие), permits: [{type, validUntil}], zoneIds}`, 404 — рабочего нет; `GET /internal/people/checkpoints/{id}` → `{id, zoneId, siteId, name}`
 - shift: `GET /internal/shift/workers/{id}/active-shift?at=` → `{shiftId, start, end, windowOk}`
