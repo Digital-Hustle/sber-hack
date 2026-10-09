@@ -9,7 +9,7 @@ COPY config config
 COPY libs libs
 ARG SERVICE
 COPY ${SERVICE} ${SERVICE}
-RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -q :${SERVICE}:bootJar -x test -x checkstyleMain \
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew --no-daemon -q :${SERVICE}:bootJar -x test -x checkstyleMain \
  && java -Djarmode=tools -jar ${SERVICE}/build/libs/${SERVICE}.jar extract --layers --launcher --destination /out
 
 FROM eclipse-temurin:21-jre

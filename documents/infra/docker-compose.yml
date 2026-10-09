@@ -17,7 +17,7 @@ x-java: &java
     postgres: { condition: service_healthy }
     kafka: { condition: service_healthy }
   healthcheck: &java-health
-    test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/$${SERVER_PORT}"]
+    test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/$$SERVER_PORT"]   # sh в образе — dash, /dev/tcp есть только в bash
     interval: 10s
     timeout: 3s
     retries: 30
@@ -119,6 +119,8 @@ services:
       INTAKE_URL: ${INTAKE_URL:-http://intake:8081}
       DOCPROC_URL: ${DOCPROC_URL:-http://docproc:8082}
       REVIEW_URL: ${REVIEW_URL:-http://review:8083}
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
     depends_on:
       keycloak: { condition: service_started }
 

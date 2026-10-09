@@ -36,4 +36,4 @@ Realm `documents` из `infra/keycloak/realm-documents.json` (секреты —
 - Модели не уходят в интернет в локальном режиме; при облачном провайдере — предупреждение в README и на защите (ПДн уходят провайдеру).
 
 ## 5. Заголовки и транспорт
-Caddy: HTTPS (Let's Encrypt или `tls internal`), HSTS, CSP `default-src 'self'` (+ `blob:` для превью), `X-Content-Type-Options`, `Referrer-Policy: no-referrer` (ключ заявки в URL-фрагменте, не в query — не уходит в Referer и логи), `Cache-Control: no-store` для `/files/**` и ответов с ПДн. CORS — только свой origin.
+Caddy: HTTPS (Let's Encrypt или `tls internal`), HSTS, CSP `default-src 'self'` (+ `blob:` для превью), `X-Content-Type-Options`, `Referrer-Policy: no-referrer` (ключ заявки в URL-фрагменте, не в query — не уходит в Referer и логи), `Cache-Control: no-store` для `/files/**` и ответов с ПДн. CORS — только свой origin (`app.cors.allowed-origins` в gateway). Gateway: `/internal/**` → 404, лимит тела по маршруту (`RequestSize`: intake 25 МБ, прочие 1 МБ → 413), rate-limit по IP клиента (последний `X-Forwarded-For`, его выставляет Caddy) → 429 `RATE_LIMITED` + `Retry-After`.

@@ -13,7 +13,7 @@ docproc ──► LlmGateway  (libs/llm; интерфейс)
    ru.documents.llm.infra.ollama.OllamaAdapter           // format: <json schema>, keep_alive
 ```
 - Бин выбирается `@ConditionalOnProperty(name = "app.llm.provider")`. Вне `ru.documents.llm.infra` никто не знает о провайдерах (ArchUnit `LlmIsolationTest` + `guard.sh`).
-- Общее для всех адаптеров (`DefaultLlmGateway`): таймаут, retry ×2 с экспоненциальной паузой, честный семафор `LLM_MAX_CONCURRENCY`; вместо circuit breaker — при `ModelUnavailableException` задание docproc уходит в `WAITING_MODEL` и откладывается на `waiting-model-retry`, после восстановления модели догоняет само, метрики `llm_request_seconds{provider,model,outcome}`, запись в `llm_calls` (через SPI, который реализует docproc).
+- Общее для всех адаптеров (`DefaultLlmGateway`): таймаут, retry ×2 с экспоненциальной паузой, свой circuit breaker (3 неудачи подряд → 15 с сразу `ModelUnavailableException`, без Resilience4j), честный семафор `LLM_MAX_CONCURRENCY`, метрики `llm_request_seconds{provider,model,outcome}` и `llm_schema_invalid_total`, журнал вызовов через `LlmCallListener` (в docproc — `LlmCallJournal`). При `ModelUnavailableException` задание docproc уходит в `WAITING_MODEL` и откладывается на `waiting-model-retry`, после восстановления модели догоняет само.
 - Ответ проверяется по JSON Schema (networknt json-schema-validator, Apache-2.0). Невалиден → одна перегенерация с текстом ошибки → `MODEL_INVALID_OUTPUT` → `NEEDS_REVIEW`. Модель недоступна / CB открыт → `ModelUnavailableException` → стадия `WAITING_MODEL` (не «готово», СН).
 
 ## Настройки (`infra/.env`)

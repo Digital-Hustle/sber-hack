@@ -34,7 +34,7 @@ jobs:
         with:
           filters: |
             frontend: ['documents/frontend/**', 'documents/contracts/**']
-            infra: ['documents/infra/**']
+            infra: ['documents/infra/**', 'documents/services/Dockerfile', 'documents/services/ocr/Dockerfile', 'documents/frontend/Dockerfile', 'documents/scripts/smoke.sh', 'documents/scripts/gen-env.sh']
       - id: svc
         name: изменённые сервисы (libs/, build-logic/, gradle/, config/ → все)
         run: |
@@ -176,19 +176,30 @@ jobs:
 
   smoke:
     needs: [changes, services, frontend, security]
-    if: always() && github.ref == 'refs/heads/main' && needs.changes.outputs.has_infra == 'true' && (needs.services.result == 'success' || needs.services.result == 'skipped') && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') && needs.security.result == 'success'
+    if: always() && (github.ref == 'refs/heads/main' || needs.changes.outputs.infra == 'true') && needs.changes.outputs.has_infra == 'true' && (needs.services.result == 'success' || needs.services.result == 'skipped') && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') && needs.security.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # Модель для полного прогона eval: облачный OpenAI-совместимый провайдер, если задан секрет (локальная модель на раннере слишком медленная).
+      LLM_API_KEY: ${{ secrets.DOCS_LLM_API_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - run: ../scripts/gen-env.sh && docker compose up -d --build --wait --wait-timeout 600
+      - name: .env стенда
+        working-directory: documents/infra
+        run: |
+          ../scripts/gen-env.sh
+          if [ -n "$LLM_API_KEY" ]; then
+            sed -i "s|^LLM_PROVIDER=.*|LLM_PROVIDER=${{ vars.DOCS_LLM_PROVIDER || 'openai' }}|; s|^LLM_BASE_URL=.*|LLM_BASE_URL=${{ vars.DOCS_LLM_BASE_URL }}|; s|^LLM_MODEL=.*|LLM_MODEL=${{ vars.DOCS_LLM_MODEL }}|; s|^LLM_API_KEY=.*|LLM_API_KEY=$LLM_API_KEY|" .env
+          fi
+      - run: docker compose up -d --build --wait --wait-timeout 600
         working-directory: documents/infra
       - run: documents/scripts/smoke.sh https://localhost
-      - if: hashFiles('documents/eval/run.py') != ''
+      - if: hashFiles('documents/eval/run.py') != '' && env.LLM_API_KEY != ''
         uses: astral-sh/setup-uv@v6
-      - name: eval на синтетике через API стенда
-        if: hashFiles('documents/eval/run.py') != ''
+      - name: eval на синтетике через API стенда (типы и стадии; поля — с токеном оператора)
+        if: hashFiles('documents/eval/run.py') != '' && env.LLM_API_KEY != ''
         working-directory: documents/eval
-        run: uv run python run.py --set synthetic --api https://localhost
+        run: uv run python run.py --set synthetic --api https://localhost --insecure --max-errors 0
       - if: failure()
-        run: docker compose logs --tail=200
+        run: docker compose ps -a && docker compose logs --tail=200
         working-directory: documents/infra

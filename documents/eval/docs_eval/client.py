@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -24,15 +25,18 @@ class ApiError(RuntimeError):
 class DocResult:
     stage: str | None
     type: str | None
-    fields: dict[str, tuple[str | None, float | None]]
+    fields: dict[str, tuple[str | None, float | None]] | None
     seconds: float
 
 
 class Api:
-    def __init__(self, base: str, operator_token: str | None, timeout: float = 30.0) -> None:
+    def __init__(self, base: str, operator_token: str | None, timeout: float = 30.0, insecure: bool = False) -> None:
         self.base = base.rstrip("/")
         self.operator_token = operator_token
         self.timeout = timeout
+        self.retries_429 = 10
+        # Локальный стенд за Caddy с внутренним CA (https://localhost) — только по явному флагу.
+        self.ssl = ssl._create_unverified_context() if insecure else None
 
     def _call(self, method: str, path: str, *, auth: str | None, body: bytes | None = None,
               ctype: str | None = None, headers: dict[str, str] | None = None) -> dict:
@@ -44,13 +48,19 @@ class Api:
             req.add_header("Content-Type", ctype)
         for k, v in (headers or {}).items():
             req.add_header(k, v)
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as rs:
-                raw = rs.read()
-        except urllib.error.HTTPError as e:
-            detail = e.read().decode("utf-8", "replace")[:300]
-            raise ApiError(f"{method} {path} → {e.code}: {detail}") from e
-        return json.loads(raw) if raw else {}
+        for attempt in range(self.retries_429 + 1):
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout, context=self.ssl) as rs:
+                    raw = rs.read()
+                return json.loads(raw) if raw else {}
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < self.retries_429:
+                    # Лимит частоты gateway (FR-06): ждём, сколько просит Retry-After, и повторяем.
+                    time.sleep(min(float(e.headers.get("Retry-After") or 5), 120.0))
+                    continue
+                detail = e.read().decode("utf-8", "replace")[:300]
+                raise ApiError(f"{method} {path} → {e.code}: {detail}") from e
+        raise ApiError(f"{method} {path} → 429")
 
     def create_application(self) -> tuple[str, str]:
         rs = self._call("POST", "/intake/api/v1/applicant/applications", auth=None,
@@ -68,18 +78,21 @@ class Api:
                         headers={"Idempotency-Key": uuid.uuid4().hex})
         return rs["documentId"]
 
-    def wait_stage(self, app_id: str, key: str, doc_id: str, deadline_s: float, poll_s: float = 2.0) -> str | None:
-        """Ждём итоговую стадию документа (PARSED, NEEDS_REVIEW, UNREADABLE, FAILED…) через кабинет соискателя."""
+    def wait_stage(
+        self, app_id: str, key: str, doc_id: str, deadline_s: float, poll_s: float = 2.0
+    ) -> tuple[str | None, str | None]:
+        """Ждём итоговую стадию документа через кабинет соискателя. Возвращает (стадия, определённый тип)."""
         stop = time.monotonic() + deadline_s
-        stage = None
+        stage = detected = None
         while time.monotonic() < stop:
             app = self._call("GET", f"/intake/api/v1/applicant/applications/{app_id}", auth=f"Applicant {key}")
             doc = next((d for d in app.get("documents", []) if d.get("id") == doc_id), None)
             stage = doc.get("stage") if doc else None
+            detected = doc.get("detectedType") if doc else None
             if stage in DONE_STAGES:
-                return stage
+                return stage, detected
             time.sleep(poll_s)
-        return stage
+        return stage, detected
 
     def result(self, doc_id: str) -> dict:
         if not self.operator_token:
@@ -91,10 +104,13 @@ class Api:
         started = time.monotonic()
         app_id, key = self.create_application()
         doc_id = self.upload(app_id, key, name, data, mime)
-        stage = self.wait_stage(app_id, key, doc_id, deadline_s)
+        stage, detected = self.wait_stage(app_id, key, doc_id, deadline_s)
         seconds = time.monotonic() - started
         if stage not in DONE_STAGES:
             raise ApiError(f"не дождались итоговой стадии за {deadline_s:.0f} с (последняя: {stage})")
+        if not self.operator_token:
+            # Без токена оператора меряем только то, что видит соискатель: стадию и тип; поля — не меряются.
+            return DocResult(stage=stage, type=detected, fields=None, seconds=seconds)
         rs = self.result(doc_id)
         fields = {f["name"]: (f.get("value"), f.get("confidence")) for f in rs.get("fields") or [] if f.get("name")}
         return DocResult(stage=rs.get("stage") or stage, type=rs.get("type"), fields=fields, seconds=seconds)

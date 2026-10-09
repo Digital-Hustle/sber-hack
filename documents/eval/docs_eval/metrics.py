@@ -55,7 +55,7 @@ class Outcome:
     unreadable: bool
     stage: str | None
     predicted_type: str | None
-    predicted_fields: dict[str, tuple[str | None, float | None]] = field(default_factory=dict)
+    predicted_fields: dict[str, tuple[str | None, float | None]] | None = field(default_factory=dict)
     seconds: float | None = None
     category: str = ""
     error: str | None = None
@@ -128,6 +128,11 @@ def evaluate(outcomes: list[Outcome]) -> Report:
         unknown += pred == "UNKNOWN"
         review += o.stage in REVIEW_STAGES
         doc_ok = ok_type
+        if o.predicted_fields is None:  # поля не меряли (нет токена оператора) — только тип
+            cat = o.category or "—"
+            cat_total[cat] += 1
+            cat_ok[cat] += doc_ok
+            continue
         for name, exp_raw in o.expected_fields.items():
             exp = normalize(name, exp_raw)
             got_raw, conf = o.predicted_fields.get(name, (None, None)) if ok_type else (None, None)
