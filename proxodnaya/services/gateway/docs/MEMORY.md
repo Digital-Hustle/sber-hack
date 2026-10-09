@@ -5,7 +5,7 @@
 ## 1. Текущее состояние
 - GW-01..08 сделаны: маршруты `/<svc>/api/v1/** → /api/v1/**`, JWT нескольких издателей (JWKS), `/internal/**` и actuator сервисов → 404, CORS только `CORS_ORIGINS`, rate-limit (окно в памяти, ADR-038), лимит тела `MAX_BODY`, SSE без таймаута, `X-Request-Id`, problem+json, 503 при недоступном upstream.
 - Management (health/prometheus) — порт 8079, наружу не публикуется.
-- Второй издатель — токены people (ADR-040): `gateway.issuers[1]` из env `PEOPLE_TOKEN_ISSUER`/`PEOPLE_JWKS_URI`, ES256; публичны `/people/api/v1/auth/device/{challenge,token}` (#PR).
+- Второй издатель — токены people (ADR-040): `gateway.issuers[1]` из env `PEOPLE_TOKEN_ISSUER`/`PEOPLE_JWKS_URI`, ES256; публичны `/people/api/v1/auth/device/{challenge,token}` (#91).
 
 ## 2. Карта сервиса
 | Путь | Что |
