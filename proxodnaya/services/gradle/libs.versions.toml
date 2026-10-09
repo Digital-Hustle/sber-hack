@@ -15,6 +15,7 @@ resilience4j = "2.4.0"
 archunit = "1.5.0"
 uuid-creator = "6.1.1"
 checkstyle = "13.0.0"
+poi = "5.5.1"
 
 [libraries]
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
@@ -33,3 +34,4 @@ uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuid-
 archunit = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
