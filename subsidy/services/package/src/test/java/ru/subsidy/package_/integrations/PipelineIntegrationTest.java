@@ -107,10 +107,12 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
         UUID documentId = UUID.randomUUID();
         assertThat(service.handle(UUID.randomUUID(), "DocumentParsed", node(Map.of("fileId", fileId.toString(),
                 "documentId", documentId.toString(), "type", "COST_ESTIMATE", "typeConfidence", 0.93,
-                "fromPage", 1, "toPage", 1)))).isPresent();
-        assertThat(dsl.select(Tables.FILE_DOCUMENTS.DOC_TYPE).from(Tables.FILE_DOCUMENTS)
-                .where(Tables.FILE_DOCUMENTS.DOCUMENT_ID.eq(documentId)).fetchOne(Tables.FILE_DOCUMENTS.DOC_TYPE))
-                .isEqualTo("COST_ESTIMATE");
+                "fromPage", 1, "toPage", 1, "source", "TEXT_LAYER", "stage", "NEEDS_REVIEW")))).isPresent();
+        var doc = dsl.selectFrom(Tables.FILE_DOCUMENTS)
+                .where(Tables.FILE_DOCUMENTS.DOCUMENT_ID.eq(documentId)).fetchOne();
+        assertThat(doc.getDocType()).isEqualTo("COST_ESTIMATE");
+        assertThat(doc.getSource()).isEqualTo("TEXT_LAYER");
+        assertThat(doc.getStage()).isEqualTo("NEEDS_REVIEW");
 
         assertThat(service.handle(UUID.randomUUID(), "PackageChecked", node(Map.of("packageId", packageId.toString(),
                 "protocolStatus", "WARN", "completeness", 80, "failed", 0, "warnings", 2, "needsReview", 1))))

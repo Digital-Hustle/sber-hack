@@ -46,6 +46,7 @@ public class PipelineEventsService {
     private static final String TYPE = "type";
     private static final String TYPE_CONFIDENCE = "typeConfidence";
     private static final String MODEL = "MODEL";
+    private static final String SOURCE = "source";
     private static final String PARSED = "PARSED";
     private static final String PROTOCOL_STATUS = "protocolStatus";
     private static final String COMPLETENESS = "completeness";
@@ -146,6 +147,9 @@ public class PipelineEventsService {
         String docType = text(payload, TYPE);
         BigDecimal confidence = payload.hasNonNull(TYPE_CONFIDENCE)
                 ? payload.path(TYPE_CONFIDENCE).decimalValue() : null;
+        String source = Optional.ofNullable(text(payload, SOURCE)).orElse(MODEL);
+        String stage = Optional.ofNullable(text(payload, STAGE)).orElse(PARSED);
+        String reason = text(payload, REASON);
         OffsetDateTime now = OffsetDateTime.now(clock);
         dsl.insertInto(Tables.FILE_DOCUMENTS)
                 .set(Tables.FILE_DOCUMENTS.DOCUMENT_ID, documentId)
@@ -155,21 +159,23 @@ public class PipelineEventsService {
                 .set(Tables.FILE_DOCUMENTS.TO_PAGE, payload.path(TO_PAGE).asInt(1))
                 .set(Tables.FILE_DOCUMENTS.DOC_TYPE, docType)
                 .set(Tables.FILE_DOCUMENTS.TYPE_CONFIDENCE, confidence)
-                .set(Tables.FILE_DOCUMENTS.SOURCE, MODEL)
-                .set(Tables.FILE_DOCUMENTS.STAGE, PARSED)
+                .set(Tables.FILE_DOCUMENTS.SOURCE, source)
+                .set(Tables.FILE_DOCUMENTS.STAGE, stage)
+                .set(Tables.FILE_DOCUMENTS.REASON_CODE, reason)
                 .set(Tables.FILE_DOCUMENTS.UPDATED_AT, now)
                 .onConflict(Tables.FILE_DOCUMENTS.DOCUMENT_ID).doUpdate()
                 .set(Tables.FILE_DOCUMENTS.DOC_TYPE, docType)
                 .set(Tables.FILE_DOCUMENTS.TYPE_CONFIDENCE, confidence)
-                .set(Tables.FILE_DOCUMENTS.SOURCE, MODEL)
-                .set(Tables.FILE_DOCUMENTS.STAGE, PARSED)
-                .set(Tables.FILE_DOCUMENTS.REASON_CODE, (String) null)
+                .set(Tables.FILE_DOCUMENTS.SOURCE, source)
+                .set(Tables.FILE_DOCUMENTS.STAGE, stage)
+                .set(Tables.FILE_DOCUMENTS.REASON_CODE, reason)
                 .set(Tables.FILE_DOCUMENTS.UPDATED_AT, now)
                 .execute();
         Map<String, Object> data = new HashMap<>();
         data.put(FILE_ID, fileId.toString());
         data.put(DOCUMENT_ID, documentId.toString());
-        data.put(STAGE, PARSED);
+        data.put(STAGE, stage);
+        data.put(REASON, reason);
         data.put(TYPE, docType);
         data.put(TYPE_CONFIDENCE, confidence);
         return packageId.map(id -> new PackageUpdate(id, EVENT_DOCUMENT, data));
