@@ -27,3 +27,4 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
 - 2026-10-09 · agent · feat(docproc): DP-12 таблицы позиций из ocr в извлечение полей
+- 2026-10-09 · subsidy-agent · DP-16: `pipeline/PipelineMetrics` — таймеры стадий text/segment/fields, уверенность вида по типам (SLO-корзины), исходы документов/файлов, повторы; таблица в ARCHITECTURE

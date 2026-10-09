@@ -50,3 +50,14 @@ package, ocr, `LlmGateway` — с таймаутом и CB.
 
 ## Конфигурация
 `DOCPROC_WORKERS`, `JOB_LEASE`, `JOB_MAX_ATTEMPTS`, `OCR_URL`, `PACKAGE_URL`, `CLASSIFY_MIN_CONFIDENCE`, `FIELD_REVIEW_THRESHOLD`, `VISION_FALLBACK_ENABLED`, `LLM_*`.
+
+## Метрики (DP-16, `/actuator/prometheus`)
+| Метрика | Теги | Зачем |
+|---|---|---|
+| `docproc_stage_duration_seconds` (гистограмма) | `stage`=text\|segment\|fields, `outcome`=ok\|error | p50/p95 стадий (EVAL «Время»), где узкое место |
+| `docproc_type_confidence` (SLO 0.5/0.7/0.8/0.9/0.95) | `type` | распределение уверенности модели по видам — для порогов `CLASSIFY_MIN_CONFIDENCE` и калибровки (DP-15) |
+| `docproc_documents_total` | `type`, `source`=MODEL\|SPECIALIST, `reason` | доля документов на ручную проверку и правок специалиста |
+| `docproc_files_finished_total` | `stage` | PARSED / NEEDS_REVIEW / UNREADABLE / FAILED |
+| `docproc_retries_total` | `code` | MODEL_UNAVAILABLE, MODEL_INVALID_OUTPUT, PIPELINE_ERROR |
+
+Теги только из закрытых словарей: без id и данных организаций. Вызовы модели дополнительно меряет `libs/llm` (`DefaultLlmGateway`).
