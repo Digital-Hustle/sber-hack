@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import ru.subsidy.common.security.CurrentUser;
 import ru.subsidy.rules.api.dto.AcceptedRs;
 import ru.subsidy.rules.api.dto.FieldRq;
 import ru.subsidy.rules.api.dto.Items;
+import ru.subsidy.rules.api.dto.RebuildRs;
 import ru.subsidy.rules.protocol.ProtocolView;
 
 /**
@@ -76,4 +78,14 @@ public interface ProtocolController {
     @GetMapping("/protocol/export")
     ResponseEntity<byte[]> export(@PathVariable UUID packageId,
                                   @RequestParam(defaultValue = "pdf") String format);
+
+    /**
+     * Пересборка проекции документов пакета из docproc (RUL-18) и перепроверка. Только SENIOR_SPECIALIST.
+     *
+     * @param packageId пакет
+     * @return итог (404 PACKAGE_NOT_FOUND, 503 DEPENDENCY_UNAVAILABLE)
+     */
+    @PostMapping("/projection/rebuild")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    RebuildRs rebuildProjection(@PathVariable UUID packageId);
 }

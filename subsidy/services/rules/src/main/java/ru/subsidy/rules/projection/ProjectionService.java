@@ -11,12 +11,15 @@ import java.util.UUID;
 
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.Record2;
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ru.subsidy.common.inbox.IdempotentConsumer;
 import ru.subsidy.rules.history.OrgHistoryService;
@@ -191,7 +194,53 @@ public class ProjectionService {
                 .execute();
     }
 
+    /**
+     * Сверяет документы пакета с docproc (RUL-18): документы с результатом — upsert, если версия результата
+     * в проекции старше или нет; документы, которых в docproc нет, — снимаются. Затем перепроверка.
+     *
+     * @param packageId пакет
+     * @param documents документы docproc (DocumentResult)
+     * @return итог сверки
+     */
+    @Transactional
+    public Reconciled reconcile(UUID packageId, List<JsonNode> documents) {
+        List<UUID> present = new ArrayList<>();
+        int updated = 0;
+        for (JsonNode doc : documents) {
+            UUID documentId = uuid(doc, DOCUMENT_ID);
+            present.add(documentId);
+            if (doc.hasNonNull(K_RESULT_VERSION) && stale(documentId, doc.path(K_RESULT_VERSION).asInt())) {
+                ObjectNode payload = doc.deepCopy();
+                payload.put(PACKAGE_ID, packageId.toString());
+                payload.set(VERSION, doc.path("fileVersion"));
+                upsertDocument(payload);
+                updated++;
+            }
+        }
+        int removed = dsl.update(Tables.PACKAGE_DOCUMENTS).set(Tables.PACKAGE_DOCUMENTS.REMOVED, true)
+                .set(Tables.PACKAGE_DOCUMENTS.UPDATED_AT, OffsetDateTime.now(clock))
+                .where(Tables.PACKAGE_DOCUMENTS.PACKAGE_ID.eq(packageId))
+                .and(Tables.PACKAGE_DOCUMENTS.REMOVED.isFalse())
+                .and(present.isEmpty() ? DSL.trueCondition() : Tables.PACKAGE_DOCUMENTS.DOCUMENT_ID.notIn(present))
+                .execute();
+        recheck.request(packageId);
+        return new Reconciled(documents.size(), updated, removed);
+    }
+
+    private boolean stale(UUID documentId, int resultVersion) {
+        Record2<Integer, Boolean> stored = dsl.select(Tables.PACKAGE_DOCUMENTS.RESULT_VERSION,
+                        Tables.PACKAGE_DOCUMENTS.REMOVED)
+                .from(Tables.PACKAGE_DOCUMENTS).where(Tables.PACKAGE_DOCUMENTS.DOCUMENT_ID.eq(documentId)).fetchOne();
+        return stored == null || stored.value1() == null || stored.value1() < resultVersion
+                || Boolean.TRUE.equals(stored.value2());
+    }
+
     private void parsed(JsonNode payload) {
+        upsertDocument(payload);
+        recheck.request(uuid(payload, PACKAGE_ID));
+    }
+
+    private void upsertDocument(JsonNode payload) {
         UUID documentId = uuid(payload, DOCUMENT_ID);
         UUID packageId = uuid(payload, PACKAGE_ID);
         Integer resultVersion = payload.hasNonNull(K_RESULT_VERSION) ? payload.path(K_RESULT_VERSION).asInt() : null;
@@ -225,7 +274,6 @@ public class ProjectionService {
                 .set(Tables.PACKAGE_DOCUMENTS.REMOVED, false)
                 .set(Tables.PACKAGE_DOCUMENTS.UPDATED_AT, now)
                 .execute();
-        recheck.request(packageId);
     }
 
     private void fileProblem(String type, JsonNode payload) {
@@ -252,5 +300,15 @@ public class ProjectionService {
 
     private static String text(JsonNode node, String field) {
         return node.hasNonNull(field) ? node.path(field).asText() : null;
+    }
+
+    /**
+     * Итог сверки с docproc.
+     *
+     * @param documents документов в docproc
+     * @param updated обновлено
+     * @param removed снято
+     */
+    public record Reconciled(int documents, int updated, int removed) {
     }
 }

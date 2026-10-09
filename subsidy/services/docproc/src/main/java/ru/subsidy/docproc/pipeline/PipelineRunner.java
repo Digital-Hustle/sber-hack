@@ -57,6 +57,7 @@ public class PipelineRunner {
     private final FieldValidator validator;
     private final TypeRegistry registry;
     private final DocprocProperties props;
+    private final PipelineMetrics metrics;
 
     /**
      * Конструктор.
@@ -70,10 +71,12 @@ public class PipelineRunner {
      * @param validator проверки
      * @param registry реестр видов
      * @param props настройки
+     * @param metrics метрики стадий
      */
     public PipelineRunner(PipelineStore store, JobQueue queue, PackageClient files, TextExtractor texts,
                           Classifier classifier, FieldExtractor extractor, FieldValidator validator,
-                          TypeRegistry registry, DocprocProperties props) {
+                          TypeRegistry registry, DocprocProperties props,
+                          PipelineMetrics metrics) {
         this.store = store;
         this.queue = queue;
         this.files = files;
@@ -83,6 +86,7 @@ public class PipelineRunner {
         this.validator = validator;
         this.registry = registry;
         this.props = props;
+        this.metrics = metrics;
     }
 
     /**
@@ -97,6 +101,7 @@ public class PipelineRunner {
         } catch (ModelUnavailableException unavailable) {
             LOG.info("model unavailable file={}", job.fileId());
             store.changeStage(job, Stage.WAITING_MODEL, MODEL_UNAVAILABLE);
+            metrics.retried(MODEL_UNAVAILABLE);
             queue.postpone(job, props.modelRetryDelay(), false, MODEL_UNAVAILABLE);
         } catch (ModelInvalidOutputException invalid) {
             retryOrFail(job, "MODEL_INVALID_OUTPUT");
@@ -110,7 +115,7 @@ public class PipelineRunner {
     private void process(Job job, FileBytes content) {
         pagesOf(job, content).ifPresent(pages -> {
             if (pages.stream().noneMatch(PageText::hasText) && !props.visionFallback()) {
-                store.finish(job, Stage.UNREADABLE, "TEXT_NOT_FOUND", UNREADABLE_EVENT);
+                finish(job, Stage.UNREADABLE, "TEXT_NOT_FOUND", UNREADABLE_EVENT);
             } else {
                 segmentsOf(job, content, pages).ifPresent(docs -> parseAll(job, content, pages, docs));
             }
@@ -125,15 +130,15 @@ public class PipelineRunner {
         if (!store.changeStage(job, Stage.EXTRACTING_TEXT, null)) {
             return Optional.empty();
         }
-        List<PageText> pages = texts.extract(content.get(), job.mime());
+        List<PageText> pages = metrics.time("text", () -> texts.extract(content.get(), job.mime()));
         return store.saveText(job, pages) ? Optional.of(pages) : Optional.empty();
     }
 
     private Optional<List<DocSegment>> segmentsOf(Job job, FileBytes content, List<PageText> pages) {
         Optional<List<DocSegment>> docs = store.loadSegments(job);
         if (docs.isEmpty()) {
-            List<Segment> segments = classifier.segment(job.fileId().toString(), pages,
-                    images(job, content, pages, 1, pages.size()));
+            List<Segment> segments = metrics.time("segment", () -> classifier.segment(job.fileId().toString(),
+                    pages, images(job, content, pages, 1, pages.size())));
             docs = store.saveSegments(job, segments);
         }
         return docs;
@@ -146,7 +151,7 @@ public class PipelineRunner {
                 parse(job, content, pages, doc, pending.orElse(null));
             }
         }
-        store.finish(job, store.needsReview(job) ? Stage.NEEDS_REVIEW : Stage.PARSED, null, null);
+        finish(job, store.needsReview(job) ? Stage.NEEDS_REVIEW : Stage.PARSED, null, null);
     }
 
     private void parse(Job job, FileBytes content, List<PageText> pages, DocSegment doc, Pending pending) {
@@ -154,8 +159,9 @@ public class PipelineRunner {
         final boolean manual = pending != null;
         DocType type = registry.orOther(manual ? pending.type() : seg.type());
         BigDecimal confidence = manual ? BigDecimal.ONE.setScale(CONF_SCALE) : seg.confidence();
-        Extraction extraction = extractor.extract(doc.documentId().toString(), type, docText(pages, seg),
-                images(job, content, pages, seg.fromPage(), seg.toPage()));
+        String text = docText(pages, seg);
+        Extraction extraction = metrics.time("fields", () -> extractor.extract(doc.documentId().toString(), type,
+                text, images(job, content, pages, seg.fromPage(), seg.toPage())));
         List<FieldValue> fields = validator.normalize(type, extraction.data(), extraction.confidence(),
                 props.fieldReviewThreshold());
         String reason = reasonOf(confidence, type, fields);
@@ -164,6 +170,7 @@ public class PipelineRunner {
                 manual ? SPECIALIST : PipelineStore.MODEL, fields, extraction.model(),
                 Prompts.SEGMENT + "+" + Prompts.EXTRACT, type.version(), reason != null, reason,
                 manual ? pending.reason() : null, manual ? pending.by() : null));
+        metrics.documentParsed(type.code(), confidence, manual ? SPECIALIST : PipelineStore.MODEL, reason);
     }
 
     private String docText(List<PageText> pages, Segment seg) {
@@ -195,10 +202,16 @@ public class PipelineRunner {
 
     private void retryOrFail(Job job, String code) {
         if (job.attempts() + 1 >= props.maxAttempts()) {
-            store.finish(job, Stage.FAILED, code, "DocumentFailed");
+            finish(job, Stage.FAILED, code, "DocumentFailed");
         } else {
+            metrics.retried(code);
             queue.postpone(job, BASE_BACKOFF.multipliedBy(1L << job.attempts()), true, code);
         }
+    }
+
+    private void finish(Job job, String stage, String reason, String eventType) {
+        store.finish(job, stage, reason, eventType);
+        metrics.fileFinished(stage);
     }
 
     /**

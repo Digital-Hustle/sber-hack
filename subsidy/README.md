@@ -9,8 +9,11 @@ scripts/gen-env.sh               # infra/.env со случайными секр
 cd infra && docker compose --profile llm-local up -d --build
 ```
 - Специалист: `https://<host>/specialist` → вход через Keycloak (демо `specialist` / `KC_DEMO_SPECIALIST_PASSWORD`)
-- Keycloak: `https://auth.<host>`
-- Health: `https://<host>/actuator/health`, сервисы — внутри сети, `scripts/smoke.sh https://<host>`
+- Keycloak: `https://<host>/auth` (админка — `KC_BOOTSTRAP_ADMIN_*` из `infra/.env`)
+- Health: `https://<host>/actuator/health`, сервисы — внутри сети
+- Проверка стенда: `scripts/smoke.sh https://<host>`; сквозная (синтетический пакет → протокол): `EVAL_PASSWORD=<KC_DEMO_SPECIALIST_PASSWORD> scripts/smoke.sh https://<host>` (нужен `uv`)
+
+Требования: Docker 24+ с compose v2, 16 ГБ RAM (локальная модель qwen3:8b + qwen2.5vl:7b ≈ 11 ГБ; первая сборка и скачивание моделей — дольше 10 минут), открытые 80/443. Сертификат — внутренний CA Caddy (`tls internal`), браузер попросит подтвердить. Для сервера с доменом: `PUBLIC_HOST`/`KC_HOSTNAME` в `infra/.env`.
 
 ## Документация
 | Файл | О чём |

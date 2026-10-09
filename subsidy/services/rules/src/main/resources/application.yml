@@ -65,3 +65,8 @@ app:
     recheck-poll: ${RECHECK_POLL:500ms}
     zone: ${APP_ZONE:Europe/Moscow}
     expiring-days: ${EXPIRING_DAYS:30}
+    docproc-url: ${DOCPROC_URL:http://docproc:8082}
+  service-account:
+    client-id: svc-rules
+    client-secret: ${KC_SVC_RULES_SECRET}
+    token-uri: ${OIDC_TOKEN_URI:http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/token}
