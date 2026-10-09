@@ -1,7 +1,9 @@
 package ru.documents.docproc.features.processing.application.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,8 +46,9 @@ public class ExtractStage {
 
     /** Выполнить. */
     public StepOutcome run(Job job, Map<String, JsonNode> outputs) {
-        JsonNode text = outputs.get(Stages.EXTRACTING_TEXT);
-        String code = outputs.get(Stages.CLASSIFYING).path("type").asText();
+        JsonNode cls = outputs.get(Stages.CLASSIFYING);
+        JsonNode text = onlyPages(outputs.get(Stages.EXTRACTING_TEXT), cls.path("pages"));
+        String code = cls.path("type").asText();
         DocType type = types.get(code).orElseThrow(() -> new IllegalStateException("type " + code));
         StringBuilder fields = new StringBuilder();
         type.schema().path("properties").properties().forEach(e -> fields.append("- ").append(e.getKey()).append(" (")
@@ -74,6 +77,27 @@ public class ExtractStage {
         out.put("type", type.code()).put("schemaVersion", type.version()).put("model", r.model())
                 .put("promptVersion", Prompts.EXTRACT);
         return StepOutcome.next(out);
+    }
+
+    /**
+     * Только страницы основного документа, если классификация разметила файл (DP-14): поля другого документа
+     * из того же файла не должны попасть в этот.
+     */
+    JsonNode onlyPages(JsonNode text, JsonNode pages) {
+        if (!pages.isArray() || pages.isEmpty() || pages.size() >= text.path("pages").size()) {
+            return text;
+        }
+        Set<Integer> keep = new HashSet<>();
+        pages.forEach(n -> keep.add(n.asInt()));
+        ObjectNode copy = text.deepCopy();
+        ArrayNode filtered = json.createArrayNode();
+        text.path("pages").forEach(p -> {
+            if (keep.contains(p.path("n").asInt())) {
+                filtered.add(p);
+            }
+        });
+        copy.set("pages", filtered);
+        return copy;
     }
 
     /** Схема ответа модели по схеме вида: по каждому полю value/raw/page/confidence/reason. */

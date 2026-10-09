@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -28,12 +29,21 @@ public class BaseExceptionHandler {
     private static final Logger LOG = LoggerFactory.getLogger(BaseExceptionHandler.class);
     private static final String CODE = "code";
     private static final String HINT = "hint";
+    /** Ключ extra у DomainException с 429: через сколько секунд повторить. */
+    public static final String RETRY_AFTER_SEC = "retryAfterSec";
+    private static final int DEFAULT_RETRY_AFTER_SEC = 60;
 
     /** Доменные ошибки с кодом из API.md. */
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ProblemDetail> domain(DomainException ex) {
         ProblemDetail pd = problem(ex.status(), ex.code(), ex.getMessage(), ex.hint());
         ex.extra().forEach(pd::setProperty);
+        if (ex.status() == HttpStatus.TOO_MANY_REQUESTS.value()) {
+            // RFC 9110: клиент и eval ждут столько, сколько сказал сервер (retryAfterSec в extra, иначе минута).
+            Object wait = ex.extra().getOrDefault(RETRY_AFTER_SEC, DEFAULT_RETRY_AFTER_SEC);
+            return ResponseEntity.status(pd.getStatus()).header(HttpHeaders.RETRY_AFTER, String.valueOf(wait))
+                    .contentType(MediaType.APPLICATION_PROBLEM_JSON).body(pd);
+        }
         return respond(pd);
     }
 

@@ -170,6 +170,37 @@ class PipelineIntegrationTest {
     }
 
     @Test
+    void multiDocumentFileIsSplitByPages() throws Exception {
+        JsonNode two = ocrPage(SNILS_TEXT, 0.92, 300.0);
+        ObjectNode second = ((ObjectNode) two.path("pages").get(0)).deepCopy().put("n", 2)
+                .put("text", "СВИДЕТЕЛЬСТВО о постановке на учёт ИНН 500100732259");
+        ((com.fasterxml.jackson.databind.node.ArrayNode) two.path("pages")).add(second);
+        when(ocr.extract(any())).thenReturn(two);
+        List<String> extractPrompts = new java.util.ArrayList<>();
+        doAnswer(inv -> {
+            LlmRequest rq = inv.getArgument(0);
+            if ("CLASSIFYING".equals(rq.stage())) {
+                assertThat(rq.schema().path("required").toString()).contains("segments");
+                return result("{\"type\":\"SNILS\",\"confidence\":0.95,\"evidence\":[\"СТРАХОВОЕ СВИДЕТЕЛЬСТВО\"],"
+                        + "\"segments\":[{\"type\":\"SNILS\",\"pages\":[1]},{\"type\":\"INN\",\"pages\":[2]}]}");
+            }
+            extractPrompts.add(rq.user());
+            return answer(rq);
+        }).when(llm).structured(any());
+        UUID doc = received();
+        drain();
+        assertThat(stage(doc)).isEqualTo("NEEDS_REVIEW");
+        assertThat(extractPrompts).hasSize(1);
+        assertThat(extractPrompts.get(0)).contains("Страница 1").doesNotContain("Страница 2").doesNotContain("500100732259");
+        String body = mvc.perform(get("/api/v1/documents/" + doc + "/result")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_OPERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.type").value("SNILS"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(body).contains("MULTI_DOCUMENT").contains("стр. 2");
+        assertThat(om.readTree(body).path("promptVersion").asText()).startsWith("classify.v2");
+    }
+
+    @Test
     void duplicateEventCreatesOneJob() {
         UUID doc = UUID.randomUUID();
         ObjectNode p = om.createObjectNode().put("documentId", doc.toString())

@@ -55,7 +55,9 @@
       "directAccessGrantsEnabled": false,
       "protocolMappers": [
         { "name": "aud-ocr", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
-          "config": { "included.custom.audience": "ocr", "access.token.claim": "true", "id.token.claim": "false" } }
+          "config": { "included.custom.audience": "ocr", "access.token.claim": "true", "id.token.claim": "false" } },
+        { "name": "aud-intake", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+          "config": { "included.custom.audience": "intake", "access.token.claim": "true", "id.token.claim": "false" } }
       ]
     },
     {
@@ -64,7 +66,13 @@
       "secret": "${KC_SVC_REVIEW_SECRET}",
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false
+      "directAccessGrantsEnabled": false,
+      "protocolMappers": [
+        { "name": "aud-intake", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+          "config": { "included.custom.audience": "intake", "access.token.claim": "true", "id.token.claim": "false" } },
+        { "name": "aud-docproc", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+          "config": { "included.custom.audience": "docproc", "access.token.claim": "true", "id.token.claim": "false" } }
+      ]
     }
   ],
   "users": [

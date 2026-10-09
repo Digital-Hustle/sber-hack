@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import ru.documents.common.event.Topics;
+import ru.documents.common.exception.BaseExceptionHandler;
 import ru.documents.common.exception.DomainException;
 import ru.documents.common.outbox.OutboxWriter;
 import ru.documents.intake.config.IntakeProperties;
@@ -141,7 +142,8 @@ public class ApplicationCommandService {
         Instant now = clock.instant();
         Instant window = now.minus(RESUME_WINDOW);
         if (repo.resumeFailures(contactHash, window) >= props.resumeMaxAttempts()) {
-            throw new DomainException("RATE_LIMITED", 429, "Слишком много попыток", "Подождите 15 минут");
+            throw new DomainException("RATE_LIMITED", 429, "Слишком много попыток", "Подождите 15 минут",
+                    Map.of(BaseExceptionHandler.RETRY_AFTER_SEC, RESUME_WINDOW.toSeconds()));
         }
         String codeHash = Secrets.hash(props.pepper(), code == null ? "" : code.trim().toUpperCase());
         List<UUID> found = normalized == null ? List.of() : repo.byContact(normalized, codeHash);

@@ -34,7 +34,7 @@ jobs:
         with:
           filters: |
             frontend: ['documents/frontend/**', 'documents/contracts/**']
-            infra: ['documents/infra/**', 'documents/services/Dockerfile', 'documents/services/ocr/Dockerfile', 'documents/frontend/Dockerfile', 'documents/scripts/smoke.sh', 'documents/scripts/gen-env.sh']
+            infra: ['documents/infra/**', 'documents/services/Dockerfile', 'documents/services/ocr/Dockerfile', 'documents/frontend/Dockerfile', 'documents/scripts/smoke.sh', 'documents/scripts/gen-env.sh', 'documents/scripts/attack.sh', 'documents/services/libs/common/src/main/**/security/**']
       - id: svc
         name: изменённые сервисы (libs/, build-logic/, gradle/, config/ → все)
         run: |
@@ -144,6 +144,8 @@ jobs:
         with: { node-version: '22' }   # guard проверяет дизайн-токены (gen-tokens --check, Node ≥ 22.6)
       - name: guard (красные линии)
         run: documents/scripts/guard.sh
+      - name: контракты (коды ошибок и стадии ↔ API.md ↔ фронт)
+        run: python3 documents/scripts/check-contracts.py
       - name: trivy (уязвимости зависимостей)
         run: docker run --rm -v "$PWD:/repo" aquasec/trivy:latest fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 /repo/documents
 
@@ -188,12 +190,17 @@ jobs:
         working-directory: documents/infra
         run: |
           ../scripts/gen-env.sh
+          # eval создаёт заявку на каждый документ с одного IP; лимит gateway проверяет GatewaySecurityTest
+          sed -i 's/^RATE_LIMIT_ENABLED=.*/RATE_LIMIT_ENABLED=false/' .env
           if [ -n "$LLM_API_KEY" ]; then
             sed -i "s|^LLM_PROVIDER=.*|LLM_PROVIDER=${{ vars.DOCS_LLM_PROVIDER || 'openai' }}|; s|^LLM_BASE_URL=.*|LLM_BASE_URL=${{ vars.DOCS_LLM_BASE_URL }}|; s|^LLM_MODEL=.*|LLM_MODEL=${{ vars.DOCS_LLM_MODEL }}|; s|^LLM_API_KEY=.*|LLM_API_KEY=$LLM_API_KEY|" .env
           fi
       - run: docker compose up -d --build --wait --wait-timeout 600
         working-directory: documents/infra
       - run: documents/scripts/smoke.sh https://localhost
+      - name: «злоумышленник» (чек-лист I, угрозы T1–T10; рестарт docproc посреди разбора)
+        working-directory: documents/infra
+        run: ../scripts/attack.sh https://localhost --docker
       - if: hashFiles('documents/eval/run.py') != '' && env.LLM_API_KEY != ''
         uses: astral-sh/setup-uv@v6
       - name: eval на синтетике через API стенда (типы и стадии; поля — с токеном оператора)

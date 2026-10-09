@@ -9,6 +9,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
@@ -66,12 +71,16 @@ public class SecurityConfig {
         return src;
     }
 
-    /** JWKS из внутренней сети, issuer — публичный адрес Keycloak. */
+    /** JWKS из внутренней сети, issuer — публичный адрес Keycloak, aud — токен выдан для API (клиент оператора). */
     @Bean
     public ReactiveJwtDecoder jwtDecoder(@Value("${app.oidc.jwk-set-uri}") String jwks,
-                                         @Value("${app.oidc.issuer}") String issuer) {
+                                         @Value("${app.oidc.issuer}") String issuer,
+                                         @Value("${app.oidc.audience:documents-api}") String audience) {
         NimbusReactiveJwtDecoder d = NimbusReactiveJwtDecoder.withJwkSetUri(jwks).build();
-        d.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer));
+        OAuth2TokenValidator<Jwt> aud = jwt -> jwt.getAudience() != null && jwt.getAudience().contains(audience)
+                ? OAuth2TokenValidatorResult.success()
+                : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "aud mismatch", null));
+        d.setJwtValidator(new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefaultWithIssuer(issuer), aud));
         return d;
     }
 

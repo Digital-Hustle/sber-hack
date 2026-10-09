@@ -1,5 +1,6 @@
 package ru.documents.review.config;
 
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,9 +52,10 @@ public class SecurityConfig {
                 "/v3/api-docs/**");
     }
 
-    /** Проверка JWT Keycloak. */
+    /** Проверка JWT Keycloak: подпись, issuer, aud ({@code documents-api} оператора или имя этого сервиса). */
     @Bean
-    public JwtDecoder jwtDecoder(@Value("${app.oidc.jwk-set-uri}") String jwks, @Value("${app.oidc.issuer}") String iss) {
-        return KeycloakJwt.decoder(jwks, iss);
+    public JwtDecoder jwtDecoder(@Value("${app.oidc.jwk-set-uri}") String jwks, @Value("${app.oidc.issuer}") String iss,
+                                 @Value("${app.oidc.audiences:documents-api,review}") List<String> audiences) {
+        return KeycloakJwt.decoder(jwks, iss, audiences);
     }
 }

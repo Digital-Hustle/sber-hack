@@ -36,6 +36,8 @@ public final class Codes {
             Map.entry("CHECKSUM_FAILED", new String[] {"Номер не прошёл проверку", "Оператор сверит с оригиналом"}),
             Map.entry("MRZ_MISMATCH", new String[] {"Данные в машиночитаемой строке не совпадают с текстом",
                 "Оператор сверит с оригиналом"}),
+            Map.entry("MULTI_DOCUMENT", new String[] {"В одном файле несколько документов",
+                "Загрузите каждый документ отдельным файлом в свой пункт"}),
             Map.entry("MODEL_UNAVAILABLE", new String[] {"Модель недоступна", "Продолжим автоматически"}),
             Map.entry("MODEL_INVALID_OUTPUT", new String[] {"Модель вернула ответ не по схеме",
                 "Оператор проверит вручную"}));

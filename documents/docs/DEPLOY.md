@@ -28,10 +28,12 @@
 3. `docker login ghcr.io` (read-only токен); `docker compose --profile llm-local up -d`; `scripts/smoke.sh https://<host>`.
 
 ## CI (`.github/workflows/documents-ci.yml`)
-На PR и push в `main` с изменениями `documents/**`: changes → services (матрица изменённых: Java — Postgres service, Liquibase, jOOQ, `check`, be-check, контракт; Python ocr — ruff, mypy, pytest) → frontend (`gen:api`, токены, lint, typecheck, build, fsd-check) → eval (синтетика, если есть `eval/run.py`) → security (gitleaks по истории, `documents/scripts/guard.sh`, Trivy) → infra (`compose config`) → smoke (только `main`).
+На PR и push в `main` с изменениями `documents/**`: changes → services (матрица изменённых: Java — Postgres service, Liquibase, jOOQ, `check`, be-check, контракт; Python ocr — ruff, mypy, pytest) → frontend (`gen:api`, токены, lint, typecheck, build, fsd-check) → eval (синтетика, если есть `eval/run.py`) → security (gitleaks по истории, `documents/scripts/guard.sh`, Trivy) → infra (`compose config`) → smoke (`main` и PR с изменениями инфраструктуры: `compose up --build --wait`, `scripts/smoke.sh`, при секрете `DOCS_LLM_API_KEY` — `eval/run.py` на синтетике).
 
 ## CD (`.github/workflows/documents-deploy.yml`)
-push в `main` → CI зелёный → jar-ы → образы `ghcr.io/<org>/docs-<svc>:<sha>` → SSH: `docker compose pull && up -d` → health-check → откат на прошлый тег. Включение: переменная репозитория `DOCS_DEPLOY_ENABLED=true` + секреты `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`. Секретов приложения в GitHub нет.
+push в `main` → CI зелёный → `docker compose build` (те же Dockerfile, что локально: сборка внутри образа, ADR-014) → push `ghcr.io/<org>/documents/<svc>:<sha>` (gateway, intake, ocr, docproc, review, caddy с фронтом) → SSH: `git checkout <sha>`, в `.env` выставляются `IMAGE_REGISTRY`/`IMAGE_TAG` → `docker compose pull && up -d --no-build` → `scripts/smoke.sh` до 3 минут → при провале откат на прошлый тег. Ручной запуск — `workflow_dispatch` с тегом (`docs-demo-2`).
+Включение: переменная репозитория `DOCS_DEPLOY_ENABLED=true` + секреты `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`. Секретов приложения в GitHub нет (кроме необязательного `DOCS_LLM_API_KEY` для eval в smoke CI).
+Пока сервера нет, CD выключен; стенд поднимается одной командой `docker compose up -d --build` из чистого клона.
 
 ## Перед защитой
 Тег `docs-demo-final`, деплой тега, заморозка деплоя; маршрут судьи на сервере и на запасном ноутбуке; модели и образы — локально (`docker save` в архив).

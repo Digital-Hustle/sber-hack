@@ -17,6 +17,6 @@
 | DP-11 | FR-31/43 | `parse_results`, `fields`, `llm_calls`; `DocumentParsed` с версиями промпта/схемы | B2 | done `feat/DP-01-docproc` |
 | DP-12 | FR-29 | Vision-путь при слабом OCR (`VISION_FALLBACK_ENABLED`) + замер в EVAL | B2 | done `feat/DP-01-docproc` |
 | DP-13 | FR-30/46 | `POST /documents/{id}/reprocess`, `GET /model/status`, результат для review | B2 | done `feat/DP-01-docproc` |
-| DP-14 | FR-07 | Разметка страниц многостраничного файла по документам | B2 | todo |
+| DP-14 | FR-07 | Разметка страниц многостраничного файла по документам | B2 | done #40 — разметка страниц моделью (classify.v2) + проверка кодом, извлечение только по страницам основного документа, замечание MULTI_DOCUMENT; автоматическое разделение на отдельные документы intake — нет (соискателю подсказка загрузить отдельно) |
 | DP-15 | NFR-07 | Метрики `docproc_stage_seconds{stage}`, `docproc_jobs{stage}`, источник для B-06 | B2 | done `feat/DP-01-docproc` |
-| DP-16 | FR-28 | Калибровка порогов и весов уверенности на открытом наборе, отчёт в EVAL.md | B2 | todo |
+| DP-16 | FR-28 | Калибровка порогов и весов уверенности на открытом наборе, отчёт в EVAL.md | B2 | blocked: нужен размеченный открытый набор — методика калибровки и скрипт в EVAL.md / eval/run.py готовы |
