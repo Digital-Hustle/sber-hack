@@ -44,6 +44,15 @@ shift:
     # опоздание — вход позже начала смены больше чем на это; переработка — выход позже конца не меньше чем на это
     late-grace: ${LATE_GRACE:5m}
     overtime-threshold: ${OVERTIME_THRESHOLD:15m}
+  alerts:
+    # геозона площадки: без координат правило «покинул площадку» выключено
+    site-lat: ${SITE_LAT:}
+    site-lon: ${SITE_LON:}
+    site-radius: ${SITE_RADIUS_M:300}
+    no-signal-after: ${NO_SIGNAL_AFTER:5m}
+    # скопление: больше crowd-limit человек в зоне дольше crowd-for; 0 — выключено
+    crowd-limit: ${CROWD_LIMIT:0}
+    crowd-for: ${CROWD_FOR:5m}
   stream:
     ticket-ttl: ${STREAM_TICKET_TTL:30s}
     heartbeat: ${STREAM_HEARTBEAT:15s}

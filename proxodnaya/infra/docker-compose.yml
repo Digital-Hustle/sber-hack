@@ -192,6 +192,12 @@ services:
       AUTO_CLOSE_AFTER: ${AUTO_CLOSE_AFTER:-2h}
       LATE_GRACE: ${LATE_GRACE:-5m}
       OVERTIME_THRESHOLD: ${OVERTIME_THRESHOLD:-15m}
+      SITE_LAT: ${SITE_LAT:-}
+      SITE_LON: ${SITE_LON:-}
+      SITE_RADIUS_M: ${SITE_RADIUS_M:-300}
+      NO_SIGNAL_AFTER: ${NO_SIGNAL_AFTER:-5m}
+      CROWD_LIMIT: ${CROWD_LIMIT:-0}
+      CROWD_FOR: ${CROWD_FOR:-5m}
 
   face:
     image: ghcr.io/digital-hustle/gate-face:${IMAGE_TAG:-latest}
