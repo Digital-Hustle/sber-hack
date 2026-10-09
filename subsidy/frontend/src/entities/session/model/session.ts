@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { UserManager, WebStorageStateStore, InMemoryWebStorage, type User } from "oidc-client-ts";
+import { OidcClient, UserManager, WebStorageStateStore, InMemoryWebStorage, type User } from "oidc-client-ts";
 import { env } from "@/shared/config/env";
 import { setAuth } from "@/shared/api";
 import { routes } from "@/shared/const/router";
@@ -23,7 +23,7 @@ export const userManager = new UserManager({
   authority: env.oidcAuthority,
   client_id: env.oidcClientId,
   redirect_uri: `${location.origin}${routes.callback}`,
-  post_logout_redirect_uri: `${location.origin}${routes.specialist}`,
+  post_logout_redirect_uri: `${location.origin}/`,
   response_type: "code",
   scope: "openid profile email",
   automaticSilentRenew: true,
@@ -108,10 +108,31 @@ export const useSpecialistAuth = () => {
   }, []);
 };
 
+/** Последний логин (не секрет) — подставляем в форму входа. */
+const LAST_LOGIN = "subsidy.login";
 const signedIn = (u: User) => {
   sessionStorage.removeItem(SSO_TRIED); // вошли — при следующей перезагрузке снова можно тихо
+  const login = u.profile.preferred_username;
+  if (login) localStorage.setItem(LAST_LOGIN, login);
   set({ user: u, ready: true });
 };
+
+/**
+ * FE-UI-02: вход внутри страницы — форма Keycloak во фрейме того же origin (/auth), без ухода с сайта.
+ * Запрос и PKCE — те же, что у редиректа (state в sessionStorage); callback во фрейме отдаёт адрес родителю
+ * (app/main.tsx), родитель меняет код на токены — они остаются в памяти вкладки.
+ */
+export const embeddedSignInUrl = async (next: string) => {
+  const req = await new OidcClient(userManager.settings).createSigninRequest({
+    request_type: "si:r",
+    state: { next },
+    login_hint: localStorage.getItem(LAST_LOGIN) ?? undefined,
+  });
+  return req.url;
+};
+export const SIGNIN_MESSAGE = "subsidy.signin";
+export const completeEmbeddedSignIn = async (url: string) => signedIn(await userManager.signinRedirectCallback(url));
+export const forgetLogin = () => localStorage.removeItem(LAST_LOGIN);
 
 export const useSession = () => {
   const s = useSyncExternalStore((f) => { subs.add(f); return () => subs.delete(f); }, () => state);

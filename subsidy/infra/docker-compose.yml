@@ -84,6 +84,7 @@ services:
       PUBLIC_HOST: ${PUBLIC_HOST:?}
     volumes:
       - ./keycloak/subsidy-realm.json:/opt/keycloak/data/import/subsidy-realm.json:ro
+      - ./keycloak/themes/subsidy:/opt/keycloak/themes/subsidy:ro
     depends_on:
       postgres: { condition: service_healthy }
     healthcheck:

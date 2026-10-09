@@ -38,6 +38,11 @@ realm = {
     "accessTokenLifespan": 300,
     "ssoSessionIdleTimeout": 1800,
     "otpPolicyType": "totp",
+    # FE-UI-02: форма входа в стиле фронта (themes/subsidy) и «запомнить меня»
+    "loginTheme": "subsidy",
+    "rememberMe": True,
+    "ssoSessionIdleTimeoutRememberMe": 604800,
+    "ssoSessionMaxLifespanRememberMe": 604800,
     "internationalizationEnabled": True,
     "supportedLocales": ["ru"],
     "defaultLocale": "ru",

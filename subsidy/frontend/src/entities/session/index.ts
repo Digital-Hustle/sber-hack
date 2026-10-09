@@ -1,1 +1,1 @@
-export { useSession, useSpecialistAuth, completeSignIn, can, roleLabel, type Role, type Perm } from "./model/session";
+export { useSession, useSpecialistAuth, completeSignIn, embeddedSignInUrl, completeEmbeddedSignIn, forgetLogin, SIGNIN_MESSAGE, can, roleLabel, type Role, type Perm } from "./model/session";
