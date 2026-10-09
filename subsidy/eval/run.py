@@ -148,7 +148,7 @@ def wait(api: Api, package_id: str, timeout: int) -> dict[str, Any]:
         time.sleep(10)
 
 
-def compare(api: Api, pkg: dict[str, Any], labels: dict[str, Any]) -> list[str]:
+def compare(api: Api, pkg: dict[str, Any], labels: dict[str, Any]) -> tuple[list[str], int]:
     lines = ["| Файл | Ожидали | Получили | Уверенность |", "|---|---|---|---|"]
     ok = total = 0
     for f in pkg["files"]:
@@ -170,9 +170,12 @@ def compare(api: Api, pkg: dict[str, Any], labels: dict[str, Any]) -> list[str]:
         "|---|---|---|",
     ]
     got_rules = {r["rule"]: r["status"] for r in proto.get("results", [])}
+    wrong_rules = 0
     for rule, want_status in labels.get("expectedRules", {}).items():
-        lines.append(f"| {rule} | {want_status} | {got_rules.get(rule)} |")
-    return lines
+        mark = "" if got_rules.get(rule) == want_status else " ✖"
+        wrong_rules += bool(mark)
+        lines.append(f"| {rule} | {want_status} | {got_rules.get(rule)}{mark} |")
+    return lines, (total - ok) + wrong_rules
 
 
 def main() -> None:
@@ -184,6 +187,7 @@ def main() -> None:
     p.add_argument("--timeout", type=int, default=1800)
     p.add_argument("--report", type=Path)
     p.add_argument("--verify", action="store_true")
+    p.add_argument("--strict", action="store_true", help="код выхода 1 при любом расхождении с разметкой")
     a = p.parse_args()
     labels = json.loads((a.dir / "labels.json").read_text(encoding="utf-8"))
     api = Api(a.api, a.verify)
@@ -198,10 +202,13 @@ def main() -> None:
     if up.get("rejected"):
         print(f"отклонено: {up['rejected']}", file=sys.stderr)
     pkg = wait(api, package_id, a.timeout)
-    report = "\n".join([f"# eval {a.dir.name}: пакет {package_id}", "", *compare(api, pkg, labels)])
+    lines, mismatches = compare(api, pkg, labels)
+    report = "\n".join([f"# eval {a.dir.name}: пакет {package_id}", "", *lines, "", f"Расхождений: {mismatches}"])
     print(report)
     if a.report:
         a.report.write_text(report + "\n", encoding="utf-8")
+    if a.strict and mismatches:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

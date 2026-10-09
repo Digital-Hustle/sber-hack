@@ -41,4 +41,5 @@
 ## 5. Журнал (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: подготовка кейса «Субсидии» — документы кейса и модулей, каталог правил, скрипты, CI, скилл subsidy-dev
 - 2026-10-09 · subsidy-agent · PLT-09: генератор синтетики `eval/synthetic` (reportlab, 8 видов, верные контрольные суммы, склейка, дефект сметы, labels.json) и `eval/run.py` через публичный API (вход PKCE формой Keycloak)
+- 2026-10-09 · subsidy-agent · PLT-08: smoke.sh — Keycloak под `/auth` (был auth.<host>), сквозной прогон синтетики при EVAL_PASSWORD; run.py --strict; README: требования и адреса
 - 2026-10-09 · subsidy-agent · PLT-04: `contracts/events/` — схемы payload всех 11 событий 4 топиков + конверт, генератор `gen.py` (поля сверены с outbox.append); вехи M0/M1 и PLT-05/06 отмечены по факту

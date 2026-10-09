@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Быстрый смоук стенда «Субсидии». Использование: scripts/smoke.sh https://host
+# Смоук стенда «Субсидии». Использование: scripts/smoke.sh https://host
+# Со сквозным прогоном: EVAL_PASSWORD=<пароль specialist из infra/.env> scripts/smoke.sh https://host
+#   — генерирует синтетический пакет (eval/synthetic), грузит его через публичный API и сверяет протокол с разметкой (расхождения печатаются, падает — только если протокол не получен).
 set -euo pipefail
-H="${1:-https://localhost}"; K="${KEYCLOAK_URL:-${H/\/\//\/\/auth.}}"
+H="${1:-https://localhost}"; K="${KEYCLOAK_URL:-$H/auth}"
 GW_HEALTH="${GATEWAY_HEALTH_URL:-$H/actuator/health}"
 ok() { echo "✔ $1"; } ; bad() { echo "✖ $1"; exit 1; }
 code_of() { curl -sk -o /dev/null -w '%{http_code}' "$@"; }
@@ -24,4 +26,13 @@ c=$(code_of -X POST "$H/rules/api/v1/packages/00000000-0000-0000-0000-0000000000
 for p in /internal/package/files /rules/internal/evaluate /ocr/v1/extract; do
   c=$(code_of "$H$p"); [[ "$c" = 401 || "$c" = 403 || "$c" = 404 ]] && ok "$p закрыт снаружи ($c)" || bad "$p снаружи: $c"
 done
-echo "ℹ дальше — маршрут судьи из docs/DEMO.md руками"
+if [ -n "${EVAL_PASSWORD:-}" ]; then
+  command -v uv >/dev/null || bad "для сквозного прогона нужен uv (https://docs.astral.sh/uv/)"
+  D=$(mktemp -d); trap 'rm -rf "$D"' EXIT
+  cd "$(dirname "$0")/../eval"
+  uv run -q python -m synthetic.gen --out "$D/pkg" --seed "${SMOKE_SEED:-1}" --merged >/dev/null && ok "синтетический пакет: $(ls "$D/pkg" | grep -c pdf) PDF"
+  uv run -q python run.py --api "$H" --dir "$D/pkg" --user "${EVAL_USER:-specialist}" --timeout "${SMOKE_TIMEOUT:-1800}" --report "$D/report.md" \
+    && ok "сквозной прогон: протокол получен ($(grep -o 'Расхождений: [0-9]*' "$D/report.md"))" || bad "сквозной прогон: протокол не получен"
+else
+  echo "ℹ сквозной прогон пропущен: задайте EVAL_PASSWORD (пароль specialist) — или пройдите маршрут из docs/DEMO.md руками"
+fi
