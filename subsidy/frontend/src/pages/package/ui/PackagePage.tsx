@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, History } from "lucide-react";
@@ -63,7 +63,7 @@ const Files = ({ card, files, docs, typeName, types, type, onType, doubtFirst, o
               const r = docs.get(d.documentId);
               return (
                 <button key={d.documentId} type="button" onClick={() => onSelect(d.documentId)}
-                  className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none transition-colors duration-fast hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring", selected === d.documentId && "bg-surface")}>
+                  className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none transition-colors duration-fast hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring", selected === d.documentId && "bg-accent text-accent-foreground hover:bg-accent")}>
                   <span className="min-w-0 flex-1 truncate">{typeName(r?.type ?? d.type)} <span className="text-muted-foreground">стр. {d.fromPage}–{d.toPage}</span></span>
                   {d.typeConfidence !== null && <span className="text-xs tabular-nums text-muted-foreground">{Math.round(d.typeConfidence * PERCENT)}%</span>}
                   <StageBadge stage={r?.stage ?? d.stage} />
@@ -94,7 +94,12 @@ export const PackagePage = () => {
   const [type, setType] = useState("");
   const docs = useMemo(() => new Map((documents.data?.items ?? []).map((d) => [d.documentId, d])), [documents.data]);
   const files = useMemo(() => arrangeFiles(card.data?.files ?? [], docs, { doubtFirst, type }), [card.data, docs, doubtFirst, type]);
-  const openDoc = useCallback((documentId: string) => setSp((p) => { const n = new URLSearchParams(p); n.set("doc", documentId); n.set("tab", "documents"); return n; }, { replace: true }), [setSp]);
+  const main = useRef<HTMLDivElement>(null);
+  const openDoc = useCallback((documentId: string) => {
+    setSp((p) => { const n = new URLSearchParams(p); n.set("doc", documentId); n.set("tab", "documents"); return n; }, { replace: true });
+    // На телефоне колонки идут друг под другом: после выбора документа прокручиваем к просмотрщику
+    if (!matchMedia("(min-width: 64rem)").matches) requestAnimationFrame(() => main.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [setSp]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -135,7 +140,7 @@ export const PackagePage = () => {
     <>
       <Link to={routes.packages} className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Пакеты</Link>
       <PageHeader title={c.org.name || `ИНН ${c.org.inn}`}
-        sub={<span className="flex flex-wrap items-center gap-2">ИНН {c.org.inn} · {c.program} <PackageStatusBadge status={c.status} />
+        sub={<span className="flex flex-wrap items-center gap-2">{c.org.name ? `ИНН ${c.org.inn} · ` : ""}{c.program} <PackageStatusBadge status={c.status} />
           <Link to={routes.org(c.org.inn)} className="inline-flex items-center gap-1 text-sm underline-offset-2 hover:underline"><History className="size-4" />история</Link></span>}
         actions={<div className="flex flex-wrap gap-2">{checked && <ExportButtons packageId={id} />}{c.status === "CHECKED" && can(roles, "decide") && <DecideButton packageId={id} />}{c.status !== "DECIDED" && c.files.length > 0 && can(roles, "reprocess") && <RebuildButton packageId={id} />}</div>} />
       {c.decision && (
@@ -145,13 +150,13 @@ export const PackagePage = () => {
           {c.decision.comment && <p className="basis-full whitespace-pre-wrap">{c.decision.comment}</p>}
         </CardContent></Card>
       )}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="flex min-w-0 flex-col gap-4">
           {canEdit && <UploadDropzone packageId={id} />}
           <Files card={c} files={files} docs={docs} typeName={typeName} types={typeOptions} type={type} onType={setType}
             doubtFirst={doubtFirst} onDoubtFirst={setDoubtFirst} selected={selected} onSelect={openDoc} canEdit={canEdit} canReprocess={can(roles, "reprocess")} />
         </div>
-        <div className="flex flex-col gap-4 lg:col-span-2">
+        <div ref={main} className="flex min-w-0 scroll-mt-20 flex-col gap-4 lg:col-span-2">
           <Segmented label="Раздел" value={tab} onChange={(v) => setParam("tab", v)}
             options={[{ value: "protocol", label: "Протокол" }, { value: "documents", label: "Документ" }, { value: "assistant", label: "Помощник" }]} />
           {tab === "protocol" && <ProtocolPanel packageId={id} onEvidence={(d) => openDoc(d)} />}
