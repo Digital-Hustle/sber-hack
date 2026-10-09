@@ -69,8 +69,9 @@ jOOQ codegen требует живую БД во время сборки — т�
 | Ollama / Qwen3 / Qwen2.5-VL-7B | MIT / Apache-2.0 / Apache-2.0 | B3 |
 | Apache POI / Apache PDFBox | Apache-2.0 | B3 |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
-| oidc-client-ts | Apache-2.0 | F2 |
-| react-dropzone / react-pdf (pdf.js) | MIT / MIT (pdf.js Apache-2.0) | F1/F2 |
+| oidc-client-ts (вход оператора, PKCE) | Apache-2.0 | агент (FE-S-03) |
+| @tanstack/react-query (кэш запросов) | MIT | агент (FE-S-03) |
+| ~~react-dropzone / react-pdf (pdf.js)~~ — не понадобились: свой drop-слот, страницы PNG от intake | — | — |
 | Остальное фронта (компоненты реестров, иконки, шрифты) | как в `../../proxodnaya/docs/DECISIONS.md` | F2 |
 
 **Запрещено (п. 5.8.4):** PyMuPDF/fitz (AGPL), pdf2image + poppler-utils (GPL), ghostscript (AGPL), iText (AGPL), MinIO (AGPL), ClamAV в составе образа (GPL), Qwen2.5-VL-3B (research), любые веса «non-commercial».

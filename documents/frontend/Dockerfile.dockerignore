@@ -1,0 +1,8 @@
+# Контекст сборки — documents/; берём только contracts/ и frontend/ без артефактов.
+*
+!contracts/
+!frontend/
+frontend/node_modules
+frontend/dist
+frontend/src/shared/api/schema
+**/*.tsbuildinfo
