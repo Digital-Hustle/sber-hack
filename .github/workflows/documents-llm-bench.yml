@@ -25,6 +25,11 @@ jobs:
           - { name: qwen3-8b, model: 'qwen3:8b', vision: '' }
           - { name: qwen3-4b-vl, model: 'qwen3:4b', vision: 'qwen2.5vl:7b' }
     steps:
+      - name: место на диске раннера (образы стенда + модели 5–11 ГБ не влезают в 14 ГБ по умолчанию)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          docker system prune -af >/dev/null
+          df -h /
       - uses: actions/checkout@v4
       - name: .env стенда (Ollama, долгий таймаут CPU, без лимита частоты для eval)
         working-directory: documents/infra
