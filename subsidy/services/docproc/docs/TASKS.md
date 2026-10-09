@@ -4,19 +4,19 @@
 
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| DP-01 | NFR-15 | `new-service.sh docproc 8082 B2`, Liquibase: jobs, stage_events, stage_outputs, outbox | B2 | todo |
-| DP-02 | FR-20 | `JobClaimer` + lease + `WorkerPool`, `ConcurrentClaimTest` | B2 | todo |
-| DP-03 | FR-20 | `StageMachine` + `RestartMidStageTest` | B2 | todo |
-| DP-04 | FR-20 | Консьюмер `FileReceived`/`FileReplaced` → jobs | B2 | todo |
-| DP-05 | FR-21 | EXTRACTING_TEXT: ocr + POI для DOCX/XLSX, UNREADABLE | B2 | todo |
-| DP-06 | FR-22/24 | `doc_types` + 8 схем, `Classifier`, уверенность, `TYPE_UNKNOWN`/`OTHER`; `RenamedFilesSameTypeTest` | B2 | todo |
-| DP-07 | FR-30 | `FieldExtractor` по схеме, перегенерация | B2 | todo |
-| DP-08 | FR-31 | `MoneyNormalizer`, `DateNormalizer`, `RequisitesChecks` — тест на каждую | B2 | todo |
-| DP-09 | FR-23 | `Segmenter`: склейки → документы, `SegmenterCoverageTest` | B2 | todo |
-| DP-10 | FR-27 | WAITING_MODEL, backoff, FAILED | B2 | todo |
-| DP-11 | FR-29 | `PUT /documents/{id}/type` → переизвлечение, история результатов | B2 | todo |
+| DP-01 | NFR-15 | `new-service.sh docproc 8082 B2`, Liquibase: jobs, stage_events, stage_outputs, outbox | B2 | done |
+| DP-02 | FR-20 | `JobClaimer` + lease + `WorkerPool`, `ConcurrentClaimTest` | B2 | done |
+| DP-03 | FR-20 | `StageMachine` + `RestartMidStageTest` | B2 | done |
+| DP-04 | FR-20 | Консьюмер `FileReceived`/`FileReplaced` → jobs | B2 | done |
+| DP-05 | FR-21 | EXTRACTING_TEXT: ocr + POI для DOCX/XLSX, UNREADABLE | B2 | done |
+| DP-06 | FR-22/24 | `doc_types` + 8 схем, `Classifier`, уверенность, `TYPE_UNKNOWN`/`OTHER`; `RenamedFilesSameTypeTest` | B2 | done |
+| DP-07 | FR-30 | `FieldExtractor` по схеме, перегенерация | B2 | done |
+| DP-08 | FR-31 | `MoneyNormalizer`, `DateNormalizer`, `RequisitesChecks` — тест на каждую | B2 | done |
+| DP-09 | FR-23 | `Segmenter`: склейки → документы, `SegmenterCoverageTest` | B2 | done |
+| DP-10 | FR-27 | WAITING_MODEL, backoff, FAILED | B2 | done |
+| DP-11 | FR-29 | `PUT /documents/{id}/type` → переизвлечение, история результатов | B2 | done |
 | DP-12 | FR-32 | Таблицы позиций (pdfplumber tables / строки по bbox) | B2 | todo |
-| DP-13 | FR-34/53 | `parse_results` с версиями, `llm_calls`, `/model/status` | B2 | todo |
+| DP-13 | FR-34/53 | `parse_results` с версиями, `llm_calls`, `/model/status` | B2 | done |
 | DP-14 | FR-26 | Vision-путь при слабом OCR + замер | B2 | todo |
 | DP-15 | B-08 | Калибровка уверенности типа на открытом наборе, отчёт | B2 | todo |
 | DP-16 | NFR-07 | Метрики стадий и уверенности | B2 | todo |
