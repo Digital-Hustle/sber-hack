@@ -50,6 +50,8 @@ app:
     log-codes: ${STAFF_LOG_CODES:false}
     # dev — тестовый стенд: быстрый вход тестовыми сотрудниками и код 000000 (ADR-021); prod — боевой
     mode: ${APP_MODE:prod}
+    # тестовый вход (dev) доступен только этим учёткам
+    demo-emails: ${KC_DEMO_OPERATOR_EMAIL:},${KC_DEMO_SENIOR_EMAIL:},${KC_DEMO_AUDITOR_EMAIL:}
     code-ttl: ${STAFF_CODE_TTL:10m}
     resend-after: ${STAFF_CODE_RESEND:45s}
   review:

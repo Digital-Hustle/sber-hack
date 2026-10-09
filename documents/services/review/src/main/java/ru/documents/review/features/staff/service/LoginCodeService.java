@@ -81,6 +81,10 @@ public class LoginCodeService {
             throw new DomainException("TEST_MODE_OFF", 404, "Тестовый вход выключен", "Войдите кодом из письма");
         }
         String e = Emails.normalize(email);
+        if (!props.isDemo(e)) {
+            // даже на тестовом стенде настоящие сотрудники входят только кодом из письма (Д8)
+            throw new DomainException("STAFF_NOT_FOUND", 404, "Тестовый вход только для демо-учёток", "Войдите кодом из письма");
+        }
         JsonNode u = keycloak.findByEmail(e).filter(n -> n.path("enabled").asBoolean())
                 .orElseThrow(() -> new DomainException("STAFF_NOT_FOUND", 404, "Сотрудник не найден", null));
         String id = u.path("id").asText();
@@ -104,7 +108,7 @@ public class LoginCodeService {
             return new AuthMode("prod", List.of());
         }
         List<AuthMode.TestUser> users = staff.list().stream().filter(StaffMember::enabled)
-                .filter(m -> !m.email().isBlank())
+                .filter(m -> props.isDemo(Emails.normalize(m.email())))
                 .map(m -> new AuthMode.TestUser(m.email(), (m.firstName() + " " + m.lastName()).trim(), m.role()))
                 .toList();
         return new AuthMode("dev", users);

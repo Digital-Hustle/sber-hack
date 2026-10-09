@@ -213,6 +213,9 @@ services:
       SMTP_FROM: ${SMTP_FROM:-Документы <no-reply@digital-hustle.ru>}
       STAFF_LOGIN_URL: https://${PUBLIC_HOST}/operator
       STAFF_LOG_CODES: ${STAFF_LOG_CODES:-false}
+      KC_DEMO_OPERATOR_EMAIL: ${KC_DEMO_OPERATOR_EMAIL:-operator@documents.local}
+      KC_DEMO_SENIOR_EMAIL: ${KC_DEMO_SENIOR_EMAIL:-senior@documents.local}
+      KC_DEMO_AUDITOR_EMAIL: ${KC_DEMO_AUDITOR_EMAIL:-auditor@documents.local}
       EXPIRING_DAYS: ${EXPIRING_DAYS:-30}
       FIELD_REVIEW_THRESHOLD: ${FIELD_REVIEW_THRESHOLD:-0.8}
 
