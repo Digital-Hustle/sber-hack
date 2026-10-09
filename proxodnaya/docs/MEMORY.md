@@ -48,4 +48,4 @@
 - 2026-10-08 · miroslavrov · docs: документы модулей, токены, мультиагентный процесс, локальный CI (ADR-033/034/035)
 - 2026-10-08 · KIRI4444 · feat: B2 access — Gradle-каркас, libs/common, ACC-01/02/05/07/08 (QrParser, QrVerifier, DecisionEngine, JournalService, KioskController, 36 unit-тестов)
 - 2026-10-09 · miroslavrov (агент) · contract: предложены правка/удаление объектов, зон, проходных и проверка эталона лица при оформлении (ADR-047 песочницы, `docs/API.md`)
-- 2026-10-09 · miroslavrov (агент) · feat(infra): PLT-02/05 — docker-compose стенда, Caddy, realm Keycloak с ролями и service accounts, БД на сервис (ADR-039, #PR)
+- 2026-10-09 · miroslavrov (агент) · feat(infra): PLT-02/05 — docker-compose стенда, Caddy, realm Keycloak с ролями и service accounts, БД на сервис (ADR-039, #53)
