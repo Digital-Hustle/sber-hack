@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import ru.proxodnaya.assistant.api.dto.response.AskRs;
 import ru.proxodnaya.assistant.api.dto.response.SourceRs;
 import ru.proxodnaya.assistant.api.dto.response.StatusRs;
+import ru.proxodnaya.assistant.api.dto.response.TableRs;
 import ru.proxodnaya.assistant.api.dto.response.ToolDataRs;
 import ru.proxodnaya.assistant.features.assistant.model.Answer;
 import ru.proxodnaya.assistant.features.assistant.model.LlmStatus;
@@ -30,7 +31,9 @@ public class AssistantApiMapper {
         List<ToolDataRs> data = answer.validation() == Validation.REFUSED
                 ? answer.sources().stream().map(source -> new ToolDataRs(source.tool(), source.result())).toList()
                 : null;
-        return new AskRs(answer.text(), answer.validation().name(), sources, data);
+        TableRs table = answer.table() == null ? null
+                : new TableRs(answer.table().tool(), answer.table().columns(), answer.table().rows());
+        return new AskRs(answer.text(), answer.validation().name(), sources, table, data);
     }
 
     /**

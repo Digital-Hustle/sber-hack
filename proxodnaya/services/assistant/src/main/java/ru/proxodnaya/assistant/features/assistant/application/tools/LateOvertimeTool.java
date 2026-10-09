@@ -2,7 +2,9 @@ package ru.proxodnaya.assistant.features.assistant.application.tools;
 
 import java.time.Clock;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -11,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ru.proxodnaya.assistant.config.properties.AssistantProperties;
 import ru.proxodnaya.assistant.gateway.ShiftClient;
+import ru.proxodnaya.assistant.features.assistant.model.Table;
 import ru.proxodnaya.assistant.llm.ToolSpec;
 
 /**
@@ -20,6 +23,7 @@ import ru.proxodnaya.assistant.llm.ToolSpec;
 public class LateOvertimeTool implements AssistantTool {
 
     static final String NAME = "late_overtime";
+    private static final String ABSENT = "absent";
     private static final String WORKER_ID = "workerId";
     private static final String ITEMS = "items";
     private static final String LATE = "late";
@@ -65,7 +69,7 @@ public class LateOvertimeTool implements AssistantTool {
         long overtime = 0;
         for (JsonNode item : result.path(ITEMS)) {
             late += item.path(LATE).asLong();
-            absent += item.path("absent").asLong();
+            absent += item.path(ABSENT).asLong();
             overtime += item.path(OVERTIME).asLong();
             lateWorkers += item.path(LATE).asLong() > 0 ? 1 : 0;
             overtimeWorkers += item.path(OVERTIME).asLong() > 0 ? 1 : 0;
@@ -78,5 +82,11 @@ public class LateOvertimeTool implements AssistantTool {
         totals.put("overtimeShifts", overtime);
         totals.put("overtimePeople", overtimeWorkers);
         return totals;
+    }
+
+    @Override
+    public Optional<Table> table(JsonNode result) {
+        return AssistantTool.rows(NAME, result.path(ITEMS),
+                List.of(WORKER_ID, "shifts", LATE, "lateMinutes", ABSENT, OVERTIME, "overtimeMinutes"));
     }
 }

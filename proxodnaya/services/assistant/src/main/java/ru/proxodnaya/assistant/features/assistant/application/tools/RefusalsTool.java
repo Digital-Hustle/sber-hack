@@ -2,7 +2,9 @@ package ru.proxodnaya.assistant.features.assistant.application.tools;
 
 import java.time.Clock;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -11,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ru.proxodnaya.assistant.config.properties.AssistantProperties;
 import ru.proxodnaya.assistant.gateway.ShiftClient;
+import ru.proxodnaya.assistant.features.assistant.model.Table;
 import ru.proxodnaya.assistant.llm.ToolSpec;
 
 /**
@@ -20,6 +23,8 @@ import ru.proxodnaya.assistant.llm.ToolSpec;
 public class RefusalsTool implements AssistantTool {
 
     static final String NAME = "refusals";
+    private static final String BY_REASON = "byReason";
+    private static final String PERCENT = "percent";
     private static final String CHECKPOINT = "checkpoint";
     private static final String SHARE = "share";
 
@@ -50,12 +55,17 @@ public class RefusalsTool implements AssistantTool {
         JsonNode result = shift.get("/analytics/refusals", params);
         if (result instanceof ObjectNode node) {
             node.put("deniedPercent", Numbers.percent(node.path("deniedShare").asDouble()));
-            for (JsonNode reason : node.path("byReason")) {
+            for (JsonNode reason : node.path(BY_REASON)) {
                 if (reason instanceof ObjectNode item) {
-                    item.put("percent", Numbers.percent(item.path(SHARE).asDouble()));
+                    item.put(PERCENT, Numbers.percent(item.path(SHARE).asDouble()));
                 }
             }
         }
         return result;
+    }
+
+    @Override
+    public Optional<Table> table(JsonNode result) {
+        return AssistantTool.rows(NAME, result.path(BY_REASON), List.of("reasonCode", "count", PERCENT, "category"));
     }
 }

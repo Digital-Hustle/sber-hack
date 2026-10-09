@@ -2,7 +2,9 @@ package ru.proxodnaya.assistant.features.assistant.application.tools;
 
 import java.time.Clock;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -11,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ru.proxodnaya.assistant.config.properties.AssistantProperties;
 import ru.proxodnaya.assistant.gateway.ShiftClient;
+import ru.proxodnaya.assistant.features.assistant.model.Table;
 import ru.proxodnaya.assistant.llm.ToolSpec;
 
 /**
@@ -20,6 +23,7 @@ import ru.proxodnaya.assistant.llm.ToolSpec;
 public class WorkedHoursTool implements AssistantTool {
 
     static final String NAME = "worked_hours";
+    private static final String WORKED_HOURS = "workedHours";
     private static final String WORKER_ID = "workerId";
     private static final String ITEMS = "items";
 
@@ -52,7 +56,7 @@ public class WorkedHoursTool implements AssistantTool {
             long minutes = item.path("workedMinutes").asLong();
             total += minutes;
             if (item instanceof ObjectNode node) {
-                node.put("workedHours", Numbers.hours(minutes));
+                node.put(WORKED_HOURS, Numbers.hours(minutes));
             }
         }
         if (result instanceof ObjectNode node) {
@@ -60,5 +64,10 @@ public class WorkedHoursTool implements AssistantTool {
             node.put("people", result.path(ITEMS).size());
         }
         return result;
+    }
+
+    @Override
+    public Optional<Table> table(JsonNode result) {
+        return AssistantTool.rows(NAME, result.path(ITEMS), List.of(WORKER_ID, WORKED_HOURS, "intervals", "incomplete"));
     }
 }

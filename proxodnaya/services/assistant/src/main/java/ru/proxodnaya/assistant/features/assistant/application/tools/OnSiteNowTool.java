@@ -1,12 +1,15 @@
 package ru.proxodnaya.assistant.features.assistant.application.tools;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import ru.proxodnaya.assistant.gateway.ShiftClient;
+import ru.proxodnaya.assistant.features.assistant.model.Table;
 import ru.proxodnaya.assistant.llm.ToolSpec;
 
 /**
@@ -32,5 +35,10 @@ public class OnSiteNowTool implements AssistantTool {
     @Override
     public JsonNode call(JsonNode args) {
         return shift.get("/analytics/summary", Map.of());
+    }
+
+    @Override
+    public Optional<Table> table(JsonNode result) {
+        return AssistantTool.rows(NAME, result.path("byZone"), List.of("zoneId", "inside"));
     }
 }
