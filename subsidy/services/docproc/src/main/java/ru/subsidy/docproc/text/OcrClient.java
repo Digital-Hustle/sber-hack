@@ -22,6 +22,7 @@ import ru.subsidy.docproc.config.DocprocProperties;
 @Component
 public class OcrClient {
 
+    private final double minConf;
     private final RestClient http;
     private final boolean enabled;
     private final ObjectProvider<ServiceTokenProvider> tokens;
@@ -34,6 +35,7 @@ public class OcrClient {
      */
     public OcrClient(DocprocProperties props, ObjectProvider<ServiceTokenProvider> tokens) {
         this.tokens = tokens;
+        this.minConf = props.visionOcrMinConf() == null ? 0 : props.visionOcrMinConf().doubleValue();
         this.enabled = props.ocrUrl() != null && !props.ocrUrl().isBlank();
         this.http = RestClient.builder().baseUrl(enabled ? props.ocrUrl() : "http://localhost").build();
     }
@@ -74,10 +76,26 @@ public class OcrClient {
         if (body != null) {
             for (JsonNode page : body.path("pages")) {
                 String text = page.path("text").asText("");
-                pages.add(new PageText(page.path("n").asInt(pages.size() + 1), text,
-                        text.isBlank() ? PageText.NONE : PageText.OCR).withTables(Tables.render(page)));
+                pages.add(new PageText(page.path("n").asInt(pages.size() + 1), text, sourceOf(page, text, minConf))
+                        .withTables(Tables.render(page)));
             }
         }
         return pages;
+    }
+
+    /**
+     * Источник текста страницы: пусто — NONE; распознано со средней уверенностью ниже порога — OCR_WEAK.
+     *
+     * @param page страница ответа ocr
+     * @param text текст
+     * @param minConf порог 0..1
+     * @return NONE, OCR или OCR_WEAK
+     */
+    static String sourceOf(JsonNode page, String text, double minConf) {
+        if (text.isBlank()) {
+            return PageText.NONE;
+        }
+        boolean weak = !page.path("textLayer").asBoolean(false) && page.path("meanConf").asDouble(1) < minConf;
+        return weak ? PageText.OCR_WEAK : PageText.OCR;
     }
 }

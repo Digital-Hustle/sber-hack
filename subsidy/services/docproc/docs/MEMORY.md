@@ -27,3 +27,4 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
 - 2026-10-09 · agent · feat(docproc): DP-12 таблицы позиций из ocr в извлечение полей
+- 2026-10-09 · subsidy-agent · DP-14: OcrClient помечает страницу OCR_WEAK при meanConf < VISION_OCR_MIN_CONF (0.6, не для текстового слоя); PageText.needsImage → при VISION_FALLBACK_ENABLED картинка уходит модели вместе с текстом
