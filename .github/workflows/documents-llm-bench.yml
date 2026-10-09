@@ -1,0 +1,102 @@
+name: documents-llm-bench
+# Замер локальных моделей (FR-42, X-04): полный стенд + Ollama на CPU раннера, eval на синтетике через публичный API.
+# Таблица → step summary и артефакт bench-summary; переносится в docs/LLM.md. Долго (часы) — только вручную
+# или при изменении этого файла.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['.github/workflows/documents-llm-bench.yml']
+concurrency:
+  group: documents-llm-bench-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  bench:
+    name: bench ${{ matrix.c.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        c:
+          - { name: qwen3-1.7b, model: 'qwen3:1.7b', vision: '' }
+          - { name: qwen3-4b, model: 'qwen3:4b', vision: '' }
+          - { name: qwen3-8b, model: 'qwen3:8b', vision: '' }
+          - { name: qwen3-4b-vl, model: 'qwen3:4b', vision: 'qwen2.5vl:7b' }
+    steps:
+      - uses: actions/checkout@v4
+      - name: .env стенда (Ollama, долгий таймаут CPU, без лимита частоты для eval)
+        working-directory: documents/infra
+        run: |
+          ../scripts/gen-env.sh
+          sed -i "s|^RATE_LIMIT_ENABLED=.*|RATE_LIMIT_ENABLED=false|; s|^LLM_PROVIDER=.*|LLM_PROVIDER=ollama|; s|^LLM_BASE_URL=.*|LLM_BASE_URL=http://ollama:11434|; s|^LLM_MODEL=.*|LLM_MODEL=${{ matrix.c.model }}|; s|^LLM_VISION_MODEL=.*|LLM_VISION_MODEL=${{ matrix.c.vision }}|; s|^LLM_TIMEOUT_SECONDS=.*|LLM_TIMEOUT_SECONDS=900|; s|^LLM_MAX_CONCURRENCY=.*|LLM_MAX_CONCURRENCY=1|" .env
+          if [ -n "${{ matrix.c.vision }}" ]; then sed -i "s|^VISION_FALLBACK_ENABLED=.*|VISION_FALLBACK_ENABLED=true|" .env; fi
+          grep -E '^(LLM_|VISION_)' .env | grep -v KEY
+      - name: Ollama + скачивание моделей
+        working-directory: documents/infra
+        run: |
+          docker compose --profile llm-local up -d ollama ollama-pull
+          for i in $(seq 1 180); do
+            st=$(docker compose --profile llm-local ps -a ollama-pull --format '{{.State}} {{.ExitCode}}')
+            case "$st" in exited\ 0) break ;; exited*) docker compose --profile llm-local logs ollama-pull; exit 1 ;; esac
+            sleep 10
+          done
+          docker compose --profile llm-local exec -T ollama ollama list
+      - name: стенд
+        working-directory: documents/infra
+        run: docker compose up -d --build --wait --wait-timeout 900
+      - run: documents/scripts/smoke.sh https://localhost
+      - name: прогрев модели (загрузка в память не входит в замер)
+        working-directory: documents/infra
+        run: |
+          s=$(date +%s)
+          docker compose --profile llm-local exec -T ollama ollama run --think=false ${{ matrix.c.model }} "Ответь: ок" >/dev/null || true
+          echo "WARMUP=$(( $(date +%s) - s ))" >> "$GITHUB_ENV"
+      - uses: astral-sh/setup-uv@v6
+      - name: eval на синтетике через API (по одному документу)
+        working-directory: documents/eval
+        run: |
+          mkdir -p ../../bench
+          ( while true; do docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' >> ../../bench/stats.txt; sleep 5; done ) &
+          eval "$(../scripts/eval-client.sh | sed 's/^/export /')"
+          export EVAL_PASSWORD=$(grep '^KC_DEMO_OPERATOR_PASSWORD=' ../infra/.env | cut -d= -f2-)
+          uv run python run.py --set synthetic --api https://localhost --insecure --deadline 1800 \
+            --label "${{ matrix.c.name }}" --out ../../bench/report.md --json ../../bench/summary.json --max-errors 1
+      - name: пик памяти Ollama и метаданные
+        if: always()
+        run: |
+          peak=$(python3 - <<'PY'
+          import re
+          units = {"B": 1, "KiB": 2**10, "MiB": 2**20, "GiB": 2**30}
+          best = 0
+          for line in open("bench/stats.txt", encoding="utf-8"):
+              parts = line.split()
+              if len(parts) >= 2 and "ollama" in parts[0] and "pull" not in parts[0]:
+                  m = re.match(r"([\d.]+)(\w+)", parts[1])
+                  if m:
+                      best = max(best, float(m.group(1)) * units.get(m.group(2), 1))
+          print(f"{best / 2**30:.1f} ГБ" if best else "—")
+          PY
+          ) || peak="—"
+          printf '{"model": "%s", "vision": "%s", "peakRam": "%s", "warmupSec": %s, "runner": "GitHub ubuntu-latest, %s vCPU, %s RAM, без GPU"}\n' \
+            "${{ matrix.c.model }}" "${{ matrix.c.vision }}" "$peak" "${WARMUP:-0}" "$(nproc)" "$(free -g | awk '/Mem/{print $2" ГБ"}')" > bench/meta.json
+          cat bench/meta.json
+      - if: failure()
+        working-directory: documents/infra
+        run: docker compose ps -a && docker compose logs --tail=150 docproc ocr
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: 'bench-${{ matrix.c.name }}', path: bench/ }
+
+  summary:
+    needs: bench
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: out, pattern: 'bench-*' }
+      - run: python3 documents/scripts/bench-summary.py out | tee bench-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with: { name: bench-summary, path: bench-summary.md }
