@@ -1,5 +1,6 @@
 package ru.subsidy.docproc.text;
 
+import java.net.http.HttpClient;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +8,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -37,7 +39,10 @@ public class OcrClient {
         this.tokens = tokens;
         this.minConf = props.visionOcrMinConf() == null ? 0 : props.visionOcrMinConf().doubleValue();
         this.enabled = props.ocrUrl() != null && !props.ocrUrl().isBlank();
-        this.http = RestClient.builder().baseUrl(enabled ? props.ocrUrl() : "http://localhost").build();
+        // HTTP/1.1: JDK-клиент по умолчанию шлёт h2c-upgrade, uvicorn его отвергает → 400 и «ocr unavailable».
+        HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
+        this.http = RestClient.builder().requestFactory(new JdkClientHttpRequestFactory(client))
+                .baseUrl(enabled ? props.ocrUrl() : "http://localhost").build();
     }
 
     /**
