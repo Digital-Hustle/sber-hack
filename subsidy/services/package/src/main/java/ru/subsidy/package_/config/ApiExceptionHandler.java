@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -33,11 +32,11 @@ public class ApiExceptionHandler {
      * Доменное исключение.
      *
      * @param exception исключение
-     * @return ProblemDetail
+     * @return ProblemDetail (статус берётся из поля status)
      */
     @ExceptionHandler(DomainException.class)
-    public ResponseEntity<ProblemDetail> domain(DomainException exception) {
+    public ProblemDetail domain(DomainException exception) {
         HttpStatus status = STATUSES.getOrDefault(exception.code(), HttpStatus.UNPROCESSABLE_ENTITY);
-        return ResponseEntity.status(status).body(ProblemDetailFactory.of(exception, status.value()));
+        return ProblemDetailFactory.of(exception, status.value());
     }
 }
