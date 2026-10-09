@@ -4,8 +4,8 @@
 
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| AS-01 | B-06 | `new-service.sh assistant 8084 B3`, Liquibase: conversations, messages | B3 | todo |
-| AS-02 | B-06 | Инструменты чтения через `/internal/rules/packages/{id}/facts`, тест доступа | B3 | todo |
-| AS-03 | B-06 | Цикл tool calling через `LlmGateway.chat` | B3 | todo |
-| AS-04 | B-06 | `NumberValidator` + тест | B3 | todo |
-| AS-05 | B-06 | Аномалии в ответе (из `ANOMALY_*`), подсказки вопросов | B3 | todo |
+| AS-01 | B-06 | `new-service.sh assistant 8084 B3`, Liquibase: conversations, messages | B3 | done #AS |
+| AS-02 | B-06 | Инструменты чтения через `/internal/rules/packages/{id}/facts`, тест доступа | B3 | done #AS |
+| AS-03 | B-06 | Цикл tool calling через `LlmGateway.chat` | B3 | done #AS |
+| AS-04 | B-06 | `NumberValidator` + тест | B3 | done #AS |
+| AS-05 | B-06 | Аномалии в ответе (из `ANOMALY_*`), подсказки вопросов | B3 | done #AS |
