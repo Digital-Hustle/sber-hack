@@ -19,7 +19,7 @@ const SUGGEST = [
   { q: "Кто опоздал сегодня?", icon: AlarmClock },
   { q: "Почему были отказы за неделю?", icon: ShieldAlert },
   { q: "Сколько часов отработано за неделю?", icon: Timer },
-  { q: "Что с Ивановым сегодня?", icon: UserSearch },
+  { q: "Кто сегодня не пришёл на смену?", icon: UserSearch },
 ];
 
 const Table = ({ t }: { t: NonNullable<AssistantAnswer["table"]> }) => (

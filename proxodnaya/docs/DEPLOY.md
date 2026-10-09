@@ -30,6 +30,17 @@ JVM: `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -Xss512k` и `m
 4. `docker login ghcr.io` с read-only токеном.
 5. `docker compose --profile llm-local up -d`, проверить `scripts/smoke.sh https://<host>`.
 
+## Стенд за edge (общий сервер 217.12.40.215)
+Порты 80/443 держит общий edge сервера (`/opt/sber-hack/edge`, не трогать): он маршрутизирует `proxodnaya.digital-hustle.ru` → `127.0.0.1:8380`. Caddy «Проходной» слушает только локально и работает по http, TLS — на edge.
+- Checkout: `/opt/gate` (отдельно от `/opt/sber-hack`), `proxodnaya/infra/.env` — из `scripts/gen-env.sh`, затем правки:
+  `PUBLIC_HOST=proxodnaya.digital-hustle.ru`, `CADDY_SCHEME=http://`, `HTTP_BIND=127.0.0.1:8380`, `HTTPS_BIND=127.0.0.1:8743`;
+  модель по API: `LLM_PROVIDER=openai`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`, `LLM_TIMEOUT_SECONDS=60` (профиль `llm-local` не включаем — сервер общий);
+  `SIMULATOR_ENABLED=false`, `STAFF_BOOTSTRAP_ADMIN_EMAIL=<почта первого админа>`, `SMTP_*`; пока SMTP нет — `STAFF_LOG_CODES=true` (код входа в `docker logs proxodnaya-people-1`).
+- Caddy доверяет `X-Forwarded-*` от edge (`trusted_proxies static private_ranges`), поэтому Keycloak и ссылки видят https.
+- Деплой без GHCR: `scripts/deploy-server.sh` — jar-ы (jOOQ из временного postgres `gate-build-pg` на `127.0.0.1:5439`, чтобы не мешать серверному CI на 5432), `docker compose -p proxodnaya build`, `up -d --wait`, `docker image prune -f`.
+  `ssh srv 'cd /opt/gate && git fetch -q origin && git checkout -q -f origin/main && (setsid nohup proxodnaya/scripts/deploy-server.sh > /opt/gate/deploy.log 2>&1 < /dev/null &)'`
+- Проверка: `scripts/smoke.sh https://proxodnaya.digital-hustle.ru`. Не запускать деплой одновременно с серверным CI.
+
 ## CI (GitHub Actions, `.github/workflows/proxodnaya-ci.yml`)
 Запускается на каждый PR и push в `main`:
 1. **changes** — какие части затронуты (backend / frontend / infra / docs).
