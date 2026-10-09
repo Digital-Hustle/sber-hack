@@ -1,14 +1,23 @@
 import { AnimatePresence, motion, useDragControls, type PanInfo } from "motion/react";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { useMediaQuery } from "@/shared/hooks";
-import { spring, swipe, tween } from "@/shared/config/motion";
+import { distance, scale, spring, swipe, tween } from "@/shared/config/motion";
 
 /** Модалка на десктопе, нижняя шторка с перетаскиванием на телефоне. Блокирует прокрутку фона. */
-export const Dialog = ({ open, onClose, title, description, children, footer, className }: {
-  open: boolean; onClose: () => void; title?: string; description?: React.ReactNode; children: React.ReactNode; footer?: React.ReactNode; className?: string;
+/**
+ * Для диалога, который монтируется по условию ({x && <XDialog onClose=…/>}): закрытие сначала проигрывает выход,
+ * и только потом родитель размонтирует диалог (onClosed). Без этого модалка исчезает рывком (ADR-048).
+ */
+export const useDialogState = () => {
+  const [open, setOpen] = useState(true);
+  return { open, close: useCallback(() => setOpen(false), []) };
+};
+
+export const Dialog = ({ open, onClose, onClosed, title, description, children, footer, className }: {
+  open: boolean; onClose: () => void; onClosed?: () => void; title?: string; description?: React.ReactNode; children: React.ReactNode; footer?: React.ReactNode; className?: string;
 }) => {
   const desktop = useMediaQuery("(min-width: 640px)");
   const drag = useDragControls();
@@ -23,14 +32,14 @@ export const Dialog = ({ open, onClose, title, description, children, footer, cl
   const onDragEnd = (_: unknown, i: PanInfo) => { if (i.offset.y > swipe.offset || i.velocity.y > swipe.velocity) onClose(); };
 
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onClosed}>
       {open && (
         <div className="fixed inset-0 z-modal flex items-end justify-center sm:items-center sm:p-6">
           <motion.div className="absolute inset-0 bg-overlay backdrop-blur-xs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={tween.base} onClick={onClose} />
           <motion.div role="dialog" aria-modal aria-label={title}
-            initial={desktop ? { opacity: 0, scale: 0.95, y: 12 } : { y: "100%" }}
+            initial={desktop ? { opacity: 0, scale: scale.popIn, y: distance.enter } : { y: "100%" }}
             animate={desktop ? { opacity: 1, scale: 1, y: 0 } : { y: 0 }}
-            exit={desktop ? { opacity: 0, scale: 0.97, y: 8, transition: tween.exit } : { y: "100%", transition: spring.sheet }}
+            exit={desktop ? { opacity: 0, scale: scale.popOut, y: distance.exit, transition: tween.exit } : { y: "100%", transition: spring.sheet }}
             transition={{ ...spring.sheet, opacity: tween.fast }}
             drag={desktop ? false : "y"} dragControls={drag} dragListener={false} dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }} onDragEnd={onDragEnd}
             className={cn("relative flex max-h-sheet w-full min-w-0 flex-col rounded-t-xl bg-popover text-popover-foreground shadow-pop sm:max-w-lg sm:rounded-xl", className)}>

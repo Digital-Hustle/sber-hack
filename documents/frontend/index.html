@@ -7,8 +7,17 @@
     <meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Документы · приём документов соискателя</title>
+    <style>
+      #splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#E2F5E9;transition:opacity .35s ease,visibility .35s}
+      @media (prefers-color-scheme:dark){#splash{background:#121417}}
+      #splash img{width:56px;height:56px;border-radius:16px;animation:sp 1.2s ease-in-out infinite}
+      #splash.out{opacity:0;visibility:hidden}
+      @keyframes sp{50%{transform:scale(.92);opacity:.7}}
+      @media (prefers-reduced-motion:reduce){#splash img{animation:none}}
+    </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true"><img src="/favicon.svg" alt="" /></div>
     <div id="root"></div>
     <script type="module" src="/src/app/main.tsx"></script>
   </body>

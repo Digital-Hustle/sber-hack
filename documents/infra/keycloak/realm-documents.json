@@ -2,6 +2,7 @@
   "realm": "documents",
   "enabled": true,
   "displayName": "Документы",
+  "loginTheme": "documents",
   "sslRequired": "external",
   "registrationAllowed": false,
   "loginWithEmailAllowed": false,

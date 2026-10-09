@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { AlertTriangle, Inbox, Loader2, Search, UserRound } from "lucide-react";
-import { AppStatusBadge, reviewApi, reviewKeys, waitingRu, type QueueFilter } from "@/entities/application";
+import { AlertTriangle, ChevronRight, Inbox, Loader2, Search, UserRound } from "lucide-react";
+import { AppStatusBadge, reviewApi, reviewKeys, statusView, waitingRu, type QueueFilter } from "@/entities/application";
 import { useSession } from "@/entities/session";
 import { TakeNextButton, useTakeNext } from "@/features/take-next";
-import { Button, Card, EmptyState, Input, LoadMore, PageHeader, RowsSkeleton, Segmented, Select, Status } from "@/shared/ui";
+import { AnimatedNumber, Avatar, Button, Card, CardHeader, CardTitle, EmptyState, Input, LoadMore, PageHeader, RowsSkeleton, Segmented, Select, Status } from "@/shared/ui";
 import { errorText, useEventStream } from "@/shared/api";
 import { routes } from "@/shared/const/router";
+import { cn } from "@/shared/lib";
 import { fadeUp, stagger } from "@/shared/config/motion";
 
 const STATUSES = [
@@ -20,6 +21,40 @@ const STATUSES = [
   { value: "ACCEPTED", label: "Принятые" },
   { value: "RETURNED", label: "Возвращённые" },
 ];
+
+const ASIDE = ["SUBMITTED", "IN_REVIEW", "NEEDS_CHANGES", "DRAFT"] as const;
+
+/** Боковая сводка очереди на широком экране: счётчики по статусам (клик — фильтр), ожидание, горячие клавиши. */
+const QueueAside = ({ status, onStatus }: { status: string; onStatus: (v: string) => void }) => {
+  const m = useQuery({ queryKey: reviewKeys.metrics, queryFn: reviewApi.metrics, refetchInterval: 30_000 });
+  const apps = m.data?.applications ?? {};
+  return (
+    <aside className="hidden w-80 shrink-0 flex-col gap-4 xl:sticky xl:top-24 xl:flex">
+      <Card className="overflow-hidden">
+        <CardHeader><CardTitle>Сводка</CardTitle>{m.data && <Status>ждут {waitingRu(m.data.waiting?.p50)}</Status>}</CardHeader>
+        <ul className="flex flex-col p-2">
+          {ASIDE.map((k) => (
+            <li key={k}>
+              <button type="button" onClick={() => onStatus(status === k ? "" : k)} aria-pressed={status === k}
+                className={cn("flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left text-sm outline-none transition-colors duration-fast hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring", status === k && "bg-muted font-medium")}>
+                <span className="truncate">{statusView(k).label}</span>
+                <span className="font-semibold tabular-nums">{m.isPending ? "…" : <AnimatedNumber value={apps[k] ?? 0} />}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Card>
+      <Card className="p-4 sm:p-5">
+        <h2 className="mb-3 font-display text-base font-semibold">Клавиши</h2>
+        <dl className="flex flex-col gap-2 text-sm">
+          {[["N", "следующая заявка"], ["J / K", "поле вниз / вверх"], ["E", "править поле"], ["Enter", "подтвердить документ"]].map(([k, v]) => (
+            <div key={k} className="flex items-center gap-3"><dt className="w-14 shrink-0"><kbd className="rounded-xs bg-surface px-1.5 py-0.5 font-mono text-xs">{k}</kbd></dt><dd className="text-muted-foreground">{v}</dd></div>
+          ))}
+        </dl>
+      </Card>
+    </aside>
+  );
+};
 
 /** FE-OP-02: очередь — фильтры в URL, курсоры, «взять следующую», обновление по SSE без перезагрузки. */
 export const QueuePage = () => {
@@ -49,42 +84,52 @@ export const QueuePage = () => {
   return (
     <>
       <PageHeader title="Очередь заявок" sub="Сначала — дольше всех ждущие. Поля, в которых модель не уверена, отмечены" actions={<TakeNextButton />} />
-      <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center">
-        <Input icon={<Search />} value={text} onChange={(e) => setText(e.target.value)} placeholder="ФИО соискателя или номер заявки" className="lg:max-w-sm" aria-label="Поиск" />
-        <Select aria-label="Статус" className="lg:w-56" value={f.status ?? ""} options={STATUSES} onChange={(v) => set("status", v)} />
-        <Segmented label="Чьи" value={f.assignee ? "me" : "all"} onChange={(v) => set("assignee", v === "me" ? login : "")} options={[{ value: "all", label: "Все" }, { value: "me", label: "Мои" }]} />
-        <Segmented label="Сортировка" className="lg:ml-auto" value={f.sort === "updated" ? "updated" : "waiting"} onChange={(v) => set("sort", v === "waiting" ? "" : v)}
-          options={[{ value: "waiting", label: "Дольше ждут" }, { value: "updated", label: "Недавние" }]} />
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-6">
+        <div className="min-w-0 flex-1">
+      <div className="mb-4 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
+        <Input icon={<Search />} value={text} onChange={(e) => setText(e.target.value)} placeholder="ФИО соискателя или номер заявки" className="bg-card md:min-w-64 md:flex-1" aria-label="Поиск" />
+        <Select aria-label="Статус" className="bg-card md:w-56" value={f.status ?? ""} options={STATUSES} onChange={(v) => set("status", v)} />
+        <div className="flex flex-wrap gap-2">
+          <Segmented label="Чьи" value={f.assignee ? "me" : "all"} onChange={(v) => set("assignee", v === "me" ? login : "")} options={[{ value: "all", label: "Все" }, { value: "me", label: "Мои" }]} />
+          <Segmented label="Сортировка" value={f.sort === "updated" ? "updated" : "waiting"} onChange={(v) => set("sort", v === "waiting" ? "" : v)}
+            options={[{ value: "waiting", label: "Дольше ждут" }, { value: "updated", label: "Недавние" }]} />
+        </div>
       </div>
-      {q.isPending ? <RowsSkeleton rows={8} /> : q.isError ? (
+      {q.isPending ? <Card className="overflow-hidden"><RowsSkeleton rows={8} /></Card> : q.isError ? (
         <EmptyState title="Очередь не загрузилась" text={errorText(q.error)} action={<Button variant="secondary" onClick={() => q.refetch()}>Повторить</Button>} />
       ) : !items.length ? (
         <Card><EmptyState icon={<Inbox />} title="Заявок нет" text={f.status || f.q || f.assignee ? "Под фильтр ничего не попало" : "Как только соискатель отправит комплект, он появится здесь"} /></Card>
       ) : (
         <>
-          <motion.ul variants={stagger(0.02)} initial="hidden" animate="show" className="flex flex-col gap-2">
-            {items.map((it) => (
-              <motion.li key={it.id} variants={fadeUp}>
-                <Link to={routes.operatorApplication(it.id!)} className="block rounded-lg bg-card p-4 shadow-card outline-none transition-shadow duration-fast hover:shadow-float focus-visible:ring-2 focus-visible:ring-ring">
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <div className="min-w-0 flex-1 basis-60">
-                      <div className="truncate font-semibold">{it.applicantName || "Соискатель (имя ещё не распознано)"}</div>
-                      <div className="text-xs text-muted-foreground">№ {it.id?.slice(0, 8)} · ждёт {waitingRu(it.waitingSeconds)}</div>
+          <Card className="overflow-hidden">
+            <motion.ul variants={stagger(0.02)} initial="hidden" animate="show" className={q.isFetching && !q.isFetchingNextPage ? "opacity-70 transition-opacity duration-fast" : "transition-opacity duration-fast"}>
+              {items.map((it) => (
+                <motion.li key={it.id} variants={fadeUp} className="border-t border-border first:border-t-0">
+                  <Link to={routes.operatorApplication(it.id!)} className="group flex min-w-0 items-center gap-3 px-4 py-3.5 outline-none transition-colors duration-fast hover:bg-muted focus-visible:bg-muted sm:gap-4 sm:px-6">
+                    <Avatar name={it.applicantName || "?"} className="hidden size-10 sm:flex" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{it.applicantName || "Соискатель (имя ещё не распознано)"}</div>
+                      <div className="truncate text-xs text-muted-foreground">№ {it.id?.slice(0, 8)} · ждёт {waitingRu(it.waitingSeconds)} · {it.confirmed ?? 0}/{it.documents ?? 0} док.</div>
+                    </div>
+                    <div className="hidden flex-wrap items-center justify-end gap-1.5 md:flex">
+                      {!!it.attention && <Status tone="warning"><AlertTriangle />перепроверить: {it.attention}</Status>}
+                      {!!it.processing && <Status tone="info"><Loader2 />разбирается: {it.processing}</Status>}
+                      {!!it.missing?.length && <Status tone="danger">не хватает: {it.missing.length}</Status>}
+                      {it.assignee && <Status><UserRound />{it.assignee}</Status>}
                     </div>
                     <AppStatusBadge status={it.status} />
-                    <span className="text-sm tabular-nums text-muted-foreground">{it.confirmed ?? 0}/{it.documents ?? 0} док.</span>
-                    {!!it.attention && <Status tone="warning"><AlertTriangle />перепроверить: {it.attention}</Status>}
-                    {!!it.processing && <Status tone="info"><Loader2 />разбирается: {it.processing}</Status>}
-                    {!!it.missing?.length && <Status tone="danger">не хватает: {it.missing.length}</Status>}
-                    {it.assignee && <Status><UserRound />{it.assignee}</Status>}
-                  </div>
-                </Link>
-              </motion.li>
-            ))}
-          </motion.ul>
+                    <ChevronRight className="size-4 shrink-0 text-subtle-foreground transition-transform duration-fast group-hover:translate-x-0.5" />
+                  </Link>
+                </motion.li>
+              ))}
+            </motion.ul>
+          </Card>
           <LoadMore className="mt-4" shown={items.length} total={total} hasMore={!!q.hasNextPage} loading={q.isFetchingNextPage} error={q.isFetchNextPageError} onMore={() => q.fetchNextPage()} />
         </>
       )}
+        </div>
+        <QueueAside status={f.status ?? ""} onStatus={(v) => set("status", v)} />
+      </div>
     </>
   );
 };

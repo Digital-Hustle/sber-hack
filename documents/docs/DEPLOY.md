@@ -43,5 +43,11 @@ push в `main` → CI зелёный → `docker compose build` (те же Docke
 `PUBLIC_URL=https://documents.<домен>`, `CADDY_SCHEME=http://`, `HTTP_BIND=127.0.0.1:8180`, `HTTPS_BIND=127.0.0.1:8543`.
 Без этих переменных стенд, как раньше, сам слушает 80/443.
 
+## Тема входа Keycloak
+Тема `documents` монтируется в `/opt/keycloak/themes/documents` (`loginTheme` в realm; на существующем realm: `kcadm.sh update realms/documents -s loginTheme=documents`). После правки CSS Keycloak отдаёт старую сжатую копию из `data/tmp/kc-gzip-cache` — очистить: `docker compose exec -u 0 keycloak rm -rf /opt/keycloak/data/tmp/kc-gzip-cache`.
+
+## Тестовые данные
+`python3 eval/seed_stand.py --base https://<host> --count 8` — заявки с согласованными синтетическими документами через API соискателя (часть — черновики); разбор делает модель стенда.
+
 ## Перед защитой
 Тег `docs-demo-final`, деплой тега, заморозка деплоя; маршрут судьи на сервере и на запасном ноутбуке; модели и образы — локально (`docker save` в архив).

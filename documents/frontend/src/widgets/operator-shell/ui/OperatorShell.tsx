@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { motion } from "motion/react";
-import { LogIn, LogOut, ShieldCheck } from "lucide-react";
+import { ArrowRight, LogIn, LogOut, ShieldCheck } from "lucide-react";
 import { useSession, useOperatorAuth, can, roleLabel, type Perm } from "@/entities/session";
-import { Avatar, Button, Card, Dialog, EmptyState, HeaderBar, Logo, NavTrack, OfflineBanner, PreferencesButton, Spinner, Status } from "@/shared/ui";
+import { Avatar, Button, Dialog, EmptyState, HeaderBar, Logo, NavTrack, OfflineBanner, PreferencesButton, Spinner, Status } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
-import { pageIn } from "@/shared/config/motion";
+import { fadeUp, pageIn, stagger } from "@/shared/config/motion";
 import { ModelStatusBadge } from "./ModelStatusBadge";
 
 const NAV: { to: string; label: string; perm: Perm; end?: boolean }[] = [
@@ -14,15 +14,24 @@ const NAV: { to: string; label: string; perm: Perm; end?: boolean }[] = [
   { to: routes.operatorMetrics, label: "Метрики", perm: "metrics" },
 ];
 
+/** Вход сотрудника: единый вход Keycloak (PKCE).  */
 const SignIn = ({ onSignIn }: { onSignIn: () => void }) => (
-  <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center px-4">
-    <Card className="p-6 sm:p-8">
-      <Logo sub="рабочее место оператора" />
-      <h1 className="mt-6 font-display text-2xl font-semibold tracking-display">Вход для сотрудников</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Единый вход через корпоративную учётную запись (Keycloak). Права проверяет сервер.</p>
-      <Button size="lg" block className="mt-6" onClick={onSignIn}><LogIn />Войти</Button>
-      <Link to={routes.home} className="mt-4 block text-center text-sm text-muted-foreground underline">На главную</Link>
-    </Card>
+  <div className="relative isolate flex min-h-svh flex-col">
+    <HeaderBar inner="max-w-6xl">
+      <Link to={routes.home} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="рабочее место" /></Link>
+      <div className="ml-auto flex shrink-0 items-center gap-1.5"><PreferencesButton /></div>
+    </HeaderBar>
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pb-16 pt-8 sm:px-6">
+      <motion.div variants={stagger(0.07)} initial="hidden" animate="show" className="flex flex-col items-center text-center">
+        <motion.p variants={fadeUp} className="text-sm font-medium text-brand">Операторы, старшие и аудиторы</motion.p>
+        <motion.h1 variants={fadeUp} className="mt-5 text-balance font-display text-4xl font-semibold leading-none tracking-hero sm:text-5xl">Вход в рабочее место</motion.h1>
+        <motion.p variants={fadeUp} className="mt-3 text-pretty text-base text-foreground/70">Единая корпоративная учётная запись. Права проверяет сервер</motion.p>
+      </motion.div>
+      <motion.section variants={fadeUp} initial="hidden" animate="show" className="mt-6 flex flex-col gap-5 overflow-hidden rounded-3xl bg-card/85 p-5 shadow-card backdrop-blur-xl sm:p-8">
+        <Button variant="brand" size="lg" block className="h-14 rounded-lg" onClick={onSignIn}><LogIn />Войти<ArrowRight /></Button>
+        <p className="text-center text-xs text-muted-foreground">Нет доступа — обратитесь к администратору стенда</p>
+      </motion.section>
+    </main>
   </div>
 );
 
@@ -48,7 +57,7 @@ export const OperatorShell = () => {
       </HeaderBar>
       <OfflineBanner />
       <nav className="mx-auto mt-3 flex max-w-7xl px-4 md:hidden" aria-label="Разделы"><NavTrack items={items.map(({ to, label, end }) => ({ to, label, end }))} /></nav>
-      <motion.main key={loc.pathname} {...pageIn} className="mx-auto w-full max-w-screen-2xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
+      <motion.main key={loc.pathname} {...pageIn} className="mx-auto w-full max-w-7xl px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
         {s.roles.length ? <Outlet /> : <EmptyState icon={<ShieldCheck />} title="Нет роли" text="Учётной записи не назначена роль оператора — обратитесь к администратору" className="py-24" />}
       </motion.main>
       <Dialog open={account} onClose={() => setAccount(false)} title="Учётная запись">
