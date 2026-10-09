@@ -1,27 +1,51 @@
 import { useState } from "react";
+import { motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, ClipboardCopy, FileSearch } from "lucide-react";
 import { ProtocolStatusBadge } from "@/entities/package";
 import { CHECK_STATUS, protocolApi, protocolKeys, ruleView, type Protocol, type RuleResult } from "@/entities/protocol";
 import { ApiError, errorText } from "@/shared/api";
-import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Progress, RowsSkeleton, Segmented, Select, Spinner, Status, toast } from "@/shared/ui";
-import { agoRu } from "@/shared/lib";
+import { AnimatedNumber, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Progress, RowsSkeleton, Segmented, Select, Spinner, Status, toast } from "@/shared/ui";
+import { agoRu, cn } from "@/shared/lib";
+import { popIn, stagger } from "@/shared/config/motion";
 
 type Group = "problems" | "all";
+
+/** Плитки итогов как на обзоре песочницы; все числа — из протокола сервера (rules.md §1.2). */
+const Tiles = ({ p }: { p: Protocol }) => {
+  const tiles = [
+    { label: "Комплект", value: p.completeness.percent, suffix: "%", sub: "документов на месте" },
+    { label: "Ошибок", value: p.failed, sub: "правила не пройдены", tone: p.failed ? "text-danger" : "" },
+    { label: "Предупреждений", value: p.warnings, sub: "стоит посмотреть", tone: p.warnings ? "text-warning" : "" },
+    { label: "Вручную", value: p.needsReview, sub: "нужна проверка человеком", tone: p.needsReview ? "text-info" : "" },
+  ];
+  return (
+    <motion.dl variants={stagger(0.05)} initial="hidden" animate="show" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      {tiles.map((t, i) => (
+        <motion.div key={t.label} variants={popIn} className={cn("relative flex min-w-0 flex-col gap-1 overflow-hidden rounded-xl px-4 py-4 shadow-card sm:px-5", i === 0 ? "bg-brand-deep text-white" : "bg-card")}>
+          {i === 0 && <span aria-hidden className="absolute inset-0 bg-sheen" />}
+          <dt className={cn("relative truncate text-sm", i === 0 ? "text-white/85" : "text-muted-foreground")}>{t.label}</dt>
+          <dd className={cn("relative font-display text-4xl font-semibold tabular-nums tracking-hero", t.tone)}><AnimatedNumber value={t.value} />{t.suffix}</dd>
+          <dd className={cn("relative truncate text-xs", i === 0 ? "text-white/80" : "text-muted-foreground")}>{t.sub}</dd>
+        </motion.div>
+      ))}
+    </motion.dl>
+  );
+};
 
 const Completeness = ({ p }: { p: Protocol }) => {
   const c = p.completeness;
   const copy = () => { if (c.request) void navigator.clipboard.writeText(c.request).then(() => toast.success("Текст запроса скопирован")); };
   return (
     <Card>
-      <CardHeader><CardTitle>Комплект документов · {c.percent}%</CardTitle></CardHeader>
+      <CardHeader><CardTitle>Комплект документов</CardTitle><span className="text-sm tabular-nums text-muted-foreground">{c.percent}%</span></CardHeader>
       <CardContent className="flex flex-col gap-3">
         <Progress value={c.percent} />
         <ul className="flex flex-col gap-1.5">
           {c.items.map((it) => {
             const v = CHECK_STATUS[it.status] ?? { label: it.status, tone: "neutral" as const };
             return (
-              <li key={it.item} className="flex items-start gap-2 text-sm">
+              <li key={it.item} className="-mx-2 flex items-start gap-2 rounded-md px-2 py-1 text-sm transition-colors duration-fast hover:bg-muted">
                 <span className="min-w-0 flex-1">{it.title}{it.condition && <span className="text-muted-foreground"> · {it.condition}</span>}</span>
                 <Status tone={v.tone}>{v.label}</Status>
               </li>
@@ -93,12 +117,13 @@ export const ProtocolPanel = ({ packageId, onEvidence }: { packageId: string; on
         <ProtocolStatusBadge status={p.status} />
         <span className="text-sm text-muted-foreground">версия {p.version} · правила {p.rulesVersion} · {agoRu(Date.parse(p.createdAt))}</span>
         <span className="flex-1" />
-        <Select aria-label="Версия протокола" size="sm" className="w-48" value={version} options={options} onChange={setVersion} />
+        <Select aria-label="Версия протокола" size="sm" className="w-full sm:w-48" value={version} options={options} onChange={setVersion} />
       </div>
+      <Tiles p={p} />
       <Completeness p={p} />
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center gap-2">
-          <CardTitle className="flex-1">Проверки · ошибок {p.failed}, предупреждений {p.warnings}, вручную {p.needsReview}</CardTitle>
+          <CardTitle className="flex-1">Проверки · {p.results.length}</CardTitle>
           <Segmented size="sm" label="Показать" value={group} onChange={setGroup} options={[{ value: "problems", label: "Проблемы" }, { value: "all", label: "Все" }]} />
         </CardHeader>
         <CardContent>
