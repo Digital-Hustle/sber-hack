@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "subsidy/events/envelope",
+  "$id": "urn:subsidy:events:envelope",
   "title": "EventEnvelope",
   "description": "Конверт любого события (libs/common EventEnvelope). Ключ Kafka — aggregateId.",
   "type": "object",

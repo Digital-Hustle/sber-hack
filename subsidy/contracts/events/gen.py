@@ -33,7 +33,7 @@ for topic,types in E.items():
   os.makedirs(f'{ROOT}/{topic}',exist_ok=True)
   for t,(props,optional,desc) in types.items():
     req=[k for k in props if k not in (optional or [])]
-    sch={"$schema":"https://json-schema.org/draft/2020-12/schema","$id":f"subsidy/events/{topic}/{t}","title":t,"description":desc+". Это схема payload; конверт — envelope.schema.json.","type":"object","required":req,"properties":props,"additionalProperties":False}
+    sch={"$schema":"https://json-schema.org/draft/2020-12/schema","$id":f"urn:subsidy:events:{topic}:{t}","title":t,"description":desc+". Это схема payload; конверт — envelope.schema.json.","type":"object","required":req,"properties":props,"additionalProperties":False}
     open(f'{ROOT}/{topic}/{t}.schema.json','w').write(json.dumps(sch,ensure_ascii=False,indent=2)+"\n")
-env={"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"subsidy/events/envelope","title":"EventEnvelope","description":"Конверт любого события (libs/common EventEnvelope). Ключ Kafka — aggregateId.","type":"object","required":["eventId","type","occurredAt","aggregateId","payload"],"properties":{"eventId":U,"type":S,"occurredAt":{"type":"string","format":"date-time"},"aggregateId":S,"traceparent":NS,"payload":{"type":"object"}},"additionalProperties":False}
+env={"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:subsidy:events:envelope","title":"EventEnvelope","description":"Конверт любого события (libs/common EventEnvelope). Ключ Kafka — aggregateId.","type":"object","required":["eventId","type","occurredAt","aggregateId","payload"],"properties":{"eventId":U,"type":S,"occurredAt":{"type":"string","format":"date-time"},"aggregateId":S,"traceparent":NS,"payload":{"type":"object"}},"additionalProperties":False}
 open(f'{ROOT}/envelope.schema.json','w').write(json.dumps(env,ensure_ascii=False,indent=2)+"\n")
