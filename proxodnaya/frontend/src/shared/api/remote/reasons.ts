@@ -1,8 +1,11 @@
 import type { Decision, ReasonCode } from "../types";
 
 // Тексты для киоска приходят с сервера вместе с кодом (docs/API.md, «Коды отказов прохода»); здесь — запасные для журнала и офлайна.
+/** Подпись кода OK. Онлайн решение всегда приходит с сервера; сам терминал выставляет его только в автономном режиме по снимку (ADR-042). */
+const OK_DECISION: Decision = "ALLOW";
+
 export const REASONS: Record<ReasonCode, { decision: Decision; message: string; hint: string }> = {
-  OK: { decision: "ALLOW", message: "Проходите", hint: "Хорошей смены" },
+  OK: { decision: OK_DECISION, message: "Проходите", hint: "Хорошей смены" },
   QR_MISSING: { decision: "DENY", message: "QR-код не распознан", hint: "Покажите QR из приложения" },
   QR_INVALID: { decision: "DENY", message: "Недействительный пропуск", hint: "Откройте приложение «Проходная»" },
   QR_EXPIRED: { decision: "DENY", message: "QR устарел", hint: "Дождитесь нового QR и проверьте время на телефоне" },
