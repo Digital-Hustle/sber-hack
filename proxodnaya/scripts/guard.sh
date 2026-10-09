@@ -61,7 +61,9 @@ REPO=$(git rev-parse --show-toplevel)
 GEN="$REPO/.agents/skills/frontend-fsd/scripts/gen-tokens.mjs"
 if node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=6)?0:1)' 2>/dev/null; then
   if [ -f frontend/src/shared/config/tokens.ts ]; then
-    (cd frontend && node --experimental-strip-types --no-warnings "$GEN" src/shared/config/tokens.ts --css src/app/styles/theme.css --md docs/DESIGN.md --check >/dev/null) \
+    # у фронта свой генератор (новее скилла: градиенты, трекинг, тёмная тема) — проверяем им, как и npm run gen:tokens
+    FGEN="$GEN"; [ -f frontend/scripts/gen-tokens.mjs ] && FGEN="$PWD/frontend/scripts/gen-tokens.mjs"
+    (cd frontend && node --experimental-strip-types --no-warnings "$FGEN" src/shared/config/tokens.ts --css src/app/styles/theme.css --md docs/DESIGN.md --check >/dev/null) \
       || F "дизайн-токены: theme.css/DESIGN.md устарели или контраст < 4.5 — npm run gen:tokens"
   else
     A="$REPO/.agents/skills/frontend-fsd/assets"
