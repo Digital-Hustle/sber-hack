@@ -28,3 +28,4 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
 - 2026-10-09 · miroslavrov · feat: intake реализован (ветка feat/IN-01-intake)
+- 2026-10-09 · agent · IN-14 (B-07): `applications.assignee` (миграция application-assignee) из события `ApplicationAssigned`; `FileContentService.ensureStaffAccess` — скан оператору только по назначению

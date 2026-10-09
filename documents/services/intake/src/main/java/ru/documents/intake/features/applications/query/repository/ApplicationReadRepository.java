@@ -129,6 +129,16 @@ public class ApplicationReadRepository {
     public record FileRow(UUID applicationId, UUID documentId, String mime, int pages, byte[] enc) {
     }
 
+    /**
+     * Назначенный оператор заявки (B-07).
+     *
+     * @param appId заявка
+     * @return логин или пусто
+     */
+    public Optional<String> assignee(UUID appId) {
+        return jdbc.sql("select assignee from applications where id = ?").param(appId).query(String.class).optional();
+    }
+
     /** Файл. */
     public Optional<FileRow> file(UUID fileId) {
         return jdbc.sql("""

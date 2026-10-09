@@ -156,6 +156,33 @@ class IntakeFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    /** B-07: скан — только назначенному оператору или старшему; аудитор файлов не видит. */
+    @Test
+    void scanOpensOnlyForAssigneeOrSenior() throws Exception {
+        JsonNode a = create();
+        String id = a.get("applicationId").asText();
+        String file = "/api/v1/files/" + upload(a, TestFiles.image("png", 900, 700, "СНИЛС"), "s.png")
+                .get("fileId").asText() + "/content";
+
+        mvc.perform(get(file).with(jwt().jwt(j -> j.claim("preferred_username", "ivanov"))
+                        .authorities(role("OPERATOR"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FILE_NOT_ASSIGNED"));
+        mvc.perform(get(file).with(jwt().jwt(j -> j.claim("preferred_username", "boss"))
+                        .authorities(role("SENIOR_OPERATOR"))))
+                .andExpect(status().isOk());
+        mvc.perform(get(file).with(jwt().authorities(role("AUDITOR")))).andExpect(status().isForbidden());
+
+        JsonNode assigned = om.readTree("{\"applicationId\":\"" + id + "\",\"assignee\":\"ivanov\"}");
+        assertThat(events.review(UUID.randomUUID().toString(), "ApplicationAssigned", assigned)).isPresent();
+        mvc.perform(get(file).with(jwt().jwt(j -> j.claim("preferred_username", "ivanov"))
+                        .authorities(role("OPERATOR"))))
+                .andExpect(status().isOk());
+        mvc.perform(get(file).with(jwt().jwt(j -> j.claim("preferred_username", "petrov"))
+                        .authorities(role("OPERATOR"))))
+                .andExpect(status().isForbidden());
+    }
+
     @Test
     void uploadRejectsUnsupportedTypeWithCode() throws Exception {
         JsonNode a = create();
