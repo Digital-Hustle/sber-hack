@@ -10,3 +10,7 @@ spring:
 management:
   tracing:
     enabled: false
+people:
+  invite:
+    pepper: test-pepper-test-pepper-test-pepper-0001
+    link-base: https://gate.test/

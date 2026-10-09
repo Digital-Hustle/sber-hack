@@ -2,6 +2,8 @@
 DB_HOST: localhost
 KAFKA_BOOTSTRAP_SERVERS: localhost:9092
 PEOPLE_DB_PASSWORD: local
+INVITE_PEPPER: local-pepper-local-pepper-local-pepper
+PUBLIC_URL: https://localhost
 spring:
   liquibase:
     contexts: dev
