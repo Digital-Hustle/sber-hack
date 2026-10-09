@@ -3,11 +3,10 @@
 Память сервиса между сессиями и агентами. §1 — перезаписываемое текущее состояние (≤ 10 строк). §2 — карта, обновлять при новых пакетах/файлах. §3–4 — добавлять строки, неактуальное ~~зачёркивать~~. §5 — **только дописывать в конец** (`merge=union`). Решения для всей системы — ADR в `../../../docs/DECISIONS.md`.
 
 ## 1. Текущее состояние
-- Поток прохода работает end-to-end (PR #3): скан QR → челлендж → кадры → решение; гашение QR + журнал + присутствие + outbox в одной транзакции.
-- QR — 5 частей с `workerId`, подпись WebCrypto P1363. Ключи устройств — проекция `people.device.v1` (DeviceBound/DeviceRevoked), статус — `people.worker.v1`.
-- face/people/shift — RestClient, параллельно, таймаут `DEPS_TIMEOUT`, fail-closed → `SYSTEM_ERROR` с именем зависимости в `details`.
-- Нет: circuit breaker, service-токен на `/internal/**`, подпись киоска (ACC-12, пока `checkpointId` в теле), зона проходной, алерт TEMP_LOCKED.
-- Тесты: 53 unit (QrParser, крипто, QrCheck, DecisionEngine, PassService, роли, ArchUnit) + интеграционные (Testcontainers: гонка гашения, сквозной киоск, append-only).
+- Поток прохода end-to-end: скан QR → челлендж → кадры → решение; гашение QR + журнал + присутствие + outbox в одной транзакции (`PassRecorder`).
+- Есть: ручной проход охранника, журнал `/attempts` с keyset-курсором, зона проходной из people, симулятор (ACC-14).
+- Симулятор: `PassRecorder.simulated` — журнал + `access.pass.v1` с `source=SIMULATOR`, присутствие не трогает; флаг `SIMULATOR_ENABLED`.
+- Нет: circuit breaker, подпись киоска (ACC-12, `checkpointId` в теле), офлайн (ACC-15), `/internal/access/stats` (ACC-16), `ZONE_FULL` (ACC-17).
 
 ## 2. Карта сервиса
 | Путь | Что |
@@ -16,6 +15,7 @@
 | `src/main/java/.../shared/` | Direction, Decision, AttemptSource, ReasonCode, ReasonView, Challenge, ChallengeAction |
 | `src/main/java/.../features/qr/` | api: QrCheck, QrUses, DeviceKeyProjection; command: QrParser, EcdsaVerifier, PublicKeyCodec, QrCheckService, QrUseService, DeviceKeyService |
 | `src/main/java/.../features/pass/` | application: PassService, DecisionEngine, PassRecorder (транзакция); command: Challenge/Journal/Presence; query: PassQueryService |
+| `src/main/java/.../features/pass/application/Simulat*` | симулятор: SimulationGenerator (чистая функция от зерна), SimulatorService; API — SimulatorController |
 | `src/main/java/.../features/pass/gateway/` | FaceGateway, PeopleGateway, ShiftGateway (RestClient) |
 | `src/main/java/.../messaging/` | outbox (Outbox, OutboxRelay), consumer (PeopleEventsConsumer, IdempotentConsumer) |
 | `src/main/java/.../api/` | KioskController (+impl), DTO request/response, PathConstants |

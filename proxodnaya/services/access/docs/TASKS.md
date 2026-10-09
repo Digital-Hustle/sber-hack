@@ -17,7 +17,7 @@
 | ACC-11 | FR-10/31 | `GET /attempts` (фильтры, курсоры), `/worker/attempts`, миниатюры только ADMIN | B2 | review #31 (без миниатюр — снимок в журнал не пишется) |
 | ACC-12 | FR-64 | Проверка подписи запросов киоска (`X-Kiosk-*`, nonce, окно) | B2 | todo |
 | ACC-13 | FR-14 | Ручной проход GUARD с причиной, `source=MANUAL` | B2 | review #31 |
-| ACC-14 | FR-34 | Симулятор проходов `source=SIMULATOR` через тот же движок, флаг | B2 | todo |
+| ACC-14 | FR-34 | Симулятор проходов `source=SIMULATOR` через тот же движок, флаг | B2 | review #PR |
 | ACC-15 | FR-70 | Офлайн-снимок (подпись, TTL 12 ч) и приём `offline-attempts` с конфликтами | B2 | todo |
 | ACC-16 | FR-42 | `/internal/access/stats` для assistant | B2 | todo |
 | ACC-17 | FR-08 | Вместимость зоны → `ZONE_FULL` (нужна `capacity` зоны из people + счётчик внутри под блокировкой) | B2 | todo |
