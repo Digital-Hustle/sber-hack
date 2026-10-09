@@ -1,0 +1,6 @@
+---
+description: Правила кейса «Документы» (папка documents/)
+globs: documents/**
+alwaysApply: false
+---
+Перед любой задачей прочитай documents/AGENTS.md, documents/rules.md и .agents/skills/documents-dev/SKILL.md и следуй циклу из скилла: ID требования → ветка → реализация в границах модуля → documents/scripts/verify.sh + documents/scripts/guard.sh → documents/scripts/open-pr.sh. Красные линии rules.md §1 нарушать нельзя.
