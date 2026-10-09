@@ -1,6 +1,5 @@
 package ru.subsidy.package_.upload;
 
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
@@ -154,7 +153,7 @@ public class UploadService {
         UUID fileId = UuidCreator.getTimeOrderedEpoch();
         int version = 1;
         OffsetDateTime now = OffsetDateTime.now(clock);
-        Sealed sealed = crypto.encrypt(file.content(), aad(fileId, version));
+        Sealed sealed = crypto.encrypt(file.content(), FileCrypto.aad(fileId, version));
         dsl.insertInto(Tables.FILES)
                 .set(Tables.FILES.ID, fileId)
                 .set(Tables.FILES.PACKAGE_ID, packageId)
@@ -182,17 +181,6 @@ public class UploadService {
                 "fileId", fileId.toString(), "packageId", packageId.toString(), "version", version,
                 "mime", result.mime(), "pages", result.pages()));
         return new AcceptedFile(fileId, RECEIVED, null);
-    }
-
-    /**
-     * AAD для шифротекста версии файла.
-     *
-     * @param fileId файл
-     * @param version версия
-     * @return байты fileId:version
-     */
-    public static byte[] aad(UUID fileId, int version) {
-        return (fileId + ":" + version).getBytes(StandardCharsets.UTF_8);
     }
 
     private static String displayName(String name) {

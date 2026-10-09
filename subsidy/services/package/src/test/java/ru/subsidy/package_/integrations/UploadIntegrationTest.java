@@ -31,7 +31,6 @@ import ru.subsidy.package_.config.AbstractIntegrationTest;
 import ru.subsidy.package_.jooq.Tables;
 import ru.subsidy.package_.storage.FileCrypto;
 import ru.subsidy.package_.storage.FileCrypto.Sealed;
-import ru.subsidy.package_.upload.UploadService;
 
 class UploadIntegrationTest extends AbstractIntegrationTest {
 
@@ -84,7 +83,7 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
         var version = dsl.selectFrom(Tables.FILE_VERSIONS).where(Tables.FILE_VERSIONS.FILE_ID.eq(fileId)).fetchSingle();
         assertThat(version.getContentEnc()).isNotEqualTo(content);
         assertThat(crypto.decrypt(new Sealed(version.getContentEnc(), version.getNonce()),
-                UploadService.aad(fileId, 1))).isEqualTo(content);
+                FileCrypto.aad(fileId, 1))).isEqualTo(content);
 
         String payload = dsl.select(Tables.OUTBOX.PAYLOAD).from(Tables.OUTBOX)
                 .where(Tables.OUTBOX.MESSAGE_KEY.eq(fileId.toString())).fetchSingle().value1().data();
