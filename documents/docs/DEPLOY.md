@@ -19,13 +19,14 @@
 | postgres (БД на сервис + keycloak, файлы в bytea) | 1 ГБ |
 | kafka (KRaft, 1 брокер) | 1 ГБ |
 | jaeger | 256 МБ |
+| prometheus (профиль `observability`, хранение 7 дней) | 256 МБ |
 | ollama: `qwen3:8b` + `qwen2.5vl:7b` (профиль `llm-local`) | 12 ГБ |
 | **Итого** | **≈ 19–20 ГБ** |
 
 ## Подготовка сервера (B1, один раз)
 1. Пользователь `deploy`, SSH-ключ, `ufw allow 22,80,443`; Docker + compose plugin.
 2. `git clone` в `/opt/sber-hack` (нужна `documents/infra/`), `documents/scripts/gen-env.sh` на сервере, вписать хост и ключи моделей.
-3. `docker login ghcr.io` (read-only токен); `docker compose --profile llm-local up -d`; `scripts/smoke.sh https://<host>`.
+3. `docker login ghcr.io` (read-only токен); `docker compose --profile llm-local --profile observability up -d`; Prometheus — `ssh -L 9090:localhost:9090 deploy@<host>` → http://localhost:9090/alerts; `scripts/smoke.sh https://<host>`.
 
 ## CI (`.github/workflows/documents-ci.yml`)
 На PR и push в `main` с изменениями `documents/**`: changes → services (матрица изменённых: Java — Postgres service, Liquibase, jOOQ, `check`, be-check, контракт; Python ocr — ruff, mypy, pytest) → frontend (`gen:api`, токены, lint, typecheck, build, fsd-check) → eval (синтетика, если есть `eval/run.py`) → security (gitleaks по истории, `documents/scripts/guard.sh`, Trivy) → infra (`compose config`) → smoke (`main` и PR с изменениями инфраструктуры: `compose up --build --wait`, `scripts/smoke.sh`, при секрете `DOCS_LLM_API_KEY` — `eval/run.py` на синтетике).

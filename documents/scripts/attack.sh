@@ -32,6 +32,10 @@ done
 for p in /intake/internal/intake/files/1 /internal/intake/applications/1/summary /docproc/INTERNAL/x /review/api/../internal/x; do
   check "$p снаружи (даже с токеном)" 404 "$(req -H 'Authorization: Bearer garbage' "$H$p")"
 done
+for p in /actuator/prometheus /intake/actuator/prometheus /docproc/actuator/prometheus /review/actuator/env; do
+  code=$(req "$H$p")
+  if grep -qE '^(jvm_|# HELP|\{"activeProfiles)' "$TMP/body"; then bad "$p: метрики/настройки видны снаружи ($code)"; else ok "$p снаружи: метрик и настроек нет ($code)"; fi
+done
 
 echo "— T2: чужой ключ заявки (IDOR)"
 check "создание без согласия" 400 "$(req -X POST "$API/applications" -H 'Content-Type: application/json' -d '{"consentPd":false}')"

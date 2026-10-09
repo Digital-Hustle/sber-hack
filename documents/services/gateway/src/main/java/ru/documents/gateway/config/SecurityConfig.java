@@ -47,7 +47,8 @@ public class SecurityConfig {
                 .cors(c -> c.configurationSource(cors))
                 .headers(h -> h.frameOptions(f -> f.mode(XFrameOptionsServerHttpHeadersWriter.Mode.DENY)))
                 .authorizeExchange(a -> a
-                        .pathMatchers("/actuator/health/**", "/actuator/health").permitAll()
+                        // prometheus — для сбора внутри сети; наружу Caddy отдаёт только health (attack.sh проверяет)
+                        .pathMatchers("/actuator/health/**", "/actuator/health", "/actuator/prometheus").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/intake/api/v1/applicant/**", "/intake/api/v1/files/**").permitAll()
                         .pathMatchers("/*/api/v1/stream", "/*/api/v1/stream/events").permitAll()

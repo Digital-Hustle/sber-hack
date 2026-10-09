@@ -142,3 +142,4 @@ erDiagram
 
 ## Наблюдаемость
 OpenTelemetry → Jaeger: один документ — один трейс intake → Kafka → docproc → ocr → модель. Метрики: `intake_upload_seconds`, `intake_rejects_total{code}`, `docproc_jobs{stage}`, `docproc_stage_seconds{stage}`, `llm_request_seconds{provider,model,outcome}`, `llm_schema_invalid_total`. JSON-логи с `traceId`, без ПДн.
+Сбор и сигналы — профиль `observability`: Prometheus (`infra/prometheus/`, UI только `127.0.0.1:9090`) собирает `/actuator/prometheus` сервисов и `/metrics` ocr; правила `alerts.yml` — сервис не отвечает, документы ждут модель > 5 мин, очередь растёт, > 20 % ошибок модели, ответы не по схеме, всплеск отказов загрузки, медленный OCR; проверка — `promtool` в CI. Наружу метрики не отдаются (Caddy пропускает только `/actuator/health`, `attack.sh` проверяет). Grafana не берём — AGPL (п. 5.8.4); графики — в UI Prometheus и в «Очереди в цифрах» у оператора (B-06).

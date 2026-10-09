@@ -58,6 +58,7 @@ jOOQ codegen требует живую БД во время сборки — т�
 | jOOQ (OSS) / Liquibase / MapStruct / Resilience4j | Apache-2.0 | B1 |
 | Gradle / checkstyle / ArchUnit | Apache-2.0 / LGPL-2.1 (инструмент) / Apache-2.0 | B1 |
 | Jaeger / OpenTelemetry | Apache-2.0 | B1 |
+| Prometheus (профиль observability; Grafana не берём — AGPL-3.0) | Apache-2.0 | агент (NFR-07) |
 | Apache Tika (только детект типа по сигнатуре, `tika-core`) | Apache-2.0 | B1 |
 | FastAPI / uvicorn / pydantic | MIT / BSD / MIT | B2 |
 | pdfplumber / pdfminer.six | MIT | B2 |
