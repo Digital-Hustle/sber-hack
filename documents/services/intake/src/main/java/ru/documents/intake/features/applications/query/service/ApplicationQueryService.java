@@ -13,7 +13,6 @@ import ru.documents.intake.features.applications.model.ApplicationView;
 import ru.documents.intake.features.applications.model.DocumentView;
 import ru.documents.intake.features.applications.model.RequiredDocument;
 import ru.documents.intake.features.applications.query.repository.ApplicationReadRepository;
-import ru.documents.intake.features.applications.query.repository.ApplicationReadRepository.ActiveFile;
 import ru.documents.intake.features.applications.query.repository.ApplicationReadRepository.Row;
 import ru.documents.intake.features.applications.rules.RequirementsEngine;
 import ru.documents.intake.features.applications.rules.RequirementsEngine.Rule;
@@ -77,7 +76,7 @@ public class ApplicationQueryService {
      * @return файлы
      */
     @Transactional(readOnly = true)
-    public List<ActiveFile> activeFiles(UUID docId) {
+    public ApplicationReadRepository.DocumentFiles activeFiles(UUID docId) {
         return repo.activeFiles(docId);
     }
 

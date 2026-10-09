@@ -38,8 +38,9 @@ public class InternalControllerImpl implements InternalController {
 
     @Override
     public ActiveFilesRs files(UUID docId) {
-        return new ActiveFilesRs(queries.activeFiles(docId).stream()
-                .map(f -> new ActiveFilesRs.Item(f.fileId(), f.mime(), f.pages())).toList());
+        var files = queries.activeFiles(docId);
+        return new ActiveFilesRs(files.files().stream()
+                .map(f -> new ActiveFilesRs.Item(f.fileId(), f.mime(), f.pages())).toList(), files.onlyPages());
     }
 
     @Override

@@ -17,7 +17,8 @@ const DocCard = ({ d, titleOf, up, locked }: { d: ApplicantDocument; titleOf: (t
   const reason = reasonView(d.reasonCode, (d.reasonParams ?? {}) as Record<string, unknown>);
   const moved = d.slotType && d.detectedType && d.detectedType !== "UNKNOWN" && d.slotType !== d.detectedType;
   const files = d.files?.filter((f) => f.active !== false) ?? [];
-  const pages = files.reduce((s, f) => s + (f.pages ?? 1), 0);
+  const split = d.sourceDocumentId && d.pages?.length ? d.pages : null;
+  const pages = split ? split.length : files.reduce((s, f) => s + (f.pages ?? 1), 0);
   const err = up.errorFor(d.id!);
   const busy = up.pendingFor === d.id;
   return (
@@ -26,7 +27,9 @@ const DocCard = ({ d, titleOf, up, locked }: { d: ApplicantDocument; titleOf: (t
         <span className="grid size-10 shrink-0 place-items-center rounded-md bg-surface text-muted-foreground"><FileText className="size-5" /></span>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <StageBadge stage={d.stage} className="self-start" />
-          <span className="text-xs text-muted-foreground">{files.length} {files.length === 1 ? "файл" : "файла"} · {pages} стр.</span>
+          <span className="text-xs text-muted-foreground">
+            {split ? `Из общего файла · стр. ${split.join(", ")}` : `${files.length} ${files.length === 1 ? "файл" : "файла"} · ${pages} стр.`}
+          </span>
           {!st.done && <Progress value={st.progress} className="h-1" />}
         </div>
       </div>

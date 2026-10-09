@@ -13,7 +13,7 @@
 | RV-07 | FR-57 | Решение по заявке, SSE очереди | B3 | done `feat/RV-01-review` |
 | RV-08 | B-03 | Сверка между документами (`findings`): ФИО с транслитерацией, даты, номера | B3 | done `feat/RV-01-review` |
 | RV-09 | B-04 | Истекающие документы + выгрузка XLSX | B3 | done `feat/RV-01-review` |
-| RV-10 | B-05 | Карточка соискателя для кадров (DOCX/XLSX) | B3 | done `feat/RV-01-review` |
+| RV-10 | B-05 | Карточка соискателя для кадров (DOCX/XLSX/PDF) | B3 | done `feat/RV-01-review`; PDF — #45 (PDFBox + Liberation Sans) |
 | RV-11 | B-06 | Метрики очереди из `stage_events`/`decisions`, «как посчитано» | B3 | done `feat/RV-01-review` |
 | RV-12 | B-07 | Маскирование ПДн для AUDITOR, аудит просмотров файлов | B3 | done `feat/RV-01-review` |
 | RV-13 | FR-56 | Пустая БД → честные нули; тест на пустой схеме | B3 | done `feat/RV-01-review` |

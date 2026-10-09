@@ -244,6 +244,12 @@ public class JobCommandService {
             p.put("model", r.model());
             p.put("promptVersion", r.promptVersion());
         }
+        if (!Stages.UNREADABLE.equals(r.stage()) && !Stages.FAILED.equals(r.stage())) {
+            List<Map<String, Object>> split = split(job.documentId(), r.type());
+            if (!split.isEmpty()) {
+                p.put("split", split);
+            }
+        }
         String type = switch (r.stage()) {
             case Stages.UNREADABLE -> "DocumentUnreadable";
             case Stages.FAILED -> "DocumentFailed";
@@ -251,6 +257,28 @@ public class JobCommandService {
         };
         outbox.add(Topics.DOCPROC_DOCUMENT_V1, type, job.applicationId().toString(), p);
         return true;
+    }
+
+    /**
+     * Другие документы, найденные в многостраничном файле (FR-07, DP-14): intake выделит их в отдельные документы.
+     * Первый сегмент — основной документ, остальные — к выделению.
+     */
+    private List<Map<String, Object>> split(UUID doc, String type) {
+        String cls = outputs.load(doc).get(Stages.CLASSIFYING);
+        if (cls == null || type == null) {
+            return List.of();
+        }
+        List<Map<String, Object>> out = new java.util.ArrayList<>();
+        for (JsonNode seg : read(cls).path("segments")) {
+            String t = seg.path("type").asText(null);
+            if (t == null || t.equals(type) || Stages.UNKNOWN.equals(t) || !seg.path("pages").isArray()) {
+                continue;
+            }
+            List<Integer> pages = new java.util.ArrayList<>();
+            seg.path("pages").forEach(n -> pages.add(n.asInt()));
+            out.add(Map.of("type", t, "pages", pages));
+        }
+        return out;
     }
 
     private void stageChanged(UUID doc, UUID app, String stage, String type, String reason, Map<String, String> params) {

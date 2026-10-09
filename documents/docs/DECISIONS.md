@@ -68,6 +68,7 @@ jOOQ codegen требует живую БД во время сборки — т�
 | networknt json-schema-validator | Apache-2.0 | B2 |
 | Ollama / Qwen3 / Qwen2.5-VL-7B | MIT / Apache-2.0 / Apache-2.0 | B3 |
 | Apache POI / Apache PDFBox | Apache-2.0 | B3 |
+| Liberation Sans (шрифт в PDF-выгрузке, `review/src/main/resources/fonts`, текст лицензии рядом) | SIL OFL 1.1 | агент (B-05) |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
 | oidc-client-ts (вход оператора, PKCE) | Apache-2.0 | агент (FE-S-03) |
 | @tanstack/react-query (кэш запросов) | MIT | агент (FE-S-03) |

@@ -14,11 +14,14 @@ import java.util.UUID;
  * @param stage        стадия
  * @param reasonCode   причина
  * @param reasonParams параметры причины
- * @param files        файлы (версии)
+ * @param files        файлы (версии); у выделенного документа — файлы исходного
  * @param updatedAt    обновлён
+ * @param sourceDocumentId из какого документа выделен (FR-07), иначе null
+ * @param pages        страницы исходного файла, которые относятся к этому документу (сквозные номера), иначе null
  */
 public record DocumentView(UUID id, String slotType, String detectedType, String stage, String reasonCode,
-                           Map<String, Object> reasonParams, List<FileView> files, Instant updatedAt) {
+                           Map<String, Object> reasonParams, List<FileView> files, Instant updatedAt,
+                           UUID sourceDocumentId, List<Integer> pages) {
 
     /**
      * Файл документа.

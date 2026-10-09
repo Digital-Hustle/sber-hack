@@ -73,7 +73,8 @@ public class ValidateStage {
             norm.put(e.getKey(), FieldRules.apply(e.getValue().path("x-check").asText(), str(m, "value"), today));
         });
         crossChecks(type.code(), norm, text.path("mrz"), today, findings);
-        boolean review = !findings.isEmpty();
+        // MULTI_DOCUMENT — справка: остальные документы файла intake выделяет сам (FR-07), проверка не нужна.
+        boolean review = findings.stream().anyMatch(f -> !"MULTI_DOCUMENT".equals(f.code()));
         for (var e : type.schema().path("properties").properties()) {
             String name = e.getKey();
             JsonNode def = e.getValue();

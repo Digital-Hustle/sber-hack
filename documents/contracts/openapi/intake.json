@@ -119,6 +119,13 @@
             "format" : "uuid",
             "type" : "string"
           },
+          "pages" : {
+            "items" : {
+              "format" : "int32",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
           "reasonCode" : {
             "type" : "string"
           },
@@ -127,6 +134,10 @@
             "type" : "object"
           },
           "slotType" : {
+            "type" : "string"
+          },
+          "sourceDocumentId" : {
+            "format" : "uuid",
             "type" : "string"
           },
           "stage" : {

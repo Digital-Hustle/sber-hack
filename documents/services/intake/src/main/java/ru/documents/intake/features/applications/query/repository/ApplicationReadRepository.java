@@ -59,13 +59,14 @@ public class ApplicationReadRepository {
                 .optional();
     }
 
-    /** Документы заявки с файлами. */
+    /** Документы заявки с файлами; выделенный из файла документ (FR-07) показывает файлы исходного. */
     public List<DocumentView> documents(UUID appId) {
         List<DocumentView> docs = jdbc.sql("""
                 select * from documents where application_id = ? and not deleted order by created_at""").param(appId)
                 .query((rs, n) -> new DocumentView(rs.getObject("id", UUID.class), rs.getString("slot_type"),
                         rs.getString("detected_type"), rs.getString("stage"), rs.getString("reason_code"),
-                        map(rs.getString("reason_params")), List.of(), rs.getTimestamp("updated_at").toInstant()))
+                        map(rs.getString("reason_params")), List.of(), rs.getTimestamp("updated_at").toInstant(),
+                        rs.getObject("source_document_id", UUID.class), ints(rs.getArray("only_pages"))))
                 .list();
         Map<UUID, List<FileView>> files = new java.util.HashMap<>();
         jdbc.sql("""
@@ -78,8 +79,26 @@ public class ApplicationReadRepository {
                                     rs.getLong("size_bytes"), rs.getTimestamp("uploaded_at").toInstant()));
                     return 0;
                 }).list();
-        return docs.stream().map(d -> new DocumentView(d.id(), d.slotType(), d.detectedType(), d.stage(),
-                d.reasonCode(), d.reasonParams(), files.getOrDefault(d.id(), List.of()), d.updatedAt())).toList();
+        return docs.stream().map(d -> {
+            List<FileView> own = files.getOrDefault(d.id(), List.of());
+            boolean borrowed = own.isEmpty() && d.sourceDocumentId() != null;
+            List<FileView> shown = borrowed
+                    ? files.getOrDefault(d.sourceDocumentId(), List.of()).stream().filter(FileView::active).toList()
+                    : own;
+            return new DocumentView(d.id(), d.slotType(), d.detectedType(), d.stage(), d.reasonCode(),
+                    d.reasonParams(), shown, d.updatedAt(), d.sourceDocumentId(), borrowed ? d.pages() : null);
+        }).toList();
+    }
+
+    private static List<Integer> ints(java.sql.Array a) throws java.sql.SQLException {
+        if (a == null) {
+            return null;
+        }
+        List<Integer> out = new java.util.ArrayList<>();
+        for (Object o : (Object[]) a.getArray()) {
+            out.add(((Number) o).intValue());
+        }
+        return out;
     }
 
     /** Запросы оператора. */
@@ -129,8 +148,33 @@ public class ApplicationReadRepository {
     public record ActiveFile(UUID fileId, String mime, int pages) {
     }
 
-    /** Активные файлы документа по порядку. */
-    public List<ActiveFile> activeFiles(UUID docId) {
+    /**
+     * Файлы для разбора.
+     *
+     * @param files     активные файлы по порядку
+     * @param onlyPages только эти страницы (выделенный документ, FR-07), иначе null
+     */
+    public record DocumentFiles(List<ActiveFile> files, List<Integer> onlyPages) {
+    }
+
+    /**
+     * Активные файлы документа по порядку (FR-07: у выделенного документа — файлы исходного и его страницы).
+     * Если соискатель дослал файл в выделенный документ, разбирается уже этот файл.
+     */
+    public DocumentFiles activeFiles(UUID docId) {
+        List<ActiveFile> own = files(docId);
+        if (!own.isEmpty()) {
+            return new DocumentFiles(own, null);
+        }
+        record Src(UUID source, List<Integer> pages) {
+        }
+        Optional<Src> src = jdbc.sql("""
+                select source_document_id, only_pages from documents where id = ? and source_document_id is not null""")
+                .param(docId).query((rs, n) -> new Src(rs.getObject(1, UUID.class), ints(rs.getArray(2)))).optional();
+        return src.map(s -> new DocumentFiles(files(s.source()), s.pages())).orElse(new DocumentFiles(own, null));
+    }
+
+    private List<ActiveFile> files(UUID docId) {
         return jdbc.sql("select id, mime, pages from document_files where document_id = ? and active order by version")
                 .param(docId).query((rs, n) -> new ActiveFile(rs.getObject(1, UUID.class), rs.getString(2),
                         rs.getInt(3))).list();

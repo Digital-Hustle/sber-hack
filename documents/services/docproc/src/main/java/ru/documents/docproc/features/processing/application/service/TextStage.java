@@ -43,7 +43,9 @@ public class TextStage {
 
     /** Выполнить. */
     public StepOutcome run(Job job) {
-        List<FileRef> files = intake.activeFiles(job.documentId());
+        IntakeGateway.DocumentFiles docFiles = intake.documentFiles(job.documentId());
+        List<FileRef> files = docFiles.files();
+        java.util.Set<Integer> only = java.util.Set.copyOf(docFiles.onlyPages());
         ObjectNode out = json.createObjectNode();
         ArrayNode pages = out.putArray("pages");
         ArrayNode fileList = out.putArray("files");
@@ -57,8 +59,11 @@ public class TextStage {
                 page.put("filePage", p.path("n").asInt());
                 page.put("n", offset + p.path("n").asInt());
                 page.put("fileId", f.fileId().toString());
-                pages.add(page);
                 filePages++;
+                if (!only.isEmpty() && !only.contains(page.path("n").asInt())) {
+                    continue; // документ выделен из многостраничного файла — чужие страницы не разбираем (FR-07)
+                }
+                pages.add(page);
             }
             offset += filePages;
             fileList.addObject().put("fileId", f.fileId().toString()).put("pages", filePages);
@@ -67,8 +72,15 @@ public class TextStage {
                 mrz = m;
             }
         }
+        if (mrz != null && !only.isEmpty() && !mrzOnPages(mrz, pages)) {
+            mrz = null; // MRZ с чужой страницы файла к выделенному документу не относится
+        }
         if (mrz != null) {
             out.set("mrz", mrz);
+        }
+        if (!only.isEmpty()) {
+            ArrayNode o = out.putArray("onlyPages");
+            new java.util.TreeSet<>(only).forEach(o::add);
         }
         int chars = 0;
         double confSum = 0;
@@ -106,6 +118,22 @@ public class TextStage {
             findings.add(json.valueToTree(Finding.of("IMAGE_CUT_OFF")));
         }
         return StepOutcome.next(out);
+    }
+
+    /** Строки MRZ встречаются в тексте оставленных страниц (без пробелов — OCR их вставляет). */
+    static boolean mrzOnPages(JsonNode mrz, ArrayNode pages) {
+        StringBuilder all = new StringBuilder();
+        pages.forEach(p -> all.append(p.path("text").asText("").replaceAll("\\s", "")));
+        JsonNode raw = mrz.path("raw");
+        if (!raw.isArray() || raw.isEmpty()) {
+            return false;
+        }
+        for (JsonNode line : raw) {
+            if (!all.toString().contains(line.asText().replaceAll("\\s", ""))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private String qualityReason(ArrayNode pages) {

@@ -2,6 +2,10 @@ package ru.documents.intake.features.applications.command.service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,7 +14,9 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ru.documents.common.event.Topics;
 import ru.documents.common.inbox.IdempotentConsumer;
+import ru.documents.common.outbox.OutboxWriter;
 import ru.documents.intake.features.applications.command.repository.ApplicationRepository;
 
 /**
@@ -25,11 +31,61 @@ public class DocumentEventsService {
     private final ApplicationRepository repo;
     private final IdempotentConsumer inbox;
     private final Clock clock;
+    private final OutboxWriter outbox;
 
-    public DocumentEventsService(ApplicationRepository repo, IdempotentConsumer inbox, Clock clock) {
+    public DocumentEventsService(ApplicationRepository repo, IdempotentConsumer inbox, Clock clock, OutboxWriter outbox) {
         this.repo = repo;
         this.inbox = inbox;
         this.clock = clock;
+        this.outbox = outbox;
+    }
+
+    /**
+     * Итог разбора с разметкой страниц (FR-07, IN-12): каждый другой найденный в файле документ становится отдельным
+     * документом заявки — свой пункт, свои стадии, разбор только его страниц. Выделенный документ не делится повторно.
+     *
+     * @param eventId id события DocumentParsed
+     * @param p       payload ({documentId, applicationId, split: [{type, pages}]})
+     * @return заявка для SSE, если что-то выделено
+     */
+    @Transactional
+    public Optional<UUID> split(String eventId, JsonNode p) {
+        if (!p.path("split").isArray() || p.path("split").isEmpty() || !inbox.firstTime(eventId)) {
+            return Optional.empty();
+        }
+        UUID source = UUID.fromString(p.path(DOC).asText());
+        UUID app = UUID.fromString(p.path(APP).asText());
+        Instant now = clock.instant();
+        boolean created = false;
+        for (JsonNode part : p.path("split")) {
+            String type = text(part, "type");
+            List<Integer> pages = new ArrayList<>();
+            part.path("pages").forEach(n -> {
+                if (n.canConvertToInt() && n.asInt() > 0) {
+                    pages.add(n.asInt());
+                }
+            });
+            if (type == null || "UNKNOWN".equals(type) || pages.isEmpty()) {
+                continue;
+            }
+            UUID id = UuidCreator.getTimeOrderedEpoch();
+            if (!repo.insertSplit(id, app, source, type, pages, now)) {
+                continue;
+            }
+            created = true;
+            Map<String, Object> payload = new HashMap<>();
+            payload.put(DOC, id.toString());
+            payload.put(APP, app.toString());
+            payload.put("version", 1);
+            payload.put("slotType", type);
+            payload.put("sourceDocumentId", source.toString());
+            payload.put("pages", pages);
+            outbox.add(Topics.INTAKE_DOCUMENT_V1, "DocumentReceived", app.toString(), payload);
+        }
+        if (created) {
+            repo.touch(app, now);
+        }
+        return created ? Optional.of(app) : Optional.empty();
     }
 
     /**

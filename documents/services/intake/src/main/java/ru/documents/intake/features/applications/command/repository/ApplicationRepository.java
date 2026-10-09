@@ -113,6 +113,28 @@ public class ApplicationRepository {
                 values (?,?,?,'RECEIVED',?,?)""").params(id, appId, slot, ts(now), ts(now)).update();
     }
 
+    /**
+     * Документ, выделенный из многостраничного файла (FR-07): пункт = найденный вид, файлы — у исходного.
+     *
+     * @return true — создан; false — такой вид из этого файла уже выделен
+     */
+    public boolean insertSplit(UUID id, UUID appId, UUID source, String type, List<Integer> pages, Instant now) {
+        return jdbc.sql("""
+                insert into documents(id, application_id, slot_type, stage, source_document_id, only_pages, split_type,
+                                      created_at, updated_at)
+                select ?, ?, ?, 'RECEIVED', ?, ?::int[], ?, ?, ?
+                 where exists (select 1 from documents s where s.id = ? and not s.deleted and s.source_document_id is null)
+                on conflict do nothing""")
+                .params(id, appId, type, source, "{" + String.join(",", pages.stream().map(String::valueOf).toList()) + "}",
+                        type, ts(now), ts(now), source).update() == 1;
+    }
+
+    /** Живые документы, выделенные из этого. */
+    public List<UUID> children(UUID source) {
+        return jdbc.sql("select id from documents where source_document_id = ? and not deleted").param(source)
+                .query(UUID.class).list();
+    }
+
     /** Новый файл (версия). */
     public void insertFile(UUID id, UUID docId, UUID appId, int version, String sha, Long phash, String mime,
                            long size, int pages, Integer w, Integer h, byte[] enc, Instant now) {

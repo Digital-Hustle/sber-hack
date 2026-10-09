@@ -138,6 +138,15 @@ class ReviewFlowIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(get("/api/v1/applications/" + app + "/export").param("format", "docx").with(senior()))
                 .andExpect(status().isOk()).andExpect(content().contentType(
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+        byte[] pdf = mvc.perform(get("/api/v1/applications/" + app + "/export").param("format", "pdf").with(senior()))
+                .andExpect(status().isOk()).andExpect(content().contentType("application/pdf"))
+                .andReturn().getResponse().getContentAsByteArray();
+        assertThat(new String(pdf, 0, 5, java.nio.charset.StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+        try (var parsed = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+            assertThat(new org.apache.pdfbox.text.PDFTextStripper().getText(parsed)).contains("Карточка соискателя");
+        }
+        mvc.perform(get("/api/v1/applications/" + app + "/export").param("format", "odt").with(senior()))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("FORMAT_UNSUPPORTED"));
         mvc.perform(post("/api/v1/applications/" + app + "/decision").with(op("op1"))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"decision\":\"ACCEPTED\"}"))
                 .andExpect(status().isNoContent());

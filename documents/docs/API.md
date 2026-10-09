@@ -37,7 +37,7 @@
 - `PATCH /documents/{id}/type` `{type}` → смена типа → переизвлечение полей по новой схеме (job `EXTRACTING_FIELDS`)
 - `POST /documents/{id}/confirm`; `POST /applications/{id}/request` `{items: [{type?, documentId?, reason}]}` → соискателю (FR-55, B-01)
 - `POST /applications/{id}/decision` `{decision: ACCEPTED|RETURNED, comment}`
-- `GET /applications/{id}/history` (B-08) · `GET /applications/{id}/export?format=docx|xlsx` (B-05, SENIOR_OPERATOR; PDF — нет)
+- `GET /applications/{id}/history` (B-08) · `GET /applications/{id}/export?format=docx|xlsx|pdf` (B-05, SENIOR_OPERATOR; PDF — PDFBox + встроенный Liberation Sans)
 - `GET /reports/expiring?days=30`, XLSX — `GET /reports/expiring/export?days=30` (SENIOR_OPERATOR) (B-04) · `GET /metrics` (B-06, с формулами «как посчитано») · `POST /applications/next` — взять следующую свободную · `GET /stream` (SSE, ticket): `queue.changed`, `document.stage`
 - `POST /applications/{id}/reveal` `{field}` → полный номер документа + запись в аудит (B-07)
 
@@ -89,7 +89,7 @@
 | DOCUMENT_NOT_IN_APPLICATION | 400 | Документ не из этой заявки | Обновите карточку |
 | FIELD_UNKNOWN | 400 | В документе нет поля «{name}» | Обновите карточку |
 | CURSOR_INVALID | 400 | Неверный курсор | Начните с первой страницы |
-| FORMAT_UNSUPPORTED | 400 | Формат выгрузки — docx или xlsx | PDF не поддерживается |
+| FORMAT_UNSUPPORTED | 400 | Формат — docx, xlsx или pdf | Укажите format=docx, xlsx или pdf |
 | INTAKE_UNAVAILABLE | 503 | Сервис приёма недоступен (внутренний вызов) | Повторите позже — разбор продолжится сам |
 | DOCPROC_UNAVAILABLE | 503 | Сервис разбора недоступен (внутренний вызов) | Повторите позже |
 | OCR_UNAVAILABLE | 503 | Сервис распознавания недоступен (внутренний вызов docproc → ocr) | Разбор повторится автоматически |
@@ -111,7 +111,7 @@
 | CHECKSUM_FAILED | Номер не прошёл проверку ({field}) | Оператор сверит с оригиналом |
 | MRZ_MISMATCH | Данные в машиночитаемой строке не совпадают с текстом | Оператор сверит с оригиналом |
 | CROSS_MISMATCH | {field} отличается в документах «{a}» и «{b}» | Оператор уточнит |
-| MULTI_DOCUMENT | В одном файле несколько документов: разобрали стр. {pages}, ещё есть {documents} | Загрузите каждый документ отдельным файлом в свой пункт |
+| MULTI_DOCUMENT | В одном файле несколько документов: здесь стр. {pages}, а {documents} — отдельными пунктами | Мы разделили файл сами — проверьте, что каждый документ попал в свой пункт (FR-07: intake создаёт по документу на каждый найденный вид, `sourceDocumentId` + `pages`) |
 | MODEL_UNAVAILABLE | Модель недоступна | Продолжим автоматически |
 | MODEL_INVALID_OUTPUT | Модель вернула ответ не по схеме | Оператор проверит вручную |
 
