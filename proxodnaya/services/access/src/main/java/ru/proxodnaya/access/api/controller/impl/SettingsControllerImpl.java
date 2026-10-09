@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.proxodnaya.access.api.controller.SettingsController;
 import ru.proxodnaya.access.api.dto.request.SettingsRq;
 import ru.proxodnaya.access.api.dto.response.SettingsRs;
+import ru.proxodnaya.access.api.mapper.SettingsApiMapper;
 import ru.proxodnaya.access.features.settings.command.service.SettingsService;
 import ru.proxodnaya.access.features.settings.model.PassSettings;
 
@@ -16,14 +17,16 @@ import ru.proxodnaya.access.features.settings.model.PassSettings;
 public class SettingsControllerImpl implements SettingsController {
 
     private final SettingsService settings;
+    private final SettingsApiMapper mapper;
 
-    public SettingsControllerImpl(SettingsService settings) {
+    public SettingsControllerImpl(SettingsService settings, SettingsApiMapper mapper) {
         this.settings = settings;
+        this.mapper = mapper;
     }
 
     @Override
     public SettingsRs get() {
-        return toRs(settings.current());
+        return mapper.convert(settings.current());
     }
 
     @Override
@@ -34,14 +37,6 @@ public class SettingsControllerImpl implements SettingsController {
                 request.tempLockWindowSec(), new PassSettings.Terminal(request.terminalMode(), request.terminalScope()),
                 new PassSettings.Offline(request.offlinePolicy(), request.offlineMaxHours(), request.offlineAfterExpiry(),
                         request.offlineCheckShift(), request.offlineUnknownDevice()), null, null);
-        return toRs(settings.update(next, name == null ? token.getSubject() : name));
-    }
-
-    private static SettingsRs toRs(PassSettings value) {
-        return new SettingsRs(value.faceThreshold(), value.qrToleranceSec(), value.shiftGraceMin(), value.requireShift(),
-                value.repeatScanCooldownSec(), value.presenceTtlHours(), value.tempLockFailures(), value.tempLockWindowSec(),
-                value.terminal().mode(), value.terminal().scope(), value.offline().policy(), value.offline().maxHours(),
-                value.offline().afterExpiry(), value.offline().checkShift(), value.offline().unknownDevice(),
-                value.updatedAt() == null ? null : value.updatedAt().toEpochMilli(), value.updatedBy());
+        return mapper.convert(settings.update(next, name == null ? token.getSubject() : name));
     }
 }

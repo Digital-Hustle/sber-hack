@@ -82,8 +82,8 @@
 ## 5. Терминал (киоск)
 | Мок | Эндпоинт | Rq → Rs |
 |---|---|---|
-| регистрация киоска | `POST /access/api/v1/kiosk/register` **[новый]** | `{ publicKeyJwk }` → `{ kioskId, pairCode }` (код сопряжения на экране) |
-| `pairKiosk(code, …)` | `POST /access/api/v1/kiosks/pair` (ADMIN, INSTALLER) **[изменить]** | `{ pairCode, name, checkpointId, mode?, offlinePolicy? }` → `KioskRs` |
+| регистрация киоска | `POST /access/api/v1/kiosk/register` **[есть, ACC-12]** | `{ publicKeyJwk }` → `{ kioskId, pairCode }` (код сопряжения на экране) |
+| `pairKiosk(code, …)` | `POST /access/api/v1/kiosks/pair` (ADMIN, INSTALLER) **[есть, ACC-12]** | `{ pairCode, name, checkpointId, mode?, offlinePolicy? }` → `KioskRs` |
 | `updateKiosk` | `PATCH /access/api/v1/kiosks/{id}` | `{ name?, checkpointId?, mode?, offlinePolicy? }` → `KioskRs` |
 | `unpairKiosk` | `POST /access/api/v1/kiosks/{id}/unpair` | → `204`, киоск получает новый `pairCode`, ключ и цепочка журнала сохраняются |
 | список | `GET /access/api/v1/kiosks` | → `{ items: KioskRs[] }`, `KioskRs = { id, name, checkpointId, mode, offlinePolicy, pairedAt, lastSeen, snapshotAt, chain: {seq, hash}, syncError? }`; «в сети» = `lastSeen` моложе 45 с |

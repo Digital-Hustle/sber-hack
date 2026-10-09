@@ -7,7 +7,8 @@
 - Есть: ручной проход охранника, журнал `/attempts` с keyset-курсором, зона проходной из people, симулятор (ACC-14).
 - Симулятор: `PassRecorder.simulated` — журнал + `access.pass.v1` с `source=SIMULATOR`, присутствие не трогает; флаг `SIMULATOR_ENABLED`.
 - Вместимость (ACC-17): `worker_state.zone_id` + `PresenceService.zoneFull` под `pg_advisory_xact_lock` зоны в `PassRecorder.finish`; `capacity` — `zoneCapacity` из `/internal/people/checkpoints/{id}` при кадрах входа.
-- Нет: circuit breaker, подпись киоска (ACC-12, `checkpointId` в теле), офлайн (ACC-15), `/internal/access/stats` (ACC-16).
+- Терминалы (ACC-12): `features/kiosk` — регистрация ключа → код → сопряжение в кабинете; `KioskSignatureFilter` проверяет подпись `/api/v1/kiosk/**` (nonce в `kiosk_nonces`), проходная — из привязки.
+- Нет: circuit breaker, офлайн (ACC-15), `/internal/access/stats` (ACC-16), `/kiosk/identify`.
 
 ## 2. Карта сервиса
 | Путь | Что |
@@ -19,7 +20,9 @@
 | `src/main/java/.../features/pass/application/Simulat*` | симулятор: SimulationGenerator (чистая функция от зерна), SimulatorService; API — SimulatorController |
 | `src/main/java/.../features/pass/gateway/` | FaceGateway, PeopleGateway, ShiftGateway (RestClient) |
 | `src/main/java/.../messaging/` | outbox (Outbox, OutboxRelay), consumer (PeopleEventsConsumer, IdempotentConsumer) |
-| `src/main/java/.../api/` | KioskController (+impl), DTO request/response, PathConstants |
+| `src/main/java/.../features/kiosk/` | терминалы: KioskService, KioskAuthenticator (подпись), KioskRepository, CheckpointGateway |
+| `src/main/java/.../config/KioskSignatureFilter` | подпись запросов терминала → `KioskAuthentication` (ROLE_KIOSK) |
+| `src/main/java/.../api/` | KioskController, KioskSelfController, KiosksController (+impl), DTO request/response, PathConstants |
 | `src/main/java/.../config/` | SecurityConfig |
 | `src/main/java/.../exception/` | DomainExceptionHandler |
 | `src/main/resources/db/changelog/` | outbox, device_keys, worker_state, qr_uses, pass_attempts (+триггер) |
@@ -48,3 +51,4 @@
 - 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)
 - 2026-10-09 · miroslavrov (агент) · feat: ACC-17 вместимость зоны → `ZONE_FULL` (`worker_state.zone_id`, блокировка зоны, `zoneCapacity` от people) (#90)
 - 2026-10-10 · KIRI4444, miroslavrov (агент) · feat(access): ACC-18 настройки прохода `GET|PUT /api/v1/settings` (jsonb-строка `access_settings`, кэш 5 с, дефолты из env); порог лица, допуск QR, пауза, блокировка, присутствие и `requireShift` применяются сразу (`PassTuning`); `shiftGraceMin`, режим терминала и офлайн — пока только хранятся (#92)
+- 2026-10-09 · miroslavrov (агент) · feat(access): ACC-12 терминалы — регистрация ключа, код сопряжения, `/kiosk/me`, `/kiosks` (список, pair, patch, unpair), подпись запросов `X-Kiosk-*` с окном времени и одноразовым nonce; проходная скана — из привязки терминала (#109)

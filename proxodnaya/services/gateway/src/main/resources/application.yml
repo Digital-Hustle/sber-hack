@@ -54,7 +54,7 @@ gateway:
       jwk-set-uri: ${PEOPLE_JWKS_URI}
   cors: ${CORS_ORIGINS:}
   rate-limit:
-    paths: [ "/people/api/v1/auth/**", "/access/api/v1/kiosk/attempts/**", "/access/api/v1/kiosk/attempts" ]
+    paths: [ "/people/api/v1/auth/**", "/access/api/v1/kiosk/attempts/**", "/access/api/v1/kiosk/attempts", "/access/api/v1/kiosk/register" ]
     capacity: ${RATE_LIMIT_CAPACITY:20}
     window: ${RATE_LIMIT_WINDOW:1m}
 

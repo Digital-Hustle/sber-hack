@@ -14,6 +14,8 @@ public enum ErrorCode {
     DEVICE_REVOKED,
     DEVICE_MISMATCH,
     KIOSK_SIGNATURE_INVALID,
+    KIOSK_UNKNOWN,
+    KIOSK_NOT_PAIRED,
 
     // Worker
     WORKER_BLOCKED,

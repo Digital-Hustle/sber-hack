@@ -10,7 +10,7 @@
 | PPL-04 | FR-02/63 | Активация `{inviteCode, deviceId, publicKeyJwk}`, `DeviceBound` в outbox | B1 | done (#6) |
 | PPL-05 | FR-63 | Device challenge → token ES256 10 мин, JWKS | B1 | review #91: challenge 60 с, токен WORKER + `did`, `/internal/people/jwks`, ADR-040 |
 | PPL-06 | FR-22 | Зоны, проходные, вместимость | B1 | done (#7) |
-| PPL-07 | FR-64 | Код сопряжения киоска → ключ киоска, `/auth/kiosk/pair` | B1 | todo |
+| PPL-07 | FR-64 | Код сопряжения киоска → ключ киоска, `/auth/kiosk/pair` | B1 | done #109 (ACC-12): терминалы и их ключи — в access |
 | PPL-08 | FR-07 | Допуски: инструктаж/медосмотр со сроком, допуски в зоны; `/internal/.../access-profile` | B1 | done (#7): допуски и зоны в карточке, access-profile, internal checkpoint |
 | PPL-09 | FR-60 | Provisioning персонала в Keycloak (`POST /staff`) | B1 | done #96: заменено PPL-13 — персонал в people (ADR-041) |
 | PPL-10 | NFR-10 | Удаление рабочего: каскад в face, `WorkerDeleted` | B1 | review #44 |
