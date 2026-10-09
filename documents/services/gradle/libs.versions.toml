@@ -7,7 +7,6 @@ postgresql = "42.7.11"
 springdoc = "2.8.17"
 mapstruct = "1.6.3"
 lombok-mapstruct-binding = "0.2.0"
-resilience4j = "2.4.0"
 archunit = "1.5.0"
 uuid-creator = "6.1.1"
 checkstyle = "13.0.0"
@@ -25,7 +24,6 @@ springdoc-webflux = { module = "org.springdoc:springdoc-openapi-starter-webflux-
 mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
 mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
 lombok-mapstruct-binding = { module = "org.projectlombok:lombok-mapstruct-binding", version.ref = "lombok-mapstruct-binding" }
-resilience4j-spring-boot = { module = "io.github.resilience4j:resilience4j-spring-boot3", version.ref = "resilience4j" }
 uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuid-creator" }
 archunit = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }

@@ -102,6 +102,9 @@ jobs:
       # ---- Python (ocr) ----
       - if: matrix.svc.kind == 'python'
         uses: astral-sh/setup-uv@v6
+      - name: Tesseract (rus+eng)
+        if: matrix.svc.kind == 'python'
+        run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-rus fonts-liberation
       - name: ruff, mypy, pytest
         if: matrix.svc.kind == 'python'
         working-directory: documents/services/${{ matrix.svc.name }}

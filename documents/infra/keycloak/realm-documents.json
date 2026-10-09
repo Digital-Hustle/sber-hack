@@ -52,7 +52,11 @@
       "secret": "${KC_SVC_DOCPROC_SECRET}",
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false
+      "directAccessGrantsEnabled": false,
+      "protocolMappers": [
+        { "name": "aud-ocr", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+          "config": { "included.custom.audience": "ocr", "access.token.claim": "true", "id.token.claim": "false" } }
+      ]
     },
     {
       "clientId": "svc-review",
