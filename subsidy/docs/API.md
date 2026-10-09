@@ -3,7 +3,7 @@
 Все запросы идут через gateway: `/<service>/api/v1/...` (`package`, `docproc`, `rules`, `assistant`); gateway переписывает путь в `/api/v1/...` сервиса (как в «Проходной»). Коллекции — `{items: [...], page: {next, total}}`, request — `*Rq`, response — `*Rs`. Внутренние вызовы — `/internal/**`, наружу gateway их не пропускает. Ошибки — `application/problem+json`: `{type, title, status, detail, code, hint, traceId, errors?}` (`detail`/`hint` — по-русски). Курсоры, `options`, SSE, `Idempotency-Key` — `../../.agents/skills/backend-spring/references/frontend-contract.md`. Деньги в JSON — **строки** `"12345.67"` (без потерь точности), даты — `YYYY-MM-DD`.
 
 ## Аутентификация
-OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `subsidy-specialist`, PKCE), `Authorization: Bearer <JWT>`. Роли: `SPECIALIST` (пакеты, загрузка, правки, протокол), `SENIOR_SPECIALIST` (+ решения, программы, переразбор; TOTP), `AUDITOR` (только чтение протоколов, истории, статистики). SSE: `GET /<svc>/api/v1/stream/ticket` → одноразовый `ticket` на 30 с.
+OIDC через Keycloak (`https://<host>/auth/realms/subsidy`, клиент `subsidy-specialist`, PKCE), `Authorization: Bearer <JWT>`. Роли: `SPECIALIST` (пакеты, загрузка, правки, протокол), `SENIOR_SPECIALIST` (+ решения, программы, переразбор; TOTP), `AUDITOR` (только чтение протоколов, истории, статистики). SSE: `GET /<svc>/api/v1/stream/ticket` → одноразовый `ticket` на 30 с.
 
 ## package (`/package/api/v1`)
 - `GET /organizations?inn=` → организация или 404; `POST /organizations` `{inn}` → 201 (ИНН проверяется контрольной суммой, `INN_INVALID`)
