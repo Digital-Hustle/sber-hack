@@ -41,6 +41,7 @@
 - `GET /applications/{id}/history` (B-08) · `GET /applications/{id}/export?format=docx|xlsx|pdf` (B-05, SENIOR_OPERATOR; PDF — PDFBox + встроенный Liberation Sans)
 - `GET /reports/expiring?days=30`, XLSX — `GET /reports/expiring/export?days=30` (SENIOR_OPERATOR) (B-04) · `GET /metrics` (B-06, с формулами «как посчитано») · `POST /applications/next` — взять следующую свободную · `GET /stream` (SSE, ticket): `queue.changed`, `document.stage`
 - `POST /applications/{id}/reveal` `{field}` → полный номер документа + запись в аудит (B-07)
+- Сотрудники (SENIOR_OPERATOR, FE-UI-03/RV-15): `GET /staff` → `{items: [{login, firstName, lastName, role, enabled, codeConfigured, createdAt}]}` · `POST /staff` `{login, firstName, lastName, role}` → 201 `{login, secret, otpauthUri}` (ключ показывается один раз) · `POST /staff/{login}/code` → новый ключ (старый перестаёт работать, сессии закрываются) · `PUT /staff/{login}/enabled` `{enabled}`
 
 ## Стадии документа
 | stage | Текст соискателю | Видит оператор |
@@ -96,6 +97,10 @@
 | INTAKE_UNAVAILABLE | 503 | Сервис приёма недоступен (внутренний вызов) | Повторите позже — разбор продолжится сам |
 | DOCPROC_UNAVAILABLE | 503 | Сервис разбора недоступен (внутренний вызов) | Повторите позже |
 | OCR_UNAVAILABLE | 503 | Сервис распознавания недоступен (внутренний вызов docproc → ocr) | Разбор повторится автоматически |
+| LOGIN_TAKEN | 409 | Логин уже занят | Придумайте другой |
+| SELF_DISABLE | 409 | Нельзя запретить вход себе | Попросите другого старшего оператора |
+| STAFF_NOT_FOUND | 404 | Сотрудник не найден | Обновите список |
+| STAFF_UNAVAILABLE | 503 | Каталог сотрудников недоступен (Keycloak) | Повторите позже |
 
 Сверка «код в коде ↔ строка в этом файле» — `scripts/check-contracts.py` (CI, job security).
 

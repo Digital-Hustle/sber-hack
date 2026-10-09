@@ -129,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
     token: str | PasswordToken | None = os.environ.get("EVAL_OPERATOR_TOKEN")
     if not token and os.environ.get("EVAL_TOKEN_URL"):
         token = PasswordToken(os.environ["EVAL_TOKEN_URL"], os.environ.get("EVAL_CLIENT_ID", "documents-eval"),
-                              os.environ.get("EVAL_USERNAME", "operator"), os.environ["EVAL_PASSWORD"],
+                              os.environ.get("EVAL_USERNAME", "operator"), os.environ["EVAL_TOTP_SECRET"],
                               insecure=args.insecure)
     api = Api(args.api, token, insecure=args.insecure)
     report = evaluate(measure(rows, files_dir, api, args.deadline))

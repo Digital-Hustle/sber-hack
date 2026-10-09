@@ -23,10 +23,11 @@
   "otpPolicyDigits": 6,
   "otpPolicyPeriod": 30,
   "browserFlow": "documents-code",
+  "directGrantFlow": "documents-code-direct",
   "authenticationFlows": [
     {
       "alias": "documents-code", "providerId": "basic-flow", "topLevel": true, "builtIn": false,
-      "description": "FE-UI-02: логин, затем код из приложения-аутентификатора; пароль — только пока код не настроен",
+      "description": "FE-UI-03: логин, затем код из приложения-аутентификатора; без кода входа нет, паролей нет",
       "authenticationExecutions": [
         { "authenticator": "auth-cookie", "requirement": "ALTERNATIVE", "priority": 10, "autheticatorFlow": false, "userSetupAllowed": false },
         { "flowAlias": "documents-code-forms", "requirement": "ALTERNATIVE", "priority": 20, "autheticatorFlow": true, "userSetupAllowed": false }
@@ -34,11 +35,11 @@
     },
     {
       "alias": "documents-code-forms", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
-      "description": "Логин → код, а пока код не настроен — пароль",
+      "description": "Логин → код; кода нет — отказ",
       "authenticationExecutions": [
         { "authenticator": "auth-username-form", "requirement": "REQUIRED", "priority": 10, "autheticatorFlow": false, "userSetupAllowed": false },
         { "flowAlias": "documents-code-otp", "requirement": "CONDITIONAL", "priority": 20, "autheticatorFlow": true, "userSetupAllowed": false },
-        { "flowAlias": "documents-code-password", "requirement": "CONDITIONAL", "priority": 30, "autheticatorFlow": true, "userSetupAllowed": false }
+        { "flowAlias": "documents-code-deny", "requirement": "CONDITIONAL", "priority": 30, "autheticatorFlow": true, "userSetupAllowed": false }
       ]
     },
     {
@@ -50,16 +51,26 @@
       ]
     },
     {
-      "alias": "documents-code-password", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
-      "description": "Кода ещё нет — пароль, затем обязательная настройка кода (CONFIGURE_TOTP)",
+      "alias": "documents-code-deny", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "description": "Кода нет — вход запрещён (код выдаёт старший оператор; пароля нет вовсе)",
       "authenticationExecutions": [
         { "authenticator": "conditional-sub-flow-executed", "authenticatorConfig": "documents-code-otp-not-executed",
           "requirement": "REQUIRED", "priority": 10, "autheticatorFlow": false, "userSetupAllowed": false },
-        { "authenticator": "auth-password-form", "requirement": "REQUIRED", "priority": 20, "autheticatorFlow": false, "userSetupAllowed": false }
+        { "authenticator": "deny-access-authenticator", "authenticatorConfig": "documents-code-no-code",
+          "requirement": "REQUIRED", "priority": 20, "autheticatorFlow": false, "userSetupAllowed": false }
+      ]
+    },
+    {
+      "alias": "documents-code-direct", "providerId": "basic-flow", "topLevel": true, "builtIn": false,
+      "description": "FE-UI-03: форма входа фронта — логин + код (grant_type=password без пароля, параметр otp)",
+      "authenticationExecutions": [
+        { "authenticator": "direct-grant-validate-username", "requirement": "REQUIRED", "priority": 10, "autheticatorFlow": false, "userSetupAllowed": false },
+        { "authenticator": "direct-grant-validate-otp", "requirement": "REQUIRED", "priority": 20, "autheticatorFlow": false, "userSetupAllowed": false }
       ]
     }
   ],
   "authenticatorConfig": [
+    { "alias": "documents-code-no-code", "config": { "denyErrorMessage": "Вход не настроен: попросите старшего оператора выдать код" } },
     { "alias": "documents-code-otp-not-executed", "config": { "flow_to_check": "documents-code-otp", "check_result": "not-executed" } }
   ],
   "roles": {
@@ -77,7 +88,7 @@
       "name": "Рабочее место оператора",
       "publicClient": true,
       "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
+      "directAccessGrantsEnabled": true,
       "redirectUris": ["https://${PUBLIC_HOST}/operator/*", "https://${PUBLIC_HOST}/operator"],
       "webOrigins": ["https://${PUBLIC_HOST}"],
       "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "https://${PUBLIC_HOST}/*" },
@@ -127,8 +138,8 @@
       "email": "operator@documents.local",
       "emailVerified": true,
       "enabled": true,
-      "credentials": [{ "type": "password", "value": "${KC_DEMO_OPERATOR_PASSWORD}", "temporary": false }],
-      "requiredActions": ["CONFIGURE_TOTP"],
+      "credentials": [{ "type": "otp", "userLabel": "Приложение-аутентификатор", "secretData": "{\"value\":\"${KC_DEMO_OPERATOR_TOTP}\"}",
+        "credentialData": "{\"subType\":\"totp\",\"digits\":6,\"period\":30,\"algorithm\":\"HmacSHA1\",\"counter\":0}" }],
       "realmRoles": ["OPERATOR"]
     },
     {
@@ -138,8 +149,8 @@
       "email": "senior@documents.local",
       "emailVerified": true,
       "enabled": true,
-      "credentials": [{ "type": "password", "value": "${KC_DEMO_SENIOR_PASSWORD}", "temporary": false }],
-      "requiredActions": ["CONFIGURE_TOTP"],
+      "credentials": [{ "type": "otp", "userLabel": "Приложение-аутентификатор", "secretData": "{\"value\":\"${KC_DEMO_SENIOR_TOTP}\"}",
+        "credentialData": "{\"subType\":\"totp\",\"digits\":6,\"period\":30,\"algorithm\":\"HmacSHA1\",\"counter\":0}" }],
       "realmRoles": ["OPERATOR", "SENIOR_OPERATOR"]
     },
     {
@@ -149,11 +160,12 @@
       "email": "auditor@documents.local",
       "emailVerified": true,
       "enabled": true,
-      "credentials": [{ "type": "password", "value": "${KC_DEMO_AUDITOR_PASSWORD}", "temporary": false }],
-      "requiredActions": ["CONFIGURE_TOTP"],
+      "credentials": [{ "type": "otp", "userLabel": "Приложение-аутентификатор", "secretData": "{\"value\":\"${KC_DEMO_AUDITOR_TOTP}\"}",
+        "credentialData": "{\"subType\":\"totp\",\"digits\":6,\"period\":30,\"algorithm\":\"HmacSHA1\",\"counter\":0}" }],
       "realmRoles": ["AUDITOR"]
     },
     { "username": "service-account-svc-docproc", "enabled": true, "serviceAccountClientId": "svc-docproc", "realmRoles": ["SERVICE_DOCPROC"] },
-    { "username": "service-account-svc-review", "enabled": true, "serviceAccountClientId": "svc-review", "realmRoles": ["SERVICE_REVIEW"] }
+    { "username": "service-account-svc-review", "enabled": true, "serviceAccountClientId": "svc-review", "realmRoles": ["SERVICE_REVIEW"],
+      "clientRoles": { "realm-management": ["manage-users", "view-users", "query-users"] } }
   ]
 }

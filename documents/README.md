@@ -10,7 +10,7 @@ cd infra && docker compose --profile llm-local up -d --build
 ```
 - Всё на одном домене за Caddy (`infra/caddy/Caddyfile`, образ — `frontend/Dockerfile`: статика фронта + reverse proxy).
 - Соискатель: `https://<host>/apply` → согласие → анкета → загрузка файлов (или камера телефона); ссылка-ключ `#k=…` и код возобновления — чтобы вернуться к заявке.
-- Оператор: `https://<host>/operator` → вход через Keycloak. Демо-пользователи (пароли — в `infra/.env`): `operator` (`KC_DEMO_OPERATOR_PASSWORD`), `senior` (`KC_DEMO_SENIOR_PASSWORD`), `auditor` (`KC_DEMO_AUDITOR_PASSWORD`). Сценарий — [docs/DEMO.md](docs/DEMO.md).
+- Оператор: `https://<host>/operator` → вход без пароля: логин + код из приложения-аутентификатора. Демо-пользователи `operator`, `senior`, `auditor` (секреты кодов — `KC_DEMO_*_TOTP` в `infra/.env`, QR: `python3 keycloak/demo-qr.py senior` из `infra/`); остальных заводит `senior` в «Сотрудниках». Сценарий — [docs/DEMO.md](docs/DEMO.md).
 - Keycloak: `https://<host>/auth` (realm `documents`).
 - Health: `https://<host>/actuator/health`, сервисы — внутри сети, `scripts/smoke.sh https://<host>`.
 

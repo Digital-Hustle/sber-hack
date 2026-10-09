@@ -225,6 +225,29 @@
         },
         "type" : "object"
       },
+      "EnabledRq" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "enabled" ],
+        "type" : "object"
+      },
+      "Enrollment" : {
+        "properties" : {
+          "login" : {
+            "type" : "string"
+          },
+          "otpauthUri" : {
+            "type" : "string"
+          },
+          "secret" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ExpiringItem" : {
         "properties" : {
           "applicantName" : {
@@ -629,6 +652,70 @@
           "timeout" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "StaffMember" : {
+        "properties" : {
+          "codeConfigured" : {
+            "type" : "boolean"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "login" : {
+            "type" : "string"
+          },
+          "role" : {
+            "enum" : [ "OPERATOR", "SENIOR_OPERATOR", "AUDITOR" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "StaffRq" : {
+        "properties" : {
+          "firstName" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "lastName" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "login" : {
+            "maxLength" : 32,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "role" : {
+            "enum" : [ "OPERATOR", "SENIOR_OPERATOR", "AUDITOR" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "firstName", "lastName", "login", "role" ],
+        "type" : "object"
+      },
+      "StaffRs" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StaffMember"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -1154,6 +1241,109 @@
         },
         "summary" : "Истекающие документы в XLSX",
         "tags" : [ "reports" ]
+      }
+    },
+    "/api/v1/staff" : {
+      "get" : {
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StaffRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Сотрудники рабочего места",
+        "tags" : [ "staff" ]
+      },
+      "post" : {
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StaffRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Enrollment"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "summary" : "Завести сотрудника и выдать код",
+        "tags" : [ "staff" ]
+      }
+    },
+    "/api/v1/staff/{login}/code" : {
+      "post" : {
+        "operationId" : "reissue",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "login",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Enrollment"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Выдать новый код",
+        "tags" : [ "staff" ]
+      }
+    },
+    "/api/v1/staff/{login}/enabled" : {
+      "put" : {
+        "operationId" : "enabled",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "login",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EnabledRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Разрешить или запретить вход",
+        "tags" : [ "staff" ]
       }
     },
     "/api/v1/stream" : {

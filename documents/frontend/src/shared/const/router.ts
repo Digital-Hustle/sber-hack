@@ -7,5 +7,5 @@ export const routes = {
   operatorApplication: (id: string) => `/operator/applications/${id}`,
   operatorExpiring: "/operator/expiring",
   operatorMetrics: "/operator/metrics",
-  operatorCallback: "/operator/callback",
+  operatorStaff: "/operator/staff",
 } as const;

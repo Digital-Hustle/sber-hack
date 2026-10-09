@@ -58,7 +58,6 @@ export const router = createBrowserRouter([
           { path: ":id", lazy: async () => ({ Component: (await apply()).ApplyApplicationPage }) },
         ],
       },
-      { path: "/operator/callback", lazy: async () => ({ Component: (await operator()).CallbackPage }) },
       {
         path: "/operator", lazy: async () => ({ Component: (await operatorShell()).OperatorShell }),
         children: [
@@ -66,6 +65,7 @@ export const router = createBrowserRouter([
           { path: "applications/:id", lazy: async () => ({ Component: (await operator()).ApplicationPage }) },
           { path: "expiring", lazy: async () => ({ Component: (await operator()).ExpiringPage }) },
           { path: "metrics", lazy: async () => ({ Component: (await operator()).MetricsPage }) },
+          { path: "staff", lazy: async () => ({ Component: (await operator()).StaffPage }) },
         ],
       },
       { path: "*", element: <NotFoundPage /> },

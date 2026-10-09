@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,7 +71,7 @@ class ReviewFlowIntegrationTest extends AbstractIntegrationTest {
                 "documents", List.of(Map.of("id", passport.toString(), "files", List.of(Map.of("id",
                         UUID.randomUUID().toString(), "version", 1, "active", true, "mime", "image/png",
                         "pages", 1))))))));
-        String exp = LocalDate.now().plusDays(10).toString();
+        String exp = LocalDate.now(ZoneId.of("Europe/Moscow")).plusDays(10).toString();
         when(docproc.result(passport)).thenReturn(Optional.of(node(Map.of("documentId", passport.toString(),
                 "stage", "NEEDS_REVIEW", "type", "PASSPORT_FOREIGN", "typeName", "Паспорт иностранного гражданина",
                 "pages", List.of(Map.of("n", 1, "width", 1000, "height", 700)),
