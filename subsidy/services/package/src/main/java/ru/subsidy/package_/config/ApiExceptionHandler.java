@@ -26,6 +26,7 @@ public class ApiExceptionHandler {
             ErrorCode.FILE_NOT_FOUND, HttpStatus.NOT_FOUND,
             ErrorCode.CONFLICT, HttpStatus.CONFLICT,
             ErrorCode.PACKAGE_LOCKED, HttpStatus.CONFLICT,
+            ErrorCode.PACKAGE_DECIDED, HttpStatus.CONFLICT,
             ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
 
     /**
