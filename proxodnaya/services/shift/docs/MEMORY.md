@@ -7,7 +7,8 @@
 - SSE (SH-08): тикеты и буфер событий — в памяти (один экземпляр), события — после коммита из `IntervalService` (`interval/api/PassRecorded|PresenceChanged`).
 - Табель (SH-09): `/reports/timesheet.xlsx`, ФИО/подрядчик — из проекции `workers` (`people.worker.v1`); рабочий без карточки — строкой с id.
 - Опоздания/переработки (SH-10): `/analytics/late-overtime`, пороги `LATE_GRACE` (5 мин) и `OVERTIME_THRESHOLD` (15 мин); выход не отмечен — переработка не считается.
-- Дальше: heartbeat/оповещения (SH-11), отказы и нагрузка (SH-12) — `pass_events` для них уже копится.
+- Отказы и нагрузка (SH-12): `/analytics/refusals`, `/analytics/load-by-hour` по `pass_events`.
+- Дальше: heartbeat/оповещения (SH-11), напоминание о выходе (SH-13).
 - Пояс площадки — `SITE_ZONE` (Europe/Moscow), допуск раннего входа — `SHIFT_EARLY_ENTRY` (60 мин).
 
 ## 2. Карта сервиса
@@ -18,8 +19,7 @@
 | `features/interval` | `IntervalPlan` (правила интервалов), `IntervalService` (проход → интервалы + outbox, автозакрытие), `AutoCloseJob`, `api/PresenceLookup` |
 | `features/worker` | статус рабочего (`/worker/me`), проекция карточек `workers` (`WorkerDirectoryService`) |
 | `features/report` | табель: `TimesheetService` (интервалы → дни площадки, коды Т/Н), `TimesheetXlsxWriter` (POI) |
-| `features/analytics` | SQL сводки и часов, `LateOvertimeCalculator` (смена против интервалов), `method` в ответе |
-| `features/analytics` | SQL сводки и часов, `PassStatsQueryService` (отказы по причинам, нагрузка день × час по `pass_events`), `method` в ответе |
+| `features/analytics` | SQL сводки и часов, `LateOvertimeCalculator` (смена против интервалов), `PassStatsQueryService` (отказы по причинам, нагрузка день × час по `pass_events`), `method` в ответе |
 | `features/stream` | `TicketService` (одноразовые тикеты), `SseHub` (подписчики, буфер, Last-Event-ID, пульс), `StreamEventsListener` (события после коммита → SSE) |
 | `messaging/consumer/PassEventsConsumer` | `access.pass.v1` → `pass_events` + интервалы, идемпотентно |
 | `messaging/consumer/PeopleEventsConsumer` | `people.worker.v1` → `workers` (ФИО, должность, подрядчик, статус), старое событие не перетирает новое |
@@ -49,5 +49,4 @@
 - 2026-10-09 · miroslavrov (агент) · feat: SH-08 SSE — тикет, `/stream/situation`, `/stream/worker`, Last-Event-ID, пульс (#57)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-09 табель XLSX (`/reports/timesheet.xlsx`), проекция `people.worker.v1` → `workers` (#59)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-10 опоздания и переработки (`/analytics/late-overtime`, `LATE_GRACE`, `OVERTIME_THRESHOLD`) (#60)
-- 2026-10-09 · miroslavrov (агент) · feat: SH-12 отказы по причинам и нагрузка по часам (`/analytics/refusals`, `/analytics/load-by-hour`) (#PR)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-12 отказы по причинам и нагрузка по часам (`/analytics/refusals`, `/analytics/load-by-hour`) (#62)
