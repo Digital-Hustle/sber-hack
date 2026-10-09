@@ -1,23 +1,16 @@
 package ru.proxodnaya.access.api.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class SettingsRs {
-
-    private double faceThreshold;
-    private int qrToleranceSec;
-    private int shiftGraceMin;
-    private boolean requireShift;
-    private int tempLockFailures;
-    private int tempLockWindowSec;
-    private int framesRequired;
-    private int challengeTtlSec;
-    private int repeatScanCooldownSec;
-}
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record SettingsRs(
+        double faceThreshold,
+        int qrToleranceSec,
+        int shiftGraceMin,
+        boolean requireShift,
+        int tempLockFailures,
+        int tempLockWindowSec,
+        int framesRequired,
+        int challengeTtlSec,
+        int repeatScanCooldownSec
+) {}
