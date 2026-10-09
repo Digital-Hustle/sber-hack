@@ -1,0 +1,843 @@
+[
+ {
+  "code": "APPLICATION",
+  "name": "Заявление на предоставление субсидии",
+  "hints": "Слова «Заявление», «прошу предоставить субсидию», реквизиты заявителя, запрашиваемая сумма, подпись руководителя.",
+  "version": "1",
+  "kinds": {
+   "orgName": "text",
+   "inn": "inn",
+   "kpp": "kpp",
+   "ogrn": "ogrn",
+   "program": "text",
+   "requestedAmount": "money",
+   "date": "date",
+   "signerName": "text",
+   "signerPosition": "text",
+   "bankAccount": "account",
+   "bik": "bik"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "orgName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "inn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "kpp": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "ogrn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "program": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "requestedAmount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "date": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "signerName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "signerPosition": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "bankAccount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "bik": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "orgName",
+    "inn",
+    "kpp",
+    "ogrn",
+    "program",
+    "requestedAmount",
+    "date",
+    "signerName",
+    "signerPosition",
+    "bankAccount",
+    "bik"
+   ],
+   "additionalProperties": false
+  }
+ },
+ {
+  "code": "EGRUL_EXTRACT",
+  "name": "Выписка из ЕГРЮЛ/ЕГРИП",
+  "hints": "«Выписка из Единого государственного реестра юридических лиц / индивидуальных предпринимателей», ФНС, ОГРН, сведения о лице, имеющем право действовать без доверенности, ОКВЭД.",
+  "version": "1",
+  "kinds": {
+   "orgName": "text",
+   "inn": "inn",
+   "ogrn": "ogrn",
+   "kpp": "kpp",
+   "extractDate": "date",
+   "status": "text",
+   "headName": "text",
+   "headPosition": "text",
+   "okvedMain": "text",
+   "okvedExtra": "list",
+   "address": "text",
+   "registrationDate": "date"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "orgName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "inn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "ogrn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "kpp": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "extractDate": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "status": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "headName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "headPosition": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "okvedMain": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "okvedExtra": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "string"
+     }
+    },
+    "address": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "registrationDate": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "orgName",
+    "inn",
+    "ogrn",
+    "kpp",
+    "extractDate",
+    "status",
+    "headName",
+    "headPosition",
+    "okvedMain",
+    "okvedExtra",
+    "address",
+    "registrationDate"
+   ],
+   "additionalProperties": false
+  }
+ },
+ {
+  "code": "TAX_CERTIFICATE",
+  "name": "Справка ФНС об исполнении обязанности по уплате налогов",
+  "hints": "«Справка об исполнении налогоплательщиком обязанности по уплате налогов, сборов, страховых взносов, пеней, штрафов, процентов», КНД 1120101, «не имеет неисполненную обязанность» / «имеет неисполненную обязанность».",
+  "version": "1",
+  "kinds": {
+   "inn": "inn",
+   "orgName": "text",
+   "certificateDate": "date",
+   "asOfDate": "date",
+   "hasDebt": "bool",
+   "debtAmount": "money",
+   "ifnsCode": "text"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "inn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "orgName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "certificateDate": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "asOfDate": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "hasDebt": {
+     "type": [
+      "boolean",
+      "null"
+     ]
+    },
+    "debtAmount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "ifnsCode": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "inn",
+    "orgName",
+    "certificateDate",
+    "asOfDate",
+    "hasDebt",
+    "debtAmount",
+    "ifnsCode"
+   ],
+   "additionalProperties": false
+  }
+ },
+ {
+  "code": "FIN_STATEMENTS",
+  "name": "Бухгалтерская отчётность",
+  "hints": "«Бухгалтерский баланс», «Отчёт о финансовых результатах», КНД 0710099/0710001, коды строк 1600, 1300, 1700, 2110, 2400.",
+  "version": "1",
+  "kinds": {
+   "inn": "inn",
+   "orgName": "text",
+   "period": "text",
+   "revenue": "money",
+   "netProfit": "money",
+   "assetsTotal": "money",
+   "liabilitiesTotal": "money",
+   "equity": "money"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "inn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "orgName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "period": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "revenue": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "netProfit": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "assetsTotal": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "liabilitiesTotal": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "equity": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "inn",
+    "orgName",
+    "period",
+    "revenue",
+    "netProfit",
+    "assetsTotal",
+    "liabilitiesTotal",
+    "equity"
+   ],
+   "additionalProperties": false
+  }
+ },
+ {
+  "code": "COST_ESTIMATE",
+  "name": "Смета затрат / расчёт размера субсидии",
+  "hints": "«Смета затрат», «Расчёт размера субсидии», таблица статей затрат, итог, ставка или процент возмещения.",
+  "version": "1",
+  "kinds": {
+   "orgName": "text",
+   "inn": "inn",
+   "items": "items",
+   "total": "money",
+   "rate": "number",
+   "subsidyAmount": "money"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "orgName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "inn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "items": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "qty": {
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "price": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "amount": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "vatRate": {
+        "type": [
+         "string",
+         "null"
+        ]
+       }
+      },
+      "required": [
+       "name",
+       "qty",
+       "price",
+       "amount",
+       "vatRate"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "total": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "rate": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "subsidyAmount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "orgName",
+    "inn",
+    "items",
+    "total",
+    "rate",
+    "subsidyAmount"
+   ],
+   "additionalProperties": false
+  }
+ },
+ {
+  "code": "CONTRACT",
+  "name": "Договор с поставщиком или подрядчиком",
+  "hints": "«Договор №», стороны «Поставщик/Исполнитель» и «Покупатель/Заказчик», предмет договора, цена договора, реквизиты сторон, подписи.",
+  "version": "1",
+  "kinds": {
+   "number": "text",
+   "date": "date",
+   "buyerName": "text",
+   "buyerInn": "inn",
+   "sellerName": "text",
+   "sellerInn": "inn",
+   "subject": "text",
+   "amount": "money",
+   "vatAmount": "money"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "number": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "date": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "buyerName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "buyerInn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "sellerName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "sellerInn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "subject": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "amount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "vatAmount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "number",
+    "date",
+    "buyerName",
+    "buyerInn",
+    "sellerName",
+    "sellerInn",
+    "subject",
+    "amount",
+    "vatAmount"
+   ],
+   "additionalProperties": false
+  }
+ },
+ {
+  "code": "INVOICE",
+  "name": "Счёт, счёт-фактура, УПД или акт",
+  "hints": "«Счёт на оплату», «Счёт-фактура», «Универсальный передаточный документ», «Акт», таблица позиций, «Итого», «В т.ч. НДС».",
+  "version": "1",
+  "kinds": {
+   "kind": "text",
+   "number": "text",
+   "date": "date",
+   "sellerName": "text",
+   "sellerInn": "inn",
+   "buyerName": "text",
+   "buyerInn": "inn",
+   "items": "items",
+   "total": "money",
+   "vatAmount": "money",
+   "contractRef": "text"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "kind": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "number": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "date": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "sellerName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "sellerInn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "buyerName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "buyerInn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "items": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "qty": {
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "price": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "amount": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "vatRate": {
+        "type": [
+         "string",
+         "null"
+        ]
+       }
+      },
+      "required": [
+       "name",
+       "qty",
+       "price",
+       "amount",
+       "vatRate"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "total": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "vatAmount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "contractRef": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "kind",
+    "number",
+    "date",
+    "sellerName",
+    "sellerInn",
+    "buyerName",
+    "buyerInn",
+    "items",
+    "total",
+    "vatAmount",
+    "contractRef"
+   ],
+   "additionalProperties": false
+  }
+ },
+ {
+  "code": "PAYMENT_ORDER",
+  "name": "Платёжное поручение",
+  "hints": "«Платёжное поручение №», «Плательщик», «Получатель», БИК, «Назначение платежа», «Списано со сч. плат.», отметка банка.",
+  "version": "1",
+  "kinds": {
+   "number": "text",
+   "date": "date",
+   "amount": "money",
+   "payerName": "text",
+   "payerInn": "inn",
+   "payerAccount": "account",
+   "payeeName": "text",
+   "payeeInn": "inn",
+   "payeeAccount": "account",
+   "bik": "bik",
+   "purpose": "text"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "number": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "date": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "amount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "payerName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "payerInn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "payerAccount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "payeeName": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "payeeInn": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "payeeAccount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "bik": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "purpose": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "number",
+    "date",
+    "amount",
+    "payerName",
+    "payerInn",
+    "payerAccount",
+    "payeeName",
+    "payeeInn",
+    "payeeAccount",
+    "bik",
+    "purpose"
+   ],
+   "additionalProperties": false
+  }
+ },
+ {
+  "code": "OTHER",
+  "name": "Документ вне перечня",
+  "hints": "Любой документ, не относящийся к видам выше.",
+  "version": "1",
+  "kinds": {
+   "summary": "text"
+  },
+  "schema": {
+   "type": "object",
+   "properties": {
+    "summary": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "summary"
+   ],
+   "additionalProperties": false
+  }
+ }
+]
