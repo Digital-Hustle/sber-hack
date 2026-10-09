@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { Segmented } from "./Segmented";
 
 type Mode = "light" | "dark" | "system";
-const KEY = "subsidy.theme";
-const read = (): Mode => (localStorage.getItem(KEY) as Mode) || "system";
+const THEME_STORE = "subsidy.theme";
+const read = (): Mode => (localStorage.getItem(THEME_STORE) as Mode) || "system";
 const resolve = (m: Mode) => m === "dark" || (m === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
 
 /** Применить сохранённую тему (дублирует no-flash скрипт в index.html — на случай SPA-переходов). */
@@ -22,7 +22,7 @@ const applyAnimated = () => {
 export const useThemeMode = () => {
   const [mode, setMode] = useState<Mode>(read);
   useEffect(() => {
-    localStorage.setItem(KEY, mode);
+    localStorage.setItem(THEME_STORE, mode);
     applyAnimated();
     if (mode !== "system") return;
     const mq = matchMedia("(prefers-color-scheme: dark)");
