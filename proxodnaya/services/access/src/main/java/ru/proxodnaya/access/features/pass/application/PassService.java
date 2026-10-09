@@ -65,7 +65,8 @@ public class PassService {
     private static final String PEOPLE = "people";
     private static final String SHIFT = "shift";
     private static final String FAILED = "failedDependency";
-    private static final ChallengeAction[] ACTIONS = ChallengeAction.values();
+    /** BLINK не выдаём: face не видит моргание по 5 точкам YuNet и всегда отвечает liveness=false. */
+    private static final ChallengeAction[] ACTIONS = {ChallengeAction.TURN_LEFT, ChallengeAction.TURN_RIGHT, ChallengeAction.NOD};
 
     private final QrCheck qrCheck;
     private final PassQueryService query;
