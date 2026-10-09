@@ -1,4 +1,4 @@
-# Общий edge-прокси сервера (один на все кейсы). Запуск: cd edge && cp .env.example .env && docker compose up -d
+# Общий edge-прокси сервера (один на все кейсы). Запуск: cd edge && cp .env.example .env (вписать хосты) && docker compose up -d
 name: edge
 services:
   edge:
@@ -6,7 +6,6 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      ACME_EMAIL: ${ACME_EMAIL:?}
       DOCUMENTS_HOST: ${DOCUMENTS_HOST:-documents.localhost}
       SUBSIDY_HOST: ${SUBSIDY_HOST:-subsidy.localhost}
       PROXODNAYA_HOST: ${PROXODNAYA_HOST:-proxodnaya.localhost}

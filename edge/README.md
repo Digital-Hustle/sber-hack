@@ -31,6 +31,6 @@ TTL 300. Если у домена есть AAAA-записи на другой �
 
 ## Запуск
 ```
-cd edge && cp .env.example .env   # вписать почту и хосты
+cd edge && cp .env.example .env   # вписать хосты
 docker compose up -d && docker compose logs -f edge   # видно получение сертификатов
 ```
