@@ -54,6 +54,20 @@
         },
         "type" : "object"
       },
+      "AuthMode" : {
+        "properties" : {
+          "mode" : {
+            "type" : "string"
+          },
+          "testUsers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TestUser"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "CardRs" : {
         "properties" : {
           "application" : {
@@ -94,6 +108,22 @@
           },
           "requests" : {
             "$ref" : "#/components/schemas/JsonNode"
+          }
+        },
+        "type" : "object"
+      },
+      "CodeSent" : {
+        "properties" : {
+          "expiresInSec" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "resendInSec" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sentTo" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -232,20 +262,6 @@
           }
         },
         "required" : [ "enabled" ],
-        "type" : "object"
-      },
-      "Enrollment" : {
-        "properties" : {
-          "login" : {
-            "type" : "string"
-          },
-          "otpauthUri" : {
-            "type" : "string"
-          },
-          "secret" : {
-            "type" : "string"
-          }
-        },
         "type" : "object"
       },
       "ExpiringItem" : {
@@ -443,6 +459,17 @@
         "type" : "object"
       },
       "JsonNode" : { },
+      "LoginCodeRq" : {
+        "properties" : {
+          "email" : {
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email" ],
+        "type" : "object"
+      },
       "MetricsRs" : {
         "properties" : {
           "applications" : {
@@ -658,11 +685,11 @@
       },
       "StaffMember" : {
         "properties" : {
-          "codeConfigured" : {
-            "type" : "boolean"
-          },
           "createdAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "email" : {
             "type" : "string"
           },
           "enabled" : {
@@ -686,6 +713,11 @@
       },
       "StaffRq" : {
         "properties" : {
+          "email" : {
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
           "firstName" : {
             "maxLength" : 64,
             "minLength" : 0,
@@ -696,17 +728,12 @@
             "minLength" : 0,
             "type" : "string"
           },
-          "login" : {
-            "maxLength" : 32,
-            "minLength" : 0,
-            "type" : "string"
-          },
           "role" : {
             "enum" : [ "OPERATOR", "SENIOR_OPERATOR", "AUDITOR" ],
             "type" : "string"
           }
         },
-        "required" : [ "firstName", "lastName", "login", "role" ],
+        "required" : [ "email", "firstName", "lastName", "role" ],
         "type" : "object"
       },
       "StaffRs" : {
@@ -716,6 +743,29 @@
               "$ref" : "#/components/schemas/StaffMember"
             },
             "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "TestCode" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TestUser" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "role" : {
+            "enum" : [ "OPERATOR", "SENIOR_OPERATOR", "AUDITOR" ],
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -1063,6 +1113,83 @@
         "tags" : [ "applications" ]
       }
     },
+    "/api/v1/auth/code" : {
+      "post" : {
+        "operationId" : "requestCode",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginCodeRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CodeSent"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Прислать код входа на почту",
+        "tags" : [ "auth" ]
+      }
+    },
+    "/api/v1/auth/mode" : {
+      "get" : {
+        "operationId" : "mode",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthMode"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Режим стенда (dev/prod)",
+        "tags" : [ "auth" ]
+      }
+    },
+    "/api/v1/auth/test-code" : {
+      "post" : {
+        "operationId" : "testCode",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginCodeRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TestCode"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Тестовый код входа (только dev)",
+        "tags" : [ "auth" ]
+      }
+    },
     "/api/v1/documents/{id}/confirm" : {
       "post" : {
         "operationId" : "confirm",
@@ -1278,41 +1405,14 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/Enrollment"
+                  "$ref" : "#/components/schemas/StaffMember"
                 }
               }
             },
             "description" : "Created"
           }
         },
-        "summary" : "Завести сотрудника и выдать код",
-        "tags" : [ "staff" ]
-      }
-    },
-    "/api/v1/staff/{login}/code" : {
-      "post" : {
-        "operationId" : "reissue",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "login",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Enrollment"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Выдать новый код",
+        "summary" : "Пригласить сотрудника",
         "tags" : [ "staff" ]
       }
     },
