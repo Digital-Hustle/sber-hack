@@ -1,173 +1,104 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { OidcClient, UserManager, WebStorageStateStore, InMemoryWebStorage, type User } from "oidc-client-ts";
-import { env } from "@/shared/config/env";
-import { setAuth } from "@/shared/api";
-import { routes } from "@/shared/const/router";
+import { api, setAuth } from "@/shared/api";
 
 export type Role = "SPECIALIST" | "SENIOR_SPECIALIST" | "AUDITOR";
-export type Perm = "work" | "decide" | "programs" | "reprocess" | "stats";
+export type Perm = "work" | "decide" | "programs" | "reprocess" | "stats" | "staff";
+export type StaffStatus = "INVITED" | "ACTIVE" | "DISABLED";
+export type StaffUser = { id: string; name: string; email: string; role: Role; status: StaffStatus; demo: boolean; lastSeen: number | null };
+export type StandMode = "demo" | "prod";
+
+type SessionRs = { accessToken: string; expiresAt: number; sessionExpiresAt: number; user: StaffUser };
+export type CodeSent = { sentTo: string; expiresAt: number; resendAt: number; demoCode: string | null };
+export type Mode = { mode: StandMode; demo: StaffUser[]; demoCode: string | null };
 
 /** Права зеркалят матрицу ролей бэка (docs/API.md §Аутентификация). Решает сервер — здесь только что показывать. */
 const PERMS: Record<Role, Perm[]> = {
   SPECIALIST: ["work", "stats"],
-  SENIOR_SPECIALIST: ["work", "decide", "programs", "reprocess", "stats"],
+  SENIOR_SPECIALIST: ["work", "decide", "programs", "reprocess", "stats", "staff"],
   AUDITOR: ["stats"],
 };
 const LABEL: Record<Role, string> = { SPECIALIST: "специалист", SENIOR_SPECIALIST: "старший специалист", AUDITOR: "аудитор" };
+export const ROLES: Role[] = ["SPECIALIST", "SENIOR_SPECIALIST", "AUDITOR"];
 
-/**
- * OIDC Authorization Code + PKCE (Keycloak). Токены — только в памяти вкладки (InMemoryWebStorage),
- * не в localStorage (RULES §Избегай). Обновление — refresh_token.
- */
-export const userManager = new UserManager({
-  authority: env.oidcAuthority,
-  client_id: env.oidcClientId,
-  redirect_uri: `${location.origin}${routes.callback}`,
-  post_logout_redirect_uri: `${location.origin}/`,
-  response_type: "code",
-  scope: "openid profile email",
-  automaticSilentRenew: true,
-  userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }),
-  stateStore: new WebStorageStateStore({ store: sessionStorage }),
-});
+export const can = (roles: Role[], p: Perm) => roles.some((r) => PERMS[r].includes(p));
+export const permsOf = (r: Role) => PERMS[r];
+export const roleLabel = (r: Role | null) => (r ? LABEL[r] : "нет роли");
+export const LOGIN_CODE_LEN = 6;
 
-type State = { user: User | null; ready: boolean };
-let state: State = { user: null, ready: false };
+type State = { user: StaffUser | null; ready: boolean; mode: StandMode | null };
+let state: State = { user: null, ready: false, mode: null };
 const subs = new Set<() => void>();
 const set = (s: Partial<State>) => { state = { ...state, ...s }; subs.forEach((f) => f()); };
 
-userManager.events.addUserLoaded((u) => set({ user: u }));
-userManager.events.addUserUnloaded(() => set({ user: null }));
-userManager.events.addSilentRenewError(() => set({ user: null }));
-
-const decode = (jwt: string): Record<string, unknown> => {
-  try {
-    const p = jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(decodeURIComponent(escape(atob(p)))) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
-};
-
-/** Роли — из claim `roles` access-токена (маппер realm subsidy). */
-export const rolesOf = (u: User | null): Role[] => {
-  if (!u) return [];
-  const roles = decode(u.access_token).roles;
-  return (Array.isArray(roles) ? roles : []).filter((r): r is Role => typeof r === "string" && r in PERMS);
-};
-
-export const can = (roles: Role[], p: Perm) => roles.some((r) => PERMS[r].includes(p));
-export const mainRole = (roles: Role[]): Role | null =>
-  roles.includes("SENIOR_SPECIALIST") ? "SENIOR_SPECIALIST" : roles.includes("SPECIALIST") ? "SPECIALIST" : roles.includes("AUDITOR") ? "AUDITOR" : null;
-export const roleLabel = (r: Role | null) => (r ? LABEL[r] : "нет роли");
-
 /**
- * Тихий вход при открытии вкладки: токены живут только в памяти, но сессия Keycloak (cookie) жива —
- * один редирект с prompt=none возвращает токены без формы входа. Не вышло (login_required) — показываем вход.
- * Неудачная попытка запоминается до следующего успешного входа, чтобы не зациклиться.
+ * Сессия сотрудника (ADR-023): access-токен живёт только в памяти вкладки (RULES §Избегай — не в localStorage),
+ * продление — по httpOnly-cookie `subsidy_session`, которую браузер шлёт только на /package/api/v1/auth.
  */
-const SSO_TRIED = "subsidy.sso";
-const NEXT = "subsidy.next";
-const trySilent = () => {
-  if (sessionStorage.getItem(SSO_TRIED)) return false;
-  sessionStorage.setItem(SSO_TRIED, "1");
-  sessionStorage.setItem(NEXT, location.pathname + location.search);
-  void userManager.signinRedirect({ prompt: "none", state: { next: location.pathname + location.search } });
-  return true;
+let token: { value: string; expiresAt: number } | null = null;
+
+const auth = <T,>(path: string, body?: unknown) =>
+  api<T>("package", `/auth${path}`, { method: body === undefined ? "GET" : "POST", body: body ?? undefined, session: true });
+
+export const getMode = () => auth<Mode>("/mode");
+export const requestCode = (email: string) => auth<CodeSent>("/code", { email: email.trim().toLowerCase() });
+
+const started = (r: SessionRs) => {
+  token = { value: r.accessToken, expiresAt: r.expiresAt };
+  set({ user: r.user, ready: true });
+  return r.user;
+};
+export const verifyCode = async (email: string, code: string) => started(await auth<SessionRs>("/verify", { email, code }));
+
+/** Параллельные запросы ждут одного продления; не вышло — сессии нет, оболочка покажет вход. */
+let renewing: Promise<boolean> | null = null;
+const renew = () => {
+  renewing ??= auth<SessionRs>("/refresh", {})
+    .then((r) => { started(r); return true; })
+    .catch(() => { token = null; set({ user: null, ready: true }); return false; })
+    .finally(() => { renewing = null; });
+  return renewing;
 };
 
-/** Токен, которому осталось жить меньше этого, обновляем до запроса (фоновые вкладки пропускают таймер автообновления). */
-const REFRESH_AHEAD_S = 20;
-let refreshing: Promise<User | null> | null = null;
-const fresh = async (): Promise<User | null> => {
-  const u = state.user;
-  if (!u) return null;
-  if (!u.expired && (u.expires_in ?? 0) > REFRESH_AHEAD_S) return u;
-  refreshing ??= userManager.signinSilent().catch(() => null).finally(() => { refreshing = null; });
-  return refreshing;
-};
+/** Токен, которому осталось жить меньше этого, обновляем до запроса (фоновые вкладки пропускают таймеры). */
+const REFRESH_AHEAD_MS = 30_000;
 const bearer = async () => {
-  const u = await fresh();
-  return u && !u.expired ? `Bearer ${u.access_token}` : null;
+  if (token && token.expiresAt - Date.now() < REFRESH_AHEAD_MS) await renew();
+  return token ? `Bearer ${token.value}` : null;
 };
-const unauthorized = () => { if (state.user?.expired) void userManager.removeUser(); };
+const unauthorized = () => { void renew(); };
+
+export const signOut = async () => {
+  try { await auth<void>("/logout", {}); } catch { /* сессия и так закрыта */ }
+  token = null;
+  set({ user: null });
+};
 
 /**
- * Каждый запрос — с Bearer-токеном; 401 → сессия сброшена, оболочка покажет вход.
  * Источник токена ставим синхронно при рендере оболочки — до того, как дочерние страницы начнут запросы
- * (эффекты детей выполняются раньше эффектов родителя, иначе первые запросы уходили без токена и получали 401).
+ * (эффекты детей выполняются раньше эффектов родителя, иначе первые запросы уходят без токена и получают 401).
+ * При открытии вкладки сессия восстанавливается из cookie, режим стенда читается один раз.
  */
 export const useSpecialistAuth = () => {
   setAuth(bearer, unauthorized);
   useEffect(() => {
-    if (!state.ready) {
-      userManager.getUser()
-        .then((u) => (u && !u.expired ? set({ user: u, ready: true }) : trySilent() || set({ user: null, ready: true })))
-        .catch(() => set({ ready: true }));
-    }
+    if (state.ready && state.mode) return;
+    void getMode().then((m) => set({ mode: m.mode })).catch(() => {});
+    if (!state.ready) void renew();
   }, []);
 };
 
-/** Последний логин (не секрет) — подставляем в форму входа. */
-const LAST_LOGIN = "subsidy.login";
-const signedIn = (u: User) => {
-  sessionStorage.removeItem(SSO_TRIED); // вошли — при следующей перезагрузке снова можно тихо
-  const login = u.profile.preferred_username;
-  if (login) localStorage.setItem(LAST_LOGIN, login);
-  set({ user: u, ready: true });
-};
-
-/**
- * FE-UI-02: вход внутри страницы — форма Keycloak во фрейме того же origin (/auth), без ухода с сайта.
- * Запрос и PKCE — те же, что у редиректа (state в sessionStorage); callback во фрейме отдаёт адрес родителю
- * (app/main.tsx), родитель меняет код на токены — они остаются в памяти вкладки.
- */
-export const embeddedSignInUrl = async (next: string) => {
-  const req = await new OidcClient(userManager.settings).createSigninRequest({
-    request_type: "si:r",
-    state: { next },
-    login_hint: localStorage.getItem(LAST_LOGIN) ?? undefined,
-  });
-  return req.url;
-};
-export const SIGNIN_MESSAGE = "subsidy.signin";
-export const completeEmbeddedSignIn = async (url: string) => signedIn(await userManager.signinRedirectCallback(url));
-export const forgetLogin = () => localStorage.removeItem(LAST_LOGIN);
-
 export const useSession = () => {
   const s = useSyncExternalStore((f) => { subs.add(f); return () => subs.delete(f); }, () => state);
-  const roles = rolesOf(s.user);
-  const profile = s.user?.profile;
+  const roles: Role[] = s.user && s.user.status !== "DISABLED" ? [s.user.role] : [];
   return {
     ready: s.ready,
     user: s.user,
     roles,
-    role: mainRole(roles),
-    name: (profile?.name ?? profile?.preferred_username ?? "Специалист") as string,
-    login: (profile?.preferred_username ?? "") as string,
-    signIn: (next = location.pathname + location.search) => userManager.signinRedirect({ state: { next } }),
-    signOut: async () => {
-      const u = state.user;
-      await userManager.removeUser();
-      if (u?.id_token) await userManager.signoutRedirect({ id_token_hint: u.id_token });
-    },
+    role: s.user?.role ?? null,
+    mode: s.mode,
+    demoStand: s.mode === "demo",
+    name: s.user?.name ?? "Специалист",
+    login: s.user?.email ?? "",
+    signOut,
   };
-};
-
-/** Возврат из Keycloak: обмен кода на токены, затем — туда, откуда ушли на вход. */
-export const completeSignIn = async (): Promise<string> => {
-  let u: User;
-  try {
-    u = await userManager.signinRedirectCallback();
-  } catch (e) {
-    // тихий вход не удался (нет сессии Keycloak) — это не ошибка: обратно, там покажется форма входа
-    if ((e as { error?: string }).error === "login_required") {
-      set({ user: null, ready: true });
-      return sessionStorage.getItem(NEXT) ?? routes.packages;
-    }
-    throw e;
-  }
-  signedIn(u);
-  const next = (u.state as { next?: string } | undefined)?.next;
-  return next && next.startsWith(routes.specialist) && next !== routes.callback ? next : routes.packages;
 };

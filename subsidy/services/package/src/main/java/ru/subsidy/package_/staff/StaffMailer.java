@@ -42,12 +42,12 @@ public class StaffMailer {
     /**
      * Конструктор.
      *
-     * @param sender   SMTP (есть, только если задан spring.mail.host)
+     * @param sender   SMTP (config/MailConfig)
      * @param settings настройки входа
      * @param host     SMTP_HOST
      * @param logCodes STAFF_LOG_CODES
      */
-    public StaffMailer(ObjectProvider<JavaMailSender> sender, StaffSettings settings, @Value("${spring.mail.host:}") String host,
+    public StaffMailer(ObjectProvider<JavaMailSender> sender, StaffSettings settings, @Value("${SMTP_HOST:}") String host,
                        @Value("${STAFF_LOG_CODES:false}") boolean logCodes) {
         this.sender = sender;
         this.settings = settings;

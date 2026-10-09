@@ -1,3 +1,4 @@
+import { env } from "@/shared/config/env";
 import { ApiError, networkError, toApiError } from "./problem";
 
 export type Service = "package" | "docproc" | "rules" | "assistant";
@@ -12,14 +13,23 @@ export const setAuth = (src: AuthSource, unauthorized: () => void = () => {}) =>
   onUnauthorized = unauthorized;
 };
 
-export type RequestOpts = { method?: string; body?: unknown; headers?: Record<string, string>; signal?: AbortSignal };
+export type RequestOpts = {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+  /** Запрос входа: без Authorization, но с httpOnly-cookie сессии (ADR-023). */
+  session?: boolean;
+};
 
-const url = (svc: Service, path: string) => `/${svc}/api/v1${path}`;
+const url = (svc: Service, path: string) => `${env.apiBase}/${svc}/api/v1${path}`;
 
 const send = async (svc: Service, path: string, o: RequestOpts): Promise<Response> => {
   const headers: Record<string, string> = { Accept: "application/json", ...o.headers };
-  const auth = await authSource();
-  if (auth) headers.Authorization = auth;
+  if (!o.session) {
+    const auth = await authSource();
+    if (auth) headers.Authorization = auth;
+  }
   let body: BodyInit | undefined;
   if (o.body instanceof FormData) body = o.body;
   else if (o.body !== undefined) { body = JSON.stringify(o.body); headers["Content-Type"] = "application/json"; }
@@ -27,12 +37,12 @@ const send = async (svc: Service, path: string, o: RequestOpts): Promise<Respons
   try {
     // shared/api — единственная точка сетевого доступа (rules.md §4); fetch нужен ради потоков и blob без axios
     // eslint-disable-next-line no-restricted-globals
-    res = await fetch(url(svc, path), { method: o.method ?? "GET", headers, body, signal: o.signal, credentials: "omit" });
+    res = await fetch(url(svc, path), { method: o.method ?? "GET", headers, body, signal: o.signal, credentials: o.session ? (env.crossOrigin ? "include" : "same-origin") : "omit" });
   } catch (e) {
     if (e instanceof DOMException && e.name === "AbortError") throw e;
     throw networkError();
   }
-  if (res.status === 401) onUnauthorized();
+  if (res.status === 401 && !o.session) onUnauthorized();
   if (!res.ok) throw await toApiError(res);
   return res;
 };

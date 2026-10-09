@@ -6,7 +6,6 @@ import { tween } from "@/shared/config/motion";
 import { routes } from "@/shared/const/router";
 import { HomePage } from "@/pages/home";
 import { SpecialistShell } from "@/widgets/specialist-shell";
-import { CallbackPage } from "@/pages/callback";
 
 // Каждая страница — отдельный чанк (recharts, просмотрщик и т. п. не грузятся на главной).
 // react-router дожидается чанка до смены экрана, поэтому переход без мигания пустого экрана.
@@ -16,10 +15,13 @@ const expiring = () => import("@/pages/expiring");
 const stats = () => import("@/pages/stats");
 const programs = () => import("@/pages/programs");
 const org = () => import("@/pages/organization");
+const staff = () => import("@/pages/staff");
+const settings = () => import("@/pages/settings");
+const login = () => import("@/pages/login");
 
 /** Фоновая предзагрузка страниц после первого экрана: дальнейшие переходы мгновенные. */
 export const prefetchRoutes = () => {
-  const run = () => [packages, pkg, expiring, stats, programs, org].forEach((f) => { f().catch(() => {}); });
+  const run = () => [packages, pkg, expiring, stats, programs, org, staff, settings].forEach((f) => { f().catch(() => {}); });
   if ("requestIdleCallback" in window) requestIdleCallback(run); else setTimeout(run, 1);
 };
 
@@ -58,7 +60,7 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       { path: routes.home, element: <HomePage /> },
-      { path: routes.callback, element: <CallbackPage /> },
+      { path: routes.login, lazy: async () => ({ Component: (await login()).LoginPage }) },
       {
         path: routes.specialist,
         element: <SpecialistShell />,
@@ -70,6 +72,8 @@ export const router = createBrowserRouter([
           { path: "stats", lazy: async () => ({ Component: (await stats()).StatsPage }) },
           { path: "programs", lazy: async () => ({ Component: (await programs()).ProgramsPage }) },
           { path: "organizations/:inn", lazy: async () => ({ Component: (await org()).OrganizationPage }) },
+          { path: "staff", lazy: async () => ({ Component: (await staff()).StaffPage }) },
+          { path: "settings", lazy: async () => ({ Component: (await settings()).SettingsPage }) },
         ],
       },
     ],

@@ -62,7 +62,7 @@ GitHub Actions не стартуют (биллинг аккаунта), поэт
 ### ADR-021 Слабый OCR → модель видит и картинку (DP-14)
 Страница скана со средней уверенностью Tesseract ниже `VISION_OCR_MIN_CONF` помечается `OCR_WEAK`: текст остаётся, но при `VISION_FALLBACK_ENABLED` модель получает и изображение. Текстовый слой PDF не трогаем. Порог подбирается замером на открытом наборе.
 
-### ADR-022 Вход на странице: форма Keycloak во фрейме того же origin (FE-UI-02)
+### ADR-022 Вход на странице: форма Keycloak во фрейме того же origin (FE-UI-02) — заменён ADR-023
 Форма входа — страница Keycloak (тема `infra/keycloak/themes/subsidy`) во фрейме внутри карточки фронта: пароль и код TOTP вводятся только в Keycloak, фронт их не видит. Запрос и PKCE — как у редиректа; callback во фрейме передаёт адрес родителю (`postMessage` с проверкой origin), токены — в памяти вкладки. После перезагрузки — тихий вход `prompt=none` по cookie сессии Keycloak. Для фрейма Caddy отдаёт `X-Frame-Options SAMEORIGIN` вместо `DENY`. Своя форма логина с паролем (ROPC) отвергнута: устаревший поток, ломает TOTP и brute-force защиту.
 
 ### ADR-023 Вход сотрудников по коду из письма, два издателя токенов, режим стенда (FE-UI-04)
@@ -88,7 +88,7 @@ GitHub Actions не стартуют (биллинг аккаунта), поэт
 | Ollama / Qwen3 / Qwen2.5-VL-7B | MIT / Apache-2.0 / Apache-2.0 | B3 |
 | Apache POI / Apache PDFBox / TwelveMonkeys ImageIO | Apache-2.0 / Apache-2.0 / BSD-3 | B3 |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
-| oidc-client-ts / pdfjs-dist / react-dropzone / recharts | Apache-2.0 / Apache-2.0 / MIT / MIT | F1/F2 |
+| pdfjs-dist / react-dropzone / recharts | Apache-2.0 / MIT / MIT | F1/F2 |
 | @tanstack/react-query | MIT | F2 |
 | spring-boot-starter-mail, Jakarta Mail API / Angus Mail (письма с кодом входа) | Apache-2.0 / EPL-2.0, EDL-1.0 | B1 |
 | Liberation Sans (шрифт в PDF-экспорте протокола rules) | SIL OFL 1.1 | B3 |

@@ -6,14 +6,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/shared/api";
 import { Toaster, applyStoredTheme } from "@/shared/ui";
 import { router, prefetchRoutes } from "./providers/router";
-import { SIGNIN_MESSAGE } from "@/entities/session";
-import { routes } from "@/shared/const/router";
 import "./styles/index.css";
 
-// FE-UI-02: callback входа внутри фрейма формы — только отдать адрес родителю (SignIn), приложение не рисуем
-const signInFrame = window.parent !== window && location.pathname === routes.callback;
-if (signInFrame) window.parent.postMessage({ type: SIGNIN_MESSAGE, url: location.href }, location.origin);
-else start();
+start();
 
 function start() {
   applyStoredTheme();

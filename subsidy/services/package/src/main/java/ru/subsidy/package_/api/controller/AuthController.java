@@ -7,14 +7,15 @@ import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -83,35 +84,38 @@ public class AuthController {
     /**
      * Проверяет код и открывает сессию.
      *
-     * @param request почта и код
+     * @param request  почта и код
+     * @param response ответ: сюда ставим cookie сессии
      * @return access-токен и сотрудник, refresh — в cookie; 400 LOGIN_CODE_INVALID, 410 LOGIN_CODE_EXPIRED, 429 LOGIN_CODE_LOCKED
      */
     @PostMapping("/verify")
-    public ResponseEntity<SessionRs> verify(@Valid @RequestBody VerifyRq request) {
-        return withCookie(login.verify(request.email(), request.code()));
+    public SessionRs verify(@Valid @RequestBody VerifyRq request, HttpServletResponse response) {
+        return withCookie(login.verify(request.email(), request.code()), response);
     }
 
     /**
      * Продлевает сессию по cookie (refresh одноразовый).
      *
-     * @param refresh cookie сессии
+     * @param refresh  cookie сессии
+     * @param response ответ: сюда ставим новую cookie
      * @return новые токены; 401 SESSION_EXPIRED
      */
     @PostMapping("/refresh")
-    public ResponseEntity<SessionRs> refresh(@CookieValue(name = COOKIE, required = false) String refresh) {
-        return withCookie(login.refresh(refresh));
+    public SessionRs refresh(@CookieValue(name = COOKIE, required = false) String refresh, HttpServletResponse response) {
+        return withCookie(login.refresh(refresh), response);
     }
 
     /**
      * Выход: закрывает сессию и стирает cookie.
      *
-     * @param refresh cookie сессии
-     * @return 204
+     * @param refresh  cookie сессии
+     * @param response ответ: стираем cookie
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@CookieValue(name = COOKIE, required = false) String refresh) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@CookieValue(name = COOKIE, required = false) String refresh, HttpServletResponse response) {
         login.logout(refresh);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).header(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO).toString()).build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO).toString());
     }
 
     /**
@@ -125,10 +129,10 @@ public class AuthController {
         return UserRs.of(staff.me(UUID.fromString(user.userId())));
     }
 
-    private ResponseEntity<SessionRs> withCookie(StaffSession session) {
+    private SessionRs withCookie(StaffSession session, HttpServletResponse response) {
         Duration left = Duration.ofMillis(Math.max(0, session.sessionExpiresAt() - System.currentTimeMillis()));
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie(session.refreshToken(), left).toString())
-                .body(new SessionRs(session.accessToken(), session.expiresAt(), session.sessionExpiresAt(), UserRs.of(session.user())));
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie(session.refreshToken(), left).toString());
+        return new SessionRs(session.accessToken(), session.expiresAt(), session.sessionExpiresAt(), UserRs.of(session.user()));
     }
 
     private ResponseCookie cookie(String value, Duration maxAge) {

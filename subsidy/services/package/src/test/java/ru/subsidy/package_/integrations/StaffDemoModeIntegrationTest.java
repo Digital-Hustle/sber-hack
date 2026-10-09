@@ -36,7 +36,7 @@ class StaffDemoModeIntegrationTest extends AbstractIntegrationTest {
         // then
         assertThat(mode.path("mode").asText()).isEqualTo("demo");
         assertThat(mode.path("demoCode").asText()).isEqualTo("000000");
-        assertThat(mode.path("demo")).extracting(JsonNode::size).isEqualTo(3);
+        assertThat(mode.path("demo").size()).isEqualTo(3);
         assertThat(sent.path("demoCode").asText()).matches("\\d{6}");
         mockMvc.perform(post("/api/v1/auth/verify").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("email", "senior@demo.subsidy.local", "code", "000 000"))))

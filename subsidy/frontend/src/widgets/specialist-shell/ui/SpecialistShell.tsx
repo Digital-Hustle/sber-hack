@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { FolderOpen, CalendarClock, BarChart3, ListChecks, MoreHorizontal, Home, ChevronRight, UserCog, LogOut, Repeat2, ShieldCheck, FolderPlus } from "lucide-react";
-import { useSession, useSpecialistAuth, forgetLogin, can, roleLabel, type Perm } from "@/entities/session";
+import { FolderOpen, CalendarClock, BarChart3, ListChecks, MoreHorizontal, Home, ChevronRight, UserCog, LogOut, ShieldCheck, FolderPlus, Users, Settings, FlaskConical } from "lucide-react";
+import { useSession, useSpecialistAuth, can, roleLabel, type Perm } from "@/entities/session";
 import { Avatar, Button, Dialog, EmptyState, HeaderBar, Logo, NavTrack, OfflineBanner, PreferencesButton, Spinner, Status, ThemePicker, TrackIndicator, useTrackIndicator } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
 import { cn } from "@/shared/lib";
 import { duration, pageIn, press } from "@/shared/config/motion";
 import { ModelStatusBadge } from "./ModelStatusBadge";
-import { SignIn } from "./SignIn";
 
 const NAV: { to: string; label: string; short: string; icon: typeof FolderOpen; perm: Perm }[] = [
   { to: routes.packages, label: "Пакеты", short: "Пакеты", icon: FolderOpen, perm: "stats" },
@@ -27,9 +26,8 @@ export const SpecialistShell = () => {
   const [more, setMore] = useState(false);
   const ind = useTrackIndicator(loc.pathname);
   if (!s.ready) return <div className="grid min-h-svh place-items-center"><Spinner className="size-8" /></div>;
-  if (!s.user) return <SignIn />;
+  if (!s.user) return <Navigate to={`${routes.login}?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
   const items = NAV.filter((n) => can(s.roles, n.perm));
-  const switchUser = () => { forgetLogin(); void s.signOut(); };
   return (
     <div className="relative isolate min-h-svh text-foreground">
       {/* Шапка-пилюля, как на sberbank.ru */}
@@ -37,6 +35,7 @@ export const SpecialistShell = () => {
         <Link to={routes.home} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="специалист" /></Link>
         <NavTrack items={items.map(({ to, label }) => ({ to, label }))} className="ml-auto hidden lg:block xl:ml-6" />
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {s.demoStand && <Status tone="info" className="hidden lg:inline-flex"><FlaskConical />Демо-стенд</Status>}
           <ModelStatusBadge className="hidden xl:inline-flex" />
           <PreferencesButton className="hidden lg:flex" />
           <Button variant="quiet" className="hidden h-12 rounded-md md:inline-flex" onClick={() => setAccount(true)} aria-label={`Пользователь: ${s.name}, ${roleLabel(s.role)}`}>
@@ -74,6 +73,14 @@ export const SpecialistShell = () => {
           <button type="button" onClick={() => { setMore(false); setAccount(true); }} className="flex min-h-control-lg items-center gap-3 rounded-md px-3 text-left text-base font-medium transition-colors duration-fast hover:bg-surface">
             <UserCog className="size-5 shrink-0" /><span className="flex-1">{s.name}<span className="block text-sm font-normal text-muted-foreground">{roleLabel(s.role)}</span></span><ChevronRight className="size-4 text-subtle-foreground" />
           </button>
+          {can(s.roles, "staff") && (
+            <button type="button" onClick={() => { setMore(false); nav(routes.staff); }} className="flex min-h-control-lg items-center gap-3 rounded-md px-3 text-left text-base font-medium transition-colors duration-fast hover:bg-surface">
+              <Users className="size-5 shrink-0" /><span className="flex-1">Сотрудники</span><ChevronRight className="size-4 text-subtle-foreground" />
+            </button>
+          )}
+          <button type="button" onClick={() => { setMore(false); nav(routes.settings); }} className="flex min-h-control-lg items-center gap-3 rounded-md px-3 text-left text-base font-medium transition-colors duration-fast hover:bg-surface">
+            <Settings className="size-5 shrink-0" /><span className="flex-1">Настройки</span><ChevronRight className="size-4 text-subtle-foreground" />
+          </button>
           <button type="button" onClick={() => { setMore(false); nav(routes.home); }} className="flex min-h-control-lg items-center gap-3 rounded-md px-3 text-left text-base font-medium transition-colors duration-fast hover:bg-surface">
             <Home className="size-5 shrink-0" /><span className="flex-1">На главную</span><ChevronRight className="size-4 text-subtle-foreground" />
           </button>
@@ -84,7 +91,7 @@ export const SpecialistShell = () => {
         </div>
       </Dialog>
 
-      <Dialog open={account} onClose={() => setAccount(false)} title="Учётная запись" description="Вход — корпоративная учётная запись Keycloak. Роль назначает администратор, права проверяет сервер">
+      <Dialog open={account} onClose={() => setAccount(false)} title="Учётная запись" description="Вход — по одноразовому коду на рабочую почту. Роль назначает старший специалист, права проверяет сервер">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-lg bg-muted p-4">
             <Avatar name={s.name} className="size-11" />
@@ -92,9 +99,11 @@ export const SpecialistShell = () => {
             <Status tone="success">{roleLabel(s.role)}</Status>
           </div>
           <ModelStatusBadge className="self-start" />
+          {s.demoStand && <p className="text-pretty text-sm text-muted-foreground">Демо-стенд: код входа показывается на странице входа, а код 000000 пускает любого заведённого сотрудника.</p>}
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button variant="secondary" onClick={switchUser}><Repeat2 />Войти другим</Button>
-            <Button variant="danger-soft" onClick={() => void s.signOut()}><LogOut />Выйти</Button>
+            {can(s.roles, "staff") && <Button variant="secondary" onClick={() => { setAccount(false); nav(routes.staff); }}><Users />Сотрудники</Button>}
+            <Button variant="secondary" onClick={() => { setAccount(false); nav(routes.settings); }}><Settings />Настройки</Button>
+            <Button variant="danger-soft" className="sm:col-span-2" onClick={() => void s.signOut()}><LogOut />Выйти</Button>
           </div>
         </div>
       </Dialog>
