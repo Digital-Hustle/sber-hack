@@ -54,7 +54,7 @@ access:
   temp-lock-window: 10m
   site-zone: ${SITE_ZONE:Europe/Moscow}
   deps:
-    face-url: ${FACE_URL:http://face:8000}
+    face-url: ${FACE_URL:http://face:8090}
     people-url: ${PEOPLE_URL:http://people:8081}
     shift-url: ${SHIFT_URL:http://shift:8083}
     timeout: ${DEPS_TIMEOUT:1500ms}

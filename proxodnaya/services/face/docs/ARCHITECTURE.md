@@ -16,25 +16,25 @@ flowchart LR
 1. Проверка service-токена (JWT Keycloak, `aud=face`).
 2. Декодирование JPEG base64 (640×480), контроль качества и числа лиц на каждом кадре.
 3. Эмбеддинги кадров → сходство между кадрами (тот же человек) → косинус с расшифрованными эталонами рабочего.
-4. Челлендж: yaw по landmarks меняется в нужную сторону в пределах окна; MiniFASNet score.
+4. Челлендж: по 5 точкам YuNet — для TURN_* есть фронтальный кадр и кадр с поворотом носа в нужную сторону (`FACE_YAW_MIN`), для NOD — размах pitch ≥ `FACE_PITCH_DELTA`; окно 10 с держит access. MiniFASNet — FACE-06.
 5. Ответ `{match, score, liveness, quality, reason?}`; ничего не логируем кроме score и latency.
 
 ## Стек
-Python 3.12, uv, FastAPI + uvicorn, pydantic v2, onnxruntime (CPU), opencv-python-headless, numpy, cryptography (AES-GCM), psycopg 3, Liquibase (миграции в `db/changelog`), ruff, mypy --strict, pytest.
+Python 3.12, uv, FastAPI + uvicorn, pydantic v2, opencv-python-headless (`FaceDetectorYN`, `FaceRecognizerSF` — ONNX через OpenCV DNN), numpy, cryptography (AES-GCM), psycopg 3 + pool, PyJWT (JWKS), prometheus-client, ruff, mypy --strict, pytest. Миграции — `db/migrations/NNN_*.sql`, применяются на старте (`schema_migrations`, advisory lock).
 
 ## Структура папок
 ```
 face/
-  AGENTS.md CLAUDE.md docs/
-  pyproject.toml uv.lock Dockerfile
-  scripts/download_models.sh        # ONNX по URL + sha256, в образ, не в git
-  db/changelog/<ts>-*.sql
+  AGENTS.md CLAUDE.md docs/ pyproject.toml uv.lock Dockerfile
+  scripts/fetch_models.sh           # ONNX по URL + sha256 (в образ при сборке, не в git)
+  db/migrations/NNN_*.sql
   src/face/
-    main.py  api/ (verify, enroll, delete, health)  auth.py (JWT service account)
-    pipeline/ detect.py embed.py quality.py liveness.py antispoof.py
-    storage/ templates.py crypto.py
-    config.py metrics.py
-  tests/ test_quality.py test_verify.py test_liveness.py test_crypto.py
+    main.py                         # app() — боевая сборка, create_app() — для тестов
+    core/   config.py errors.py security.py
+    domain/ model.py quality.py liveness.py matcher.py service.py
+    infra/  models.py fetch.py images.py crypto.py repository.py migrate.py
+    api/    routes.py schemas.py metrics.py
+  tests/unit tests/integration
 ```
 
 ## Данные
@@ -47,4 +47,4 @@ face/
 Только Postgres и Keycloak (JWKS). Модели — локальные файлы.
 
 ## Конфигурация (env, значения — `infra/.env.example`)
-`BIOMETRY_KEY`, `FACE_THRESHOLD`, `MODELS_DIR`, `DB_*`, `KEYCLOAK_ISSUER`.
+`BIOMETRY_KEY`, `FACE_MATCH_THRESHOLD`, `FACE_*` (пороги качества и живости, `core/config.py`), `MODELS_DIR`, `DB_HOST`, `DB_PORT`, `FACE_DB_*`, `OIDC_ISSUER_URI`, `OIDC_JWKS_URI?`, `FACE_AUDIENCE`.
