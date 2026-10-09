@@ -35,11 +35,42 @@ public final class KeycloakJwt {
      * @return декодер
      */
     public static JwtDecoder decoder(String jwkSetUri, String issuer) {
+        return decoder(jwkSetUri, issuer, List.of());
+    }
+
+    /**
+     * Декодер с проверкой issuer и аудитории: в {@code aud} должна быть хотя бы одна из ожидаемых
+     * (оператор — {@code documents-api}, сервис-клиент — имя вызываемого сервиса). Пустой список — без проверки.
+     *
+     * @param jwkSetUri адрес JWKS (внутренний)
+     * @param issuer    ожидаемый iss (публичный)
+     * @param audiences допустимые значения aud
+     * @return декодер
+     */
+    public static JwtDecoder decoder(String jwkSetUri, String issuer, List<String> audiences) {
         NimbusJwtDecoder d = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-        OAuth2TokenValidator<Jwt> v = new DelegatingOAuth2TokenValidator<>(
-                JwtValidators.createDefaultWithIssuer(issuer), KeycloakJwt::notEmptySubject);
-        d.setJwtValidator(v);
+        d.setJwtValidator(validator(issuer, audiences));
         return d;
+    }
+
+    /**
+     * Набор проверок токена (без подписи) — отдельно, чтобы тестировать без JWKS.
+     *
+     * @param issuer    ожидаемый iss
+     * @param audiences допустимые значения aud (пусто — не проверять)
+     * @return валидатор
+     */
+    public static OAuth2TokenValidator<Jwt> validator(String issuer, List<String> audiences) {
+        List<String> expected = audiences.stream().map(String::trim).filter(a -> !a.isEmpty()).toList();
+        OAuth2TokenValidator<Jwt> aud = jwt -> expected.isEmpty() || hasAny(jwt.getAudience(), expected)
+                ? OAuth2TokenValidatorResult.success()
+                : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "aud mismatch", null));
+        return new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefaultWithIssuer(issuer), KeycloakJwt::notEmptySubject, aud);
+    }
+
+    private static boolean hasAny(List<String> actual, List<String> expected) {
+        return actual != null && actual.stream().anyMatch(expected::contains);
     }
 
     private static OAuth2TokenValidatorResult notEmptySubject(Jwt jwt) {

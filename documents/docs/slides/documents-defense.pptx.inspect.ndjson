@@ -1,0 +1,115 @@
+{"kind":"deck","id":"pr/local","name":"Deck"}
+{"kind":"slide","id":"sl/s01e00","slide":1,"title":"КЕЙС «ДОКУМЕНТЫ» · СБЕР ХАКАТОН","role":"cover","recipeId":"cover-editorial","recipeGroup":"cover","textShapes":4}
+{"kind":"textbox","id":"sh/s01e01","slide":1,"name":"Section label","text":"КЕЙС «ДОКУМЕНТЫ» · СБЕР ХАКАТОН","textPreview":"КЕЙС «ДОКУМЕНТЫ» · СБЕР ХАКАТОН","textChars":31,"textLines":1,"bbox":[72,110,900,26]}
+{"kind":"shape","id":"sh/s01e02","slide":1,"name":"Cover accent","bbox":[72,330,56,5]}
+{"kind":"textbox","id":"sh/s01e03","slide":1,"name":"","text":"Документы соискателя: от фото до проверенных полей","textPreview":"Документы соискателя: от фото до проверенных полей","textChars":50,"textLines":1,"bbox":[72,356,1040,168]}
+{"kind":"textbox","id":"sh/s01e04","slide":1,"name":"","text":"Соискатель снимает документы телефоном, система сама их читает и проверяет, оператор смотрит только сомнительное.","textPreview":"Соискатель снимает документы телефоном, система сама их читает и проверяет, оператор смотрит только сомнительное.","textChars":113,"textLines":1,"bbox":[72,538,820,78]}
+{"kind":"textbox","id":"sh/s01e05","slide":1,"name":"Footer","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[848,662,360,18]}
+{"kind":"notes","id":"nt/s01e00","slide":1,"text":""}
+{"kind":"slide","id":"sl/s02e00","slide":2,"title":"ПРОБЛЕМА","role":"argument","recipeId":"big-claim","recipeGroup":"claim-led","textShapes":3}
+{"kind":"textbox","id":"sh/s02e01","slide":2,"name":"Section label","text":"ПРОБЛЕМА","textPreview":"ПРОБЛЕМА","textChars":8,"textLines":1,"bbox":[72,110,900,26]}
+{"kind":"shape","id":"sh/s02e02","slide":2,"name":"Claim accent","bbox":[72,250,56,5]}
+{"kind":"textbox","id":"sh/s02e03","slide":2,"name":"","text":"Документы шлют фото в чат и перепечатывают руками","textPreview":"Документы шлют фото в чат и перепечатывают руками","textChars":49,"textLines":1,"bbox":[72,276,1080,210]}
+{"kind":"textbox","id":"sh/s02e04","slide":2,"name":"","text":"Плохой снимок выясняется через дни.","textPreview":"Плохой снимок выясняется через дни.","textChars":35,"textLines":1,"bbox":[72,556,820,48]}
+{"kind":"notes","id":"nt/s02e00","slide":2,"text":""}
+{"kind":"slide","id":"sl/s03e00","slide":3,"title":"КОНВЕЙЕР","role":"process","recipeId":"process-steps","recipeGroup":"process","textShapes":11}
+{"kind":"textbox","id":"sh/s03e01","slide":3,"name":"Section label","text":"КОНВЕЙЕР","textPreview":"КОНВЕЙЕР","textChars":8,"textLines":1,"bbox":[72,72,620,26]}
+{"kind":"shape","id":"sh/s03e02","slide":3,"name":"Title accent","bbox":[72,106,44,4]}
+{"kind":"textbox","id":"sh/s03e03","slide":3,"name":"Slide title","text":"Файл принят сразу, разбор идёт сам","textPreview":"Файл принят сразу, разбор идёт сам","textChars":34,"textLines":1,"bbox":[72,124,1136,92]}
+{"kind":"shape","id":"sh/s03e04","slide":3,"name":"","bbox":[200,362,880,0]}
+{"kind":"shape","id":"sh/s03e05","slide":3,"name":"Process step 1 marker","bbox":[244,336,52,52]}
+{"kind":"textbox","id":"sh/s03e06","slide":3,"name":"","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[244,350,52,24]}
+{"kind":"textbox","id":"sh/s03e07","slide":3,"name":"","text":"Приём","textPreview":"Приём","textChars":5,"textLines":1,"bbox":[90,410,360,34]}
+{"kind":"textbox","id":"sh/s03e08","slide":3,"name":"","text":"Ответ сразу, файл зашифрован","textPreview":"Ответ сразу, файл зашифрован","textChars":28,"textLines":1,"bbox":[90,452,360,82]}
+{"kind":"shape","id":"sh/s03e09","slide":3,"name":"Process step 2 marker","bbox":[614,336,52,52]}
+{"kind":"textbox","id":"sh/s03e10","slide":3,"name":"","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[614,350,52,24]}
+{"kind":"textbox","id":"sh/s03e11","slide":3,"name":"","text":"Разбор","textPreview":"Разбор","textChars":6,"textLines":1,"bbox":[460,410,360,34]}
+{"kind":"textbox","id":"sh/s03e12","slide":3,"name":"","text":"Текст, вид, поля — сами","textPreview":"Текст, вид, поля — сами","textChars":23,"textLines":1,"bbox":[460,452,360,82]}
+{"kind":"shape","id":"sh/s03e13","slide":3,"name":"Process step 3 marker","bbox":[984,336,52,52]}
+{"kind":"textbox","id":"sh/s03e14","slide":3,"name":"","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[984,350,52,24]}
+{"kind":"textbox","id":"sh/s03e15","slide":3,"name":"","text":"Проверки","textPreview":"Проверки","textChars":8,"textLines":1,"bbox":[830,410,360,34]}
+{"kind":"textbox","id":"sh/s03e16","slide":3,"name":"","text":"Суммы, MRZ, сроки — кодом","textPreview":"Суммы, MRZ, сроки — кодом","textChars":25,"textLines":1,"bbox":[830,452,360,82]}
+{"kind":"notes","id":"nt/s03e00","slide":3,"text":""}
+{"kind":"slide","id":"sl/s04e00","slide":4,"title":"МОДЕЛЬ ИЗВЛЕКАЕТ, КОД ПРОВЕРЯЕТ","role":"image-media","recipeId":"image-left-story","recipeGroup":"image-story","textShapes":3}
+{"kind":"shape","id":"sh/s04e01","slide":4,"name":"Media frame","bbox":[72,120,468,396]}
+{"kind":"image","id":"im/s04e02","slide":4,"name":"Story image","alt":"Синтетический паспорт из набора eval","imageFit":"contain","bbox":[72,120,468,396]}
+{"kind":"textbox","id":"sh/s04e03","slide":4,"name":"Section label","text":"МОДЕЛЬ ИЗВЛЕКАЕТ, КОД ПРОВЕРЯЕТ","textPreview":"МОДЕЛЬ ИЗВЛЕКАЕТ, КОД ПРОВЕРЯЕТ","textChars":31,"textLines":1,"bbox":[650,120,461,26]}
+{"kind":"shape","id":"sh/s04e04","slide":4,"name":"","bbox":[650,152,44,4]}
+{"kind":"textbox","id":"sh/s04e05","slide":4,"name":"","text":"Модели одной не верим","textPreview":"Модели одной не верим","textChars":21,"textLines":1,"bbox":[650,170,470,124]}
+{"kind":"textbox","id":"sh/s04e06","slide":4,"name":"","text":"Номер сверяется с MRZ, контрольные цифры считает код. Значение, которого нет на скане, получает штраф.","textPreview":"Номер сверяется с MRZ, контрольные цифры считает код. Значение, которого нет на скане, получает штраф.","textChars":102,"textLines":1,"bbox":[650,316,470,210]}
+{"kind":"notes","id":"nt/s04e00","slide":4,"text":""}
+{"kind":"slide","id":"sl/s05e00","slide":5,"title":"МАТМОДЕЛЬ · УВЕРЕННОСТЬ ПОЛЯ","role":"table","recipeId":"table-led","recipeGroup":"table-evidence","textShapes":4}
+{"kind":"textbox","id":"sh/s05e01","slide":5,"name":"Section label","text":"МАТМОДЕЛЬ · УВЕРЕННОСТЬ ПОЛЯ","textPreview":"МАТМОДЕЛЬ · УВЕРЕННОСТЬ ПОЛЯ","textChars":28,"textLines":1,"bbox":[72,72,620,26]}
+{"kind":"shape","id":"sh/s05e02","slide":5,"name":"Title accent","bbox":[72,106,44,4]}
+{"kind":"textbox","id":"sh/s05e03","slide":5,"name":"Slide title","text":"c = 0,4·модель + 0,3·OCR + 0,3·проверки","textPreview":"c = 0,4·модель + 0,3·OCR + 0,3·проверки","textChars":39,"textLines":1,"bbox":[72,124,1136,92]}
+{"kind":"textbox","id":"sh/s05e04","slide":5,"name":"","text":"Порог τ = 0,8: всё, что ниже, или с проваленной проверкой, — наверх к оператору.","textPreview":"Порог τ = 0,8: всё, что ниже, или с проваленной проверкой, — наверх к оператору.","textChars":80,"textLines":1,"bbox":[72,224,1000,34]}
+{"kind":"textbox","id":"sh/s05e05","slide":5,"name":"Evidence table","text":"Поле | Модель | OCR | Проверки | c | Итог\nСНИЛС, сумма сошлась | 0,90 | 0,85 | 1 | 0,915 | автоматически\nСНИЛС, сумма не сошлась | 0,90 | 0,85 | 0 | 0,615 | оператору\nФИО, без проверок | 0,90 | 0,85 | 0,7 | 0,825 | автоматически\nФИО, плохо распознано | 0,90 | 0,40 | 0,7 | 0,690 | оператору","textPreview":"Поле | Модель | OCR | Проверки | c | Итог | СНИЛС, сумма сошлась | 0,90 | 0,85 | 1 | 0,915 | автоматически | СНИЛС, сумма не сошлась | 0,90...","textChars":290,"textLines":5,"bbox":[72,280,1136,280]}
+{"kind":"table","id":"tb/s05e05","slide":5,"name":"Evidence table","rows":5,"cols":6,"preview":"Поле | Модель | OCR | Проверки | c | Итог | СНИЛС, сумма сошлась | 0,90 | 0,85 | 1 | 0,915 | автоматически | СНИЛС, сумма не сошлась | 0,90...","bbox":[72,280,1136,280]}
+{"kind":"notes","id":"nt/s05e00","slide":5,"text":""}
+{"kind":"slide","id":"sl/s06e00","slide":6,"title":"МАТМОДЕЛЬ · ОЧЕРЕДЬ M/M/C","role":"chart","recipeId":"chart-led","recipeGroup":"chart-evidence","textShapes":3}
+{"kind":"textbox","id":"sh/s06e01","slide":6,"name":"Section label","text":"МАТМОДЕЛЬ · ОЧЕРЕДЬ M/M/C","textPreview":"МАТМОДЕЛЬ · ОЧЕРЕДЬ M/M/C","textChars":25,"textLines":1,"bbox":[72,72,620,26]}
+{"kind":"shape","id":"sh/s06e02","slide":6,"name":"Title accent","bbox":[72,106,44,4]}
+{"kind":"textbox","id":"sh/s06e03","slide":6,"name":"Slide title","text":"Два слота модели держат 4 документа в минуту","textPreview":"Два слота модели держат 4 документа в минуту","textChars":44,"textLines":1,"bbox":[72,124,1136,92]}
+{"kind":"textbox","id":"sh/s06e04","slide":6,"name":"","text":"Эрланг C, μ = 3 док/мин. Синие — 2 слота, серые — 3.","textPreview":"Эрланг C, μ = 3 док/мин. Синие — 2 слота, серые — 3.","textChars":52,"textLines":1,"bbox":[72,224,1000,34]}
+{"kind":"chart","id":"ch/s06e05","slide":6,"name":"Chart","chartType":"column","bbox":[72,296,1136,300]}
+{"kind":"notes","id":"nt/s06e00","slide":6,"text":""}
+{"kind":"slide","id":"sl/s07e00","slide":7,"title":"УСТОЙЧИВОСТЬ","role":"evidence","recipeId":"evidence-panel","recipeGroup":"claim-evidence","textShapes":11}
+{"kind":"textbox","id":"sh/s07e01","slide":7,"name":"Section label","text":"УСТОЙЧИВОСТЬ","textPreview":"УСТОЙЧИВОСТЬ","textChars":12,"textLines":1,"bbox":[72,72,620,26]}
+{"kind":"shape","id":"sh/s07e02","slide":7,"name":"Title accent","bbox":[72,106,44,4]}
+{"kind":"textbox","id":"sh/s07e03","slide":7,"name":"Slide title","text":"Рестарт и падение модели не страшны","textPreview":"Рестарт и падение модели не страшны","textChars":35,"textLines":1,"bbox":[72,124,1136,92]}
+{"kind":"textbox","id":"sh/s07e04","slide":7,"name":"","text":"Задания не теряются.","textPreview":"Задания не теряются.","textChars":20,"textLines":1,"bbox":[72,250,520,190]}
+{"kind":"textbox","id":"sh/s07e05","slide":7,"name":"","text":"","textPreview":"","textChars":0,"textLines":0,"bbox":[72,452,500,64]}
+{"kind":"textbox","id":"sh/s07e06","slide":7,"name":"Section label","text":"РЕСТАРТ DOCPROC","textPreview":"РЕСТАРТ DOCPROC","textChars":15,"textLines":1,"bbox":[650,250,300,18]}
+{"kind":"textbox","id":"sh/s07e07","slide":7,"name":"","text":"задание доделано","textPreview":"задание доделано","textChars":16,"textLines":1,"bbox":[650,276,558,60]}
+{"kind":"shape","id":"sh/s07e08","slide":7,"name":"","bbox":[650,340,558,0]}
+{"kind":"textbox","id":"sh/s07e09","slide":7,"name":"Section label","text":"МОДЕЛЬ УПАЛА","textPreview":"МОДЕЛЬ УПАЛА","textChars":12,"textLines":1,"bbox":[650,354,300,18]}
+{"kind":"textbox","id":"sh/s07e10","slide":7,"name":"","text":"ждём, затем догоняем","textPreview":"ждём, затем догоняем","textChars":20,"textLines":1,"bbox":[650,380,558,60]}
+{"kind":"shape","id":"sh/s07e11","slide":7,"name":"","bbox":[650,444,558,0]}
+{"kind":"textbox","id":"sh/s07e12","slide":7,"name":"Section label","text":"ПОВТОР СОБЫТИЯ","textPreview":"ПОВТОР СОБЫТИЯ","textChars":14,"textLines":1,"bbox":[650,458,300,18]}
+{"kind":"textbox","id":"sh/s07e13","slide":7,"name":"","text":"одно задание","textPreview":"одно задание","textChars":12,"textLines":1,"bbox":[650,484,558,60]}
+{"kind":"shape","id":"sh/s07e14","slide":7,"name":"","bbox":[650,548,558,0]}
+{"kind":"textbox","id":"sh/s07e15","slide":7,"name":"Section label","text":"ПЕРЕГРУЗКА","textPreview":"ПЕРЕГРУЗКА","textChars":10,"textLines":1,"bbox":[650,562,300,18]}
+{"kind":"textbox","id":"sh/s07e16","slide":7,"name":"","text":"семафор и выключатель","textPreview":"семафор и выключатель","textChars":21,"textLines":1,"bbox":[650,588,558,60]}
+{"kind":"notes","id":"nt/s07e00","slide":7,"text":""}
+{"kind":"slide","id":"sl/s08e00","slide":8,"title":"БЕЗОПАСНОСТЬ И ПДН","role":"table","recipeId":"table-led","recipeGroup":"table-evidence","textShapes":4}
+{"kind":"textbox","id":"sh/s08e01","slide":8,"name":"Section label","text":"БЕЗОПАСНОСТЬ И ПДН","textPreview":"БЕЗОПАСНОСТЬ И ПДН","textChars":18,"textLines":1,"bbox":[72,72,620,26]}
+{"kind":"shape","id":"sh/s08e02","slide":8,"name":"Title accent","bbox":[72,106,44,4]}
+{"kind":"textbox","id":"sh/s08e03","slide":8,"name":"Slide title","text":"«Злоумышленник» запускается в CI, а не раз перед защитой","textPreview":"«Злоумышленник» запускается в CI, а не раз перед защитой","textChars":56,"textLines":1,"bbox":[72,124,1136,92]}
+{"kind":"textbox","id":"sh/s08e04","slide":8,"name":"","text":"scripts/attack.sh гоняет чек-лист на поднятом стенде при каждом изменении инфраструктуры.","textPreview":"scripts/attack.sh гоняет чек-лист на поднятом стенде при каждом изменении инфраструктуры.","textChars":89,"textLines":1,"bbox":[72,224,1000,34]}
+{"kind":"textbox","id":"sh/s08e05","slide":8,"name":"Evidence table","text":"Атака | Ответ системы\nСсылка на карточку или скан без входа | 401, сервис сам проверяет JWT и роль\nЧужой ключ заявки | 404, ключ привязан к одной заявке\nТокен alg=none, чужой issuer или aud | 401\nВнутренние ручки снаружи | 404 до проверки токена\nПодбор кода возврата | 429 и Retry-After","textPreview":"Атака | Ответ системы | Ссылка на карточку или скан без входа | 401, сервис сам проверяет JWT и роль | Чужой ключ заявки | 404, ключ привяз...","textChars":286,"textLines":6,"bbox":[72,280,1136,280]}
+{"kind":"table","id":"tb/s08e05","slide":8,"name":"Evidence table","rows":6,"cols":2,"preview":"Атака | Ответ системы | Ссылка на карточку или скан без входа | 401, сервис сам проверяет JWT и роль | Чужой ключ заявки | 404, ключ привяз...","bbox":[72,280,1136,280]}
+{"kind":"notes","id":"nt/s08e00","slide":8,"text":""}
+{"kind":"slide","id":"sl/s09e00","slide":9,"title":"ИНЖЕНЕРИЯ","role":"metric","recipeId":"metric-row","recipeGroup":"metrics","textShapes":10}
+{"kind":"textbox","id":"sh/s09e01","slide":9,"name":"Section label","text":"ИНЖЕНЕРИЯ","textPreview":"ИНЖЕНЕРИЯ","textChars":9,"textLines":1,"bbox":[72,72,620,26]}
+{"kind":"shape","id":"sh/s09e02","slide":9,"name":"Title accent","bbox":[72,106,44,4]}
+{"kind":"textbox","id":"sh/s09e03","slide":9,"name":"Slide title","text":"Проверяется автоматически на каждом PR","textPreview":"Проверяется автоматически на каждом PR","textChars":38,"textLines":1,"bbox":[72,124,1136,92]}
+{"kind":"shape","id":"sh/s09e04","slide":9,"name":"","bbox":[72,330,1136,0]}
+{"kind":"textbox","id":"sh/s09e05","slide":9,"name":"","text":"87","textPreview":"87","textChars":2,"textLines":1,"bbox":[72,356,242,86]}
+{"kind":"textbox","id":"sh/s09e06","slide":9,"name":"","text":"тестов бэкенда","textPreview":"тестов бэкенда","textChars":14,"textLines":1,"bbox":[72,466,242,26]}
+{"kind":"textbox","id":"sh/s09e07","slide":9,"name":"","text":"","textPreview":"","textChars":0,"textLines":0,"bbox":[72,496,242,28]}
+{"kind":"textbox","id":"sh/s09e08","slide":9,"name":"","text":"28","textPreview":"28","textChars":2,"textLines":1,"bbox":[370,356,242,86]}
+{"kind":"textbox","id":"sh/s09e09","slide":9,"name":"","text":"синтетических документа","textPreview":"синтетических документа","textChars":23,"textLines":1,"bbox":[370,466,242,26]}
+{"kind":"textbox","id":"sh/s09e10","slide":9,"name":"","text":"","textPreview":"","textChars":0,"textLines":0,"bbox":[370,496,242,28]}
+{"kind":"textbox","id":"sh/s09e11","slide":9,"name":"","text":"56","textPreview":"56","textChars":2,"textLines":1,"bbox":[668,356,242,86]}
+{"kind":"textbox","id":"sh/s09e12","slide":9,"name":"","text":"кодов сверено с API.md","textPreview":"кодов сверено с API.md","textChars":22,"textLines":1,"bbox":[668,466,242,26]}
+{"kind":"textbox","id":"sh/s09e13","slide":9,"name":"","text":"","textPreview":"","textChars":0,"textLines":0,"bbox":[668,496,242,28]}
+{"kind":"textbox","id":"sh/s09e14","slide":9,"name":"","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[966,356,242,86]}
+{"kind":"textbox","id":"sh/s09e15","slide":9,"name":"","text":"команда для стенда","textPreview":"команда для стенда","textChars":18,"textLines":1,"bbox":[966,466,242,26]}
+{"kind":"textbox","id":"sh/s09e16","slide":9,"name":"","text":"","textPreview":"","textChars":0,"textLines":0,"bbox":[966,496,242,28]}
+{"kind":"notes","id":"nt/s09e00","slide":9,"text":""}
+{"kind":"slide","id":"sl/s10e00","slide":10,"title":"ИТОГ","role":"summary","recipeId":"closing-takeaways","recipeGroup":"takeaways","textShapes":10}
+{"kind":"textbox","id":"sh/s10e01","slide":10,"name":"Section label","text":"ИТОГ","textPreview":"ИТОГ","textChars":4,"textLines":1,"bbox":[72,72,620,26]}
+{"kind":"shape","id":"sh/s10e02","slide":10,"name":"Title accent","bbox":[72,106,44,4]}
+{"kind":"textbox","id":"sh/s10e03","slide":10,"name":"Slide title","text":"Что важно запомнить","textPreview":"Что важно запомнить","textChars":19,"textLines":1,"bbox":[72,124,1136,92]}
+{"kind":"textbox","id":"sh/s10e04","slide":10,"name":"","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,226,72,48]}
+{"kind":"textbox","id":"sh/s10e05","slide":10,"name":"","text":"О плохом снимке соискатель узнаёт сразу.","textPreview":"О плохом снимке соискатель узнаёт сразу.","textChars":40,"textLines":1,"bbox":[168,224,1040,46]}
+{"kind":"shape","id":"sh/s10e06","slide":10,"name":"","bbox":[72,280,1136,0]}
+{"kind":"textbox","id":"sh/s10e07","slide":10,"name":"","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[72,312,72,48]}
+{"kind":"textbox","id":"sh/s10e08","slide":10,"name":"","text":"Оператор смотрит только сомнительные поля.","textPreview":"Оператор смотрит только сомнительные поля.","textChars":42,"textLines":1,"bbox":[168,310,1040,46]}
+{"kind":"shape","id":"sh/s10e09","slide":10,"name":"","bbox":[72,366,1136,0]}
+{"kind":"textbox","id":"sh/s10e10","slide":10,"name":"","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[72,398,72,48]}
+{"kind":"textbox","id":"sh/s10e11","slide":10,"name":"","text":"Модель локальная или облачная — одной настройкой.","textPreview":"Модель локальная или облачная — одной настройкой.","textChars":49,"textLines":1,"bbox":[168,396,1040,46]}
+{"kind":"shape","id":"sh/s10e12","slide":10,"name":"","bbox":[72,452,1136,0]}
+{"kind":"textbox","id":"sh/s10e13","slide":10,"name":"","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[72,484,72,48]}
+{"kind":"textbox","id":"sh/s10e14","slide":10,"name":"","text":"Веса экспертные; калибровка — на открытом наборе.","textPreview":"Веса экспертные; калибровка — на открытом наборе.","textChars":49,"textLines":1,"bbox":[168,482,1040,46]}
+{"kind":"notes","id":"nt/s10e00","slide":10,"text":""}

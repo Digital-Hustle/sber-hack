@@ -16,23 +16,23 @@
 ## Платформа (B1)
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| PLT-00 | — | Получить текст кейса: сверить С1–С22, разд. 5.3/5.5 с REQUIREMENTS, DOC-TYPES, DEMO; поправить гипотезы | B1 + все | todo |
-| PLT-01 | NFR-15 | `init-backend.sh services` (кейс documents), `libs/common` — перенести из `proxodnaya/services/libs/common` (sed `proxodnaya` → `documents`), `libs/llm` — каркас библиотеки | B1 | todo |
-| PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис, volume), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy, ollama + ollama-pull (профиль `llm-local`) | B1 | todo |
-| PLT-03 | NFR-13 | CI `documents-ci.yml` уже есть — проверить на первом коде; включить деплой (`DOCS_DEPLOY_ENABLED`) | B1 | todo |
-| PLT-04 | — | Синк контрактов: API.md, `/internal/**`, `contracts/events/*.schema.json`, коды и стадии | B1 + все | todo |
-| PLT-05 | FR-60/61 | Keycloak realm `documents`: клиенты, роли, TOTP, brute-force, демо-пользователи из `.env` | B1 | todo |
-| PLT-06 | — | Service accounts `svc-intake/docproc/review`, `aud` на каждый сервис | B1 | todo |
-| PLT-07 | NFR-17 | Outbox relay + IdempotentConsumer + конверт события в `libs/common` (перенос из «Проходной») | B1 | todo |
-| PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | todo |
+| PLT-00 | — | Получить текст кейса: сверить С1–С22, разд. 5.3/5.5 с REQUIREMENTS, DOC-TYPES, DEMO; поправить гипотезы | B1 + все | blocked: текста кейса в репозитории нет — гипотезы зафиксированы в REQUIREMENTS/QUESTIONS |
+| PLT-01 | NFR-15 | `init-backend.sh services` (кейс documents), `libs/common` — перенести из `proxodnaya/services/libs/common` (sed `proxodnaya` → `documents`), `libs/llm` — каркас библиотеки | B1 | done (до #27): services/, libs/common, libs/llm |
+| PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис, volume), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy, ollama + ollama-pull (профиль `llm-local`) | B1 | done (до #27): compose — postgres, kafka, keycloak, jaeger, caddy, ollama (профиль llm-local); healthcheck Java-сервисов исправлен в #35 |
+| PLT-03 | NFR-13 | CI `documents-ci.yml` уже есть — проверить на первом коде; включить деплой (`DOCS_DEPLOY_ENABLED`) | B1 | review `feat/PLT-platform-hardening` — CI проверен на коде, smoke на PR с инфраструктурой; CD переписан (compose build → GHCR → SSH, smoke, откат), включается DOCS_DEPLOY_ENABLED, когда будет сервер |
+| PLT-04 | — | Синк контрактов: API.md, `/internal/**`, `contracts/events/*.schema.json`, коды и стадии | B1 + все | review `feat/PLT-platform-hardening` — scripts/check-contracts.py в CI: коды ошибок ↔ API.md ↔ фронт, стадии; openapi-diff уже был |
+| PLT-05 | FR-60/61 | Keycloak realm `documents`: клиенты, роли, TOTP, brute-force, демо-пользователи из `.env` | B1 | done (до #27): realm documents — клиенты, роли, TOTP у senior, brute-force, демо-пользователи |
+| PLT-06 | — | Service accounts `svc-intake/docproc/review`, `aud` на каждый сервис | B1 | review `feat/PLT-platform-hardening` — aud-мапперы svc-docproc→intake,ocr; svc-review→intake,docproc; проверка aud в intake/docproc/review/gateway; svc-intake не нужен (intake никого не вызывает) |
+| PLT-07 | NFR-17 | Outbox relay + IdempotentConsumer + конверт события в `libs/common` (перенос из «Проходной») | B1 | done (до #27): OutboxRelay, IdempotentConsumer, EventEnvelope в libs/common |
+| PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | done #30 + smoke в CI (#35) |
 | PLT-09 | FR-28 | `eval/`: `run.py` через публичный API, разметка, отчёт; синтетика `eval/synthetic/` + запуск в CI | B2 | done #28 |
 
 ## Совместные
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
 | X-01 | FR-14/50 | Две схемы входа на фронте: OIDC оператора и ключ заявки соискателя; проверка с gateway | B1 + F1 + F2 | done #27 |
-| X-02 | FR-01/12 | Контракт загрузки и стадий: коды отказов, SSE-события, тексты и подсказки | B1 + B2 + F1 | todo |
+| X-02 | FR-01/12 | Контракт загрузки и стадий: коды отказов, SSE-события, тексты и подсказки | B1 + B2 + F1 | review `feat/PLT-platform-hardening` — сверка кодов/стадий автоматом (check-contracts.py), недостающие коды дописаны в API.md |
 | X-03 | FR-23/52 | Формат результата: поля, `bbox` в координатах страницы, уверенность, `checks[]` — для просмотрщика | B2 + B3 + F2 | done #19, #27 |
 | X-04 | FR-42 | Замер моделей на открытом наборе → таблица в LLM.md, выбор локальной модели | B2 + B3 | todo |
-| X-05 | — | «Злоумышленник» по чек-листу I (каждые 2 часа, по очереди) | все | todo |
-| X-06 | NFR-12 | Слайды, матмодель (уверенность, очередь), репетиции | F2 + B2 + B1 | todo |
+| X-05 | — | «Злоумышленник» по чек-листу I (каждые 2 часа, по очереди) | все | review `feat/PLT-platform-hardening` — scripts/attack.sh (чек-лист I + T1–T10) в smoke CI |
+| X-06 | NFR-12 | Слайды, матмодель (уверенность, очередь), репетиции | F2 + B2 + B1 | review `feat/PLT-platform-hardening` — MATH.md (уверенность, порог, контрольные суммы, M/M/c), 10 слайдов pptx; репетиции — за командой |

@@ -3,6 +3,7 @@ package ru.documents.docproc.features.processing.application.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,6 +19,7 @@ import ru.documents.docproc.features.processing.model.Job;
 import ru.documents.docproc.features.processing.model.Stages;
 import ru.documents.docproc.features.processing.model.StepOutcome;
 import ru.documents.docproc.features.processing.query.service.TypeRegistry;
+import ru.documents.docproc.features.processing.rules.PageSegments;
 import ru.documents.docproc.features.processing.rules.Text;
 import ru.documents.llm.api.LlmGateway;
 import ru.documents.llm.api.LlmRequest;
@@ -65,17 +67,21 @@ public class ClassifyStage {
             return StepOutcome.next(out);
         }
         String full = fullText(text);
+        List<Integer> pageNumbers = new ArrayList<>();
+        text.path("pages").forEach(p -> pageNumbers.add(p.path("n").asInt()));
+        boolean multi = pageNumbers.size() >= 2;
+        String prompt = multi ? Prompts.CLASSIFY_MULTI : Prompts.CLASSIFY;
         StringBuilder list = new StringBuilder();
         for (DocType t : registry) {
             list.append("- ").append(t.code()).append(" — ").append(t.name()).append(". ").append(t.signs()).append('\n');
         }
-        String system = prompts.render(Prompts.CLASSIFY, Map.of("types", list.toString().trim()));
-        String user = prompts.render(Prompts.CLASSIFY + ".user", Map.of("flags", flags(text, full),
-                "text", cut(full, props.classifyTextChars())));
+        String system = prompts.render(prompt, Map.of("types", list.toString().trim()));
+        String user = prompts.render(prompt + ".user", Map.of("flags", flags(text, full),
+                "text", cut(multi ? pagedText(text) : full, props.classifyTextChars())));
         List<String> codes = new ArrayList<>(registry.stream().map(DocType::code).toList());
         codes.add(Stages.UNKNOWN);
         LlmResult r = llm.structured(new LlmRequest(Stages.CLASSIFYING, job.documentId().toString(), system, user,
-                schema(codes), job.vision() ? visuals.pages(job, text) : List.of()));
+                schema(codes, multi), job.vision() ? visuals.pages(job, text) : List.of()));
         String type = r.json().path("type").asText(Stages.UNKNOWN);
         double conf = r.json().path("confidence").asDouble(0);
         ArrayNode evidence = out.putArray("evidence");
@@ -100,8 +106,11 @@ public class ClassifyStage {
             type = Stages.UNKNOWN;
         }
         conf = Math.round(conf * 1000) / 1000.0;
-        out.put("type", type).put("confidence", conf).put("model", r.model()).put("promptVersion", Prompts.CLASSIFY)
+        out.put("type", type).put("confidence", conf).put("model", r.model()).put("promptVersion", prompt)
                 .put("evidenceFound", found);
+        if (multi && !Stages.UNKNOWN.equals(type)) {
+            segment(out, r.json().path("segments"), type, pageNumbers, codes, registry);
+        }
         if (Stages.UNKNOWN.equals(type) || conf < props.classifyMinConfidence()) {
             out.put("ms", 0);
             Map<String, JsonNode> all = new java.util.HashMap<>(outputs);
@@ -110,7 +119,7 @@ public class ClassifyStage {
             evidence.forEach(n -> ev.add(n.asText()));
             return new StepOutcome(out, results.build(Stages.NEEDS_REVIEW, Stages.UNKNOWN, conf, ev,
                     List.of(new Finding("TYPE_UNKNOWN", Map.of("suggested", type))), List.of(), text, r.model(),
-                    Prompts.CLASSIFY, null, all));
+                    prompt, null, all));
         }
         return StepOutcome.next(out);
     }
@@ -119,6 +128,38 @@ public class ClassifyStage {
         StringBuilder b = new StringBuilder();
         for (JsonNode p : text.path("pages")) {
             b.append(p.path("text").asText("")).append('\n');
+        }
+        return b.toString();
+    }
+
+    /** Разметка страниц (DP-14): страницы основного документа и замечание MULTI_DOCUMENT про остальные. */
+    private void segment(ObjectNode out, JsonNode segments, String type, List<Integer> pages, List<String> codes,
+                         List<DocType> registry) {
+        PageSegments.Split split = PageSegments.split(segments, type, pages, Set.copyOf(codes));
+        ArrayNode mine = out.putArray("pages");
+        split.primaryPages().forEach(mine::add);
+        ArrayNode segs = out.putArray("segments");
+        segs.addObject().put("type", type).set("pages", mine.deepCopy());
+        if (!split.multi()) {
+            return;
+        }
+        List<String> parts = new ArrayList<>();
+        split.others().forEach((code, ps) -> {
+            ArrayNode a = segs.addObject().put("type", code).putArray("pages");
+            ps.forEach(a::add);
+            String name = registry.stream().filter(t -> t.code().equals(code)).map(DocType::name).findFirst().orElse(code);
+            parts.add(name + " (стр. " + PageSegments.ranges(ps) + ")");
+        });
+        out.putArray("findings").addObject().put("code", "MULTI_DOCUMENT").putObject("params")
+                .put("documents", String.join("; ", parts)).put("pages", PageSegments.ranges(split.primaryPages()));
+    }
+
+    /** Текст с разметкой страниц — модель видит границы и может разметить файл по документам. */
+    static String pagedText(JsonNode text) {
+        StringBuilder b = new StringBuilder();
+        for (JsonNode p : text.path("pages")) {
+            b.append("=== Страница ").append(p.path("n").asInt()).append(" ===\n").append(p.path("text").asText(""))
+                    .append('\n');
         }
         return b.toString();
     }
@@ -154,14 +195,25 @@ public class ClassifyStage {
         return String.join("\n", f);
     }
 
-    private JsonNode schema(List<String> codes) {
+    private JsonNode schema(List<String> codes, boolean multi) {
         ObjectNode s = json.createObjectNode().put("type", "object");
         ObjectNode p = s.putObject("properties");
         ArrayNode en = p.putObject("type").put("type", "string").putArray("enum");
         codes.forEach(en::add);
         p.putObject("confidence").put("type", "number").put("minimum", 0).put("maximum", 1);
         p.putObject("evidence").put("type", "array").put("maxItems", 5).putObject("items").put("type", "string");
-        s.putArray("required").add("type").add("confidence").add("evidence");
+        ArrayNode required = s.putArray("required").add("type").add("confidence").add("evidence");
+        if (multi) {
+            ObjectNode seg = p.putObject("segments").put("type", "array").put("maxItems", 10).putObject("items")
+                    .put("type", "object");
+            ObjectNode sp = seg.putObject("properties");
+            ArrayNode segEnum = sp.putObject("type").put("type", "string").putArray("enum");
+            codes.forEach(segEnum::add);
+            sp.putObject("pages").put("type", "array").putObject("items").put("type", "integer").put("minimum", 1);
+            seg.putArray("required").add("type").add("pages");
+            seg.put("additionalProperties", false);
+            required.add("segments");
+        }
         s.put("additionalProperties", false);
         return s;
     }

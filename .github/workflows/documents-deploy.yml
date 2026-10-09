@@ -1,4 +1,6 @@
 name: documents-deploy
+# Включение: переменная репозитория DOCS_DEPLOY_ENABLED=true + секреты DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY.
+# Образы собираются теми же Dockerfile, что и в compose (сборка внутри образа, ADR-014), и пушатся в GHCR.
 on:
   workflow_run:
     workflows: [documents-ci]
@@ -15,61 +17,45 @@ jobs:
   deploy:
     if: vars.DOCS_DEPLOY_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env: { POSTGRES_PASSWORD: postgres }
-        ports: ['5432:5432']
-        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    timeout-minutes: 60
     env:
-      DB_HOST: localhost
-      DB_ADMIN_USER: postgres
-      DB_ADMIN_PASSWORD: postgres
       REF: ${{ inputs.ref || github.event.workflow_run.head_sha }}
-      REG: ghcr.io/${{ github.repository_owner }}
+      SERVICES: gateway intake ocr docproc review caddy
     steps:
       - uses: actions/checkout@v4
         with: { ref: '${{ env.REF }}' }
       - id: v
-        run: echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "registry=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/documents" >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@v3
         with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '21' }
-      - uses: gradle/actions/setup-gradle@v4
-      - name: jar-ы (jOOQ генерируется из БД, поэтому вне docker build)
-        working-directory: documents/services
+      - name: build & push (gateway, intake, ocr, docproc, review, caddy+frontend)
+        working-directory: documents/infra
+        env:
+          IMAGE_REGISTRY: ${{ steps.v.outputs.registry }}
+          IMAGE_TAG: ${{ steps.v.outputs.tag }}
         run: |
-          for d in */src/main/resources/db/changelog; do svc=${d%%/*}
-            PGPASSWORD=postgres psql -h localhost -U postgres -c "create database $svc"
-            ./gradlew --no-daemon -q :$svc:update :$svc:generateJooq; done
-          ./gradlew --no-daemon -q bootJar
-      - name: build & push images (Java-сервисы, ocr, frontend)
-        run: |
-          TAG=${{ steps.v.outputs.tag }}
-          cd documents/services
-          for svc in $(for d in */; do [ -f "$d/build.gradle.kts" ] && [ -d "$d/src" ] && basename "$d"; done | grep -vE '^(libs|build-logic)$'); do
-            docker build -t $REG/docs-$svc:$TAG --build-arg SERVICE=$svc -f Dockerfile .
-            docker push $REG/docs-$svc:$TAG
-          done
-          for svc in $(for d in */; do [ -f "$d/pyproject.toml" ] && basename "$d"; done); do
-            docker build -t $REG/docs-$svc:$TAG $svc && docker push $REG/docs-$svc:$TAG
-          done
-          cd ../frontend && docker build -t $REG/docs-frontend:$TAG . && docker push $REG/docs-frontend:$TAG
-      - name: deploy over ssh
+          ../scripts/gen-env.sh   # только для интерполяции compose при сборке; секреты стенда живут на сервере
+          docker compose build $SERVICES
+          docker compose push $SERVICES
+      - name: deploy over ssh (health-check, откат на прошлый тег)
         env:
           KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
           TAG: ${{ steps.v.outputs.tag }}
+          IMAGE_REGISTRY: ${{ steps.v.outputs.registry }}
         run: |
           install -m 600 /dev/null key && printf '%s\n' "$KEY" > key
           ssh -i key -o StrictHostKeyChecking=accept-new "$USER@$HOST" "
-            set -e; cd /opt/sber-hack/documents/infra
+            set -e; cd /opt/sber-hack && git fetch -q origin && git checkout -q $REF; cd documents/infra
+            sed -i '/^IMAGE_REGISTRY=/d' .env && echo 'IMAGE_REGISTRY=$IMAGE_REGISTRY' >> .env
+            grep -q '^IMAGE_TAG=' .env || echo 'IMAGE_TAG=latest' >> .env
             PREV=\$(grep '^IMAGE_TAG=' .env | cut -d= -f2)
             sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/' .env
-            docker compose pull && docker compose up -d --remove-orphans
-            for i in \$(seq 1 30); do curl -fsk https://localhost/api/gateway/health && exit 0; sleep 4; done
-            echo 'health failed, rollback to' \$PREV; sed -i \"s/^IMAGE_TAG=.*/IMAGE_TAG=\$PREV/\" .env
-            docker compose up -d; exit 1"
+            docker compose pull $SERVICES && docker compose up -d --no-build --remove-orphans
+            for i in \$(seq 1 45); do ../scripts/smoke.sh https://localhost >/dev/null 2>&1 && exit 0; sleep 4; done
+            echo 'smoke failed, rollback to' \$PREV; sed -i \"s/^IMAGE_TAG=.*/IMAGE_TAG=\$PREV/\" .env
+            docker compose up -d --no-build; exit 1"
           rm -f key

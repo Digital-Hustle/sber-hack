@@ -64,6 +64,7 @@ public class ValidateStage {
         LocalDate today = LocalDate.now(clock.withZone(ZoneId.of(props.zone())));
         List<Finding> findings = new ArrayList<>();
         text.path("findings").forEach(f -> findings.add(json.convertValue(f, Finding.class)));
+        cls.path("findings").forEach(f -> findings.add(json.convertValue(f, Finding.class)));
         Map<String, FieldRules.Normalized> norm = new HashMap<>();
         List<FieldResult> fields = new ArrayList<>();
         JsonNode model = ext.path("fields");

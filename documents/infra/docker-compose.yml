@@ -112,7 +112,7 @@ services:
   gateway:
     <<: *java
     build: { context: ../services, args: { SERVICE: gateway } }
-    image: documents/gateway:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-documents}/gateway:${IMAGE_TAG:-latest}
     environment:
       <<: *java-env
       SERVER_PORT: 8080
@@ -127,7 +127,7 @@ services:
   intake:
     <<: *java
     build: { context: ../services, args: { SERVICE: intake } }
-    image: documents/intake:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-documents}/intake:${IMAGE_TAG:-latest}
     environment:
       <<: *java-env
       SERVER_PORT: 8081
@@ -144,7 +144,7 @@ services:
   ocr:
     restart: unless-stopped
     build: { context: ../services/ocr }
-    image: documents/ocr:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-documents}/ocr:${IMAGE_TAG:-latest}
     environment:
       OCR_LANGS: ${OCR_LANGS:-rus+eng}
       OCR_DPI: ${OCR_DPI:-300}
@@ -160,7 +160,7 @@ services:
   docproc:
     <<: *java
     build: { context: ../services, args: { SERVICE: docproc } }
-    image: documents/docproc:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-documents}/docproc:${IMAGE_TAG:-latest}
     environment:
       <<: *java-env
       SERVER_PORT: 8082
@@ -192,7 +192,7 @@ services:
   review:
     <<: *java
     build: { context: ../services, args: { SERVICE: review } }
-    image: documents/review:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-documents}/review:${IMAGE_TAG:-latest}
     environment:
       <<: *java-env
       SERVER_PORT: 8083
@@ -205,7 +205,7 @@ services:
 
   caddy:
     build: { context: .., dockerfile: frontend/Dockerfile }
-    image: documents/caddy:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-documents}/caddy:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports: ["80:80", "443:443"]
     environment:

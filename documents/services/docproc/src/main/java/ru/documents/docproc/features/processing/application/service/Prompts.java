@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 public class Prompts {
 
     public static final String CLASSIFY = "classify.v1";
+    /** Многостраничный файл: вид + разметка страниц по документам (DP-14). */
+    public static final String CLASSIFY_MULTI = "classify.v2";
     public static final String EXTRACT = "extract.v1";
 
     /**

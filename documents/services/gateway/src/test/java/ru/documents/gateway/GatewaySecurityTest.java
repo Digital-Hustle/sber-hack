@@ -81,9 +81,10 @@ class GatewaySecurityTest {
 
     @ParameterizedTest
     @MethodSource("operatorPaths")
-    void garbageExpiredAndForeignTokensAre401(String path) {
+    void garbageExpiredForeignIssuerAndAudienceAre401(String path) {
         for (String token : List.of("garbage", jwt(ISSUER, Instant.now().minusSeconds(60)),
-                jwt("https://evil/realms/documents", Instant.now().plusSeconds(300)))) {
+                jwt("https://evil/realms/documents", Instant.now().plusSeconds(300)),
+                jwt(ISSUER, Instant.now().plusSeconds(300), "ocr"))) {
             web.get().uri(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                     .exchange().expectStatus().isUnauthorized();
         }
@@ -154,8 +155,12 @@ class GatewaySecurityTest {
     }
 
     private static String jwt(String issuer, Instant exp) {
+        return jwt(issuer, exp, "documents-api");
+    }
+
+    private static String jwt(String issuer, Instant exp, String audience) {
         try {
-            JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer).subject("operator")
+            JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer).subject("operator").audience(audience)
                     .issueTime(Date.from(exp.minusSeconds(600))).expirationTime(Date.from(exp)).build();
             SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(KEY.getKeyID()).build(), claims);
             jwt.sign(new RSASSASigner(KEY));
