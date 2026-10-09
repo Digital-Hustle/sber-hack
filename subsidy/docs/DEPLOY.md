@@ -28,6 +28,12 @@
 2. `git clone` в `/opt/sber-hack` (нужна `subsidy/infra/`), `subsidy/scripts/gen-env.sh` на сервере, вписать хост и ключи моделей.
 3. `docker login ghcr.io` (read-only токен); `docker compose --profile llm-local up -d`; `scripts/smoke.sh https://<host>`.
 
+## За общим edge (сервер на несколько кейсов)
+Порты 80/443 держит общий Caddy (`edge/`, TLS Let's Encrypt, маршрут по имени хоста). Кейс поднимается с
+`CADDY_SCHEME=http://`, `HTTP_BIND=127.0.0.1:8280`, `HTTPS_BIND=127.0.0.1:8643`, `PUBLIC_HOST=KC_HOSTNAME=subsidy.<домен>`,
+`OIDC_ISSUER_URI=https://subsidy.<домен>/auth/realms/subsidy` — его Caddy слушает только http, `X-Forwarded-*` от edge доверены
+(`trusted_proxies private_ranges`). Без этих переменных кейс как раньше сам на 80/443 (внутренний CA, `local_certs`).
+
 ## CI на сервере (основной, ADR-017)
 GitHub Actions сейчас не стартуют (биллинг аккаунта), поэтому те же шаги гоняет `/root/sub-ci/run.sh pr-N` на сервере (под `flock`, своя БД `sub-pg` на 5434) и ставит commit status `server-ci`. Мерж — при зелёном `server-ci`. Подробно — в handoff агентов и `docs/WORKFLOW.md`.
 
