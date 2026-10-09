@@ -25,7 +25,7 @@
 | PLT-06 | — | Service accounts `svc-intake/docproc/review`, `aud` на каждый сервис | B1 | todo |
 | PLT-07 | NFR-17 | Outbox relay + IdempotentConsumer + конверт события в `libs/common` (перенос из «Проходной») | B1 | todo |
 | PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | todo |
-| PLT-09 | FR-28 | `eval/`: `run.py` через публичный API, разметка, отчёт; синтетика `eval/synthetic/` + запуск в CI | B2 | todo |
+| PLT-09 | FR-28 | `eval/`: `run.py` через публичный API, разметка, отчёт; синтетика `eval/synthetic/` + запуск в CI | B2 | done #28 |
 
 ## Совместные
 | ID | FR | Задача | Роль | Статус |
