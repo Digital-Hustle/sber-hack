@@ -58,6 +58,7 @@ Kafka доставляет «файл принят», воркеры берут 
 | Apache Tika core, Apache Commons Compress (ZIP) | Apache-2.0 | B1 |
 | FastAPI / uvicorn / pydantic | MIT / BSD / MIT | B2 |
 | pdfplumber / pdfminer.six / pypdfium2 | MIT / MIT / Apache-2.0, BSD-3 | B2 |
+| reportlab (генератор синтетики `eval/`, только dev) | BSD-3 | B2 |
 | opencv-python-headless / numpy / Pillow / pillow-heif | Apache-2.0 / BSD / MIT-CMU / BSD-3 | B2 |
 | Tesseract 5 + tessdata `rus`, `eng` / pytesseract | Apache-2.0 | B2 |
 | networknt json-schema-validator | Apache-2.0 | B2 |

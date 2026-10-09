@@ -28,7 +28,11 @@
 ## Как запустить
 ```bash
 cd subsidy/eval
-uv run python run.py --set synthetic                   # CI
-EVAL_OPEN_DIR=~/datasets/subsidy-open uv run python run.py --set open --api https://<host>
+uv run python -m synthetic.gen --out /tmp/syn --seed 1 --merged          # 1 пакет: 8 видов, заявление+ЕГРЮЛ+справка склеены в один PDF
+uv run python -m synthetic.gen --out /tmp/syn-bad --seed 2 --defect items # тот же пакет с ошибкой в сумме сметы
+EVAL_PASSWORD=... uv run python run.py --api https://<host> --dir /tmp/syn --report reports/synthetic.md
+EVAL_OPEN_DIR=~/datasets/subsidy-open uv run python run.py --api https://<host> --dir "$EVAL_OPEN_DIR"
 ```
-`run.py` создаёт пакет и грузит файлы через **публичный API** (как специалист), ждёт протокол и сравнивает типы, поля и статусы правил с разметкой — меряем систему целиком.
+Генератор (`synthetic/gen.py`, reportlab) создаёт документы **вымышленной** организации с верными контрольными суммами ИНН/ОГРН/КПП/БИК/р/с, файлы называются нейтрально (`doc-XXXX.pdf`) — вид нельзя угадать по имени. Рядом кладётся `labels.json`: страницы → вид, ключевые поля и ожидаемые статусы правил (`expectedRules`).
+
+`run.py` входит как специалист (форма Keycloak, PKCE), создаёт организацию и пакет и грузит файлы через **публичный API**, ждёт протокол и сравнивает виды, поля и статусы правил с разметкой — меряем систему целиком. Отчёт — markdown (`--report`), код выхода ≠ 0 при расхождениях.
