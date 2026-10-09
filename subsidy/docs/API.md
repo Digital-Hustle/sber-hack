@@ -29,6 +29,7 @@ OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `su
 - `GET /packages/{id}/protocols` → версии протоколов `[{protocolId, version, status, completeness, failed, warnings, needsReview, createdAt}]`; `GET /packages/{id}/protocols/{version}` → конкретная версия. До первой проверки `GET .../protocol` → 409 `NOT_CHECKED_YET`
 - `PUT /packages/{id}/fields` `{documentId, field, value, reason}` → 202 — правка значения специалистом (данные, не вердикт); сервер перепроверяет и создаёт новую версию протокола
 - `GET /packages/{id}/protocol/export?format=docx|xlsx|pdf` → файл (B-02)
+- `POST /packages/{id}/projection/rebuild` → 202 `{packageId, documents, updated, removed, status: RECHECK_SCHEDULED}` — только `SENIOR_SPECIALIST`: пересборка проекции документов из docproc (`/internal/docproc/...`, токен svc-rules), если событие разбора потеряно. Автоматически — перед расчётом протокола, когда у разобранного файла в проекции нет документов. Ошибки: 404 `PACKAGE_NOT_FOUND`, 503 `DEPENDENCY_UNAVAILABLE`
 - `GET /organizations/{inn}/history` → `[{at, by, action, packageId, details}]` (B-03)
 - `GET /stats/errors?from=&to=&program=` → `[{rule, count, share}]` + «как посчитано» (B-04)
 - `GET /expiring?days=30` → документы, срок которых истекает (B-05)

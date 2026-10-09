@@ -11,5 +11,8 @@ management:
   tracing:
     enabled: false
 app:
+  service-account:
+    client-secret: test-secret
   rules:
     recheck-enabled: false
+    docproc-url: ""

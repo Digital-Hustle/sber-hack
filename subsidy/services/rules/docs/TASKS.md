@@ -21,4 +21,4 @@
 | RUL-15 | B-04/B-05 | Статистика частых ошибок, истекающие документы | B3 | done #43 |
 | RUL-16 | B-06 | Правила аномалий `ANOMALY_*` (WARNING) | B3 | done #43 |
 | RUL-17 | FR-41/B-06 | `ANOMALY_OUTLIER` (цена vs медиана по программе), `SUM_WORDS` (сумма прописью) | B3 | partial: SUM_WORDS done (`*Words` из docproc, `RubleWords`) |
-| RUL-18 | NFR-15 | Пересборка проекции из `docproc /internal/.../documents` при пропуске событий | B3 | todo |
+| RUL-18 | NFR-15 | Пересборка проекции из `docproc /internal/.../documents` при пропуске событий | B3 | done #PR |

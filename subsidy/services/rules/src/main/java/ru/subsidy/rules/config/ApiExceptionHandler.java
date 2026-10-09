@@ -32,7 +32,8 @@ public class ApiExceptionHandler {
             Map.entry(ErrorCode.DOCUMENT_TYPE_INVALID, HttpStatus.BAD_REQUEST),
             Map.entry(ErrorCode.FIELD_INVALID, HttpStatus.BAD_REQUEST),
             Map.entry(ErrorCode.PROTOCOL_NOT_FOUND, HttpStatus.NOT_FOUND),
-            Map.entry(ErrorCode.NOT_CHECKED_YET, HttpStatus.CONFLICT));
+            Map.entry(ErrorCode.NOT_CHECKED_YET, HttpStatus.CONFLICT),
+            Map.entry(ErrorCode.DEPENDENCY_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE));
 
     /**
      * Доменное исключение.

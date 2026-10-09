@@ -219,6 +219,8 @@ services:
       OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
       OIDC_TOKEN_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/token
+      KC_SVC_RULES_SECRET: ${KC_SVC_RULES_SECRET:?}
+      DOCPROC_URL: ${DOCPROC_URL:?}
       OTLP_ENDPOINT: ${OTLP_ENDPOINT:?}
     depends_on:
       postgres: { condition: service_healthy }
