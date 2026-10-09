@@ -4,10 +4,10 @@
 
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| OCR-01 | FR-21 | Каркас FastAPI, JWT, health, Dockerfile с tesseract-ocr-rus, CI python | B2 | todo |
-| OCR-02 | FR-21 | PDF: текстовый слой с bbox, рендер pypdfium2 | B2 | todo |
-| OCR-03 | FR-21 | Предобработка: EXIF, deskew, CLAHE, OSD | B2 | todo |
-| OCR-04 | FR-21 | Tesseract `rus+eng`: слова + bbox + conf | B2 | todo |
-| OCR-05 | FR-26 | Метрики качества | B2 | todo |
+| OCR-01 | FR-21 | Каркас FastAPI, JWT, health, Dockerfile с tesseract-ocr-rus, CI python | B2 | done #OCR |
+| OCR-02 | FR-21 | PDF: текстовый слой с bbox, рендер pypdfium2 | B2 | done #OCR |
+| OCR-03 | FR-21 | Предобработка: EXIF, deskew, CLAHE, OSD | B2 | done #OCR |
+| OCR-04 | FR-21 | Tesseract `rus+eng`: слова + bbox + conf | B2 | done #OCR |
+| OCR-05 | FR-26 | Метрики качества | B2 | done #OCR |
 | OCR-06 | FR-32 | Таблицы: pdfplumber + строки/колонки по bbox для сканов | B2 | todo |
-| OCR-07 | FR-63 | `/v1/render` превью страниц | B2 | todo |
+| OCR-07 | FR-63 | `/v1/render` превью страниц | B2 | done #OCR |

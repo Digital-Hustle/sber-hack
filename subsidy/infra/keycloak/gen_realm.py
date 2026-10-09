@@ -8,6 +8,8 @@ SL = chr(47)
 HOST = "https:" + SL + SL + "${PUBLIC_HOST}"
 ROLES = ["SPECIALIST", "SENIOR_SPECIALIST", "AUDITOR"]
 SERVICES = ["package", "docproc", "rules", "assistant"]
+# ocr (Python) — не клиент Keycloak, но принимает токены svc-docproc / svc-package с aud=ocr
+OCR_CALLERS = {"package", "docproc"}
 
 
 def env(name: str) -> str:
@@ -68,7 +70,7 @@ realm = {
             "protocolMappers": [{
                 "name": f"svc-aud-{t}", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
                 "config": {"included.custom.audience": t, "access.token.claim": "true", "id.token.claim": "false"},
-            } for t in SERVICES if t != s],
+            } for t in [*(x for x in SERVICES if x != s), *(["ocr"] if s in OCR_CALLERS else [])]],
         } for s in SERVICES],
     ],
     "users": [
