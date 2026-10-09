@@ -49,6 +49,8 @@
 ## Аномалии (B-06, только WARNING — специалист решает)
 `ANOMALY_ROUND_SUMS` (все суммы круглые), `ANOMALY_WEEKEND_DATES` (платёж в выходной), `ANOMALY_SAME_DAY_CHAIN` (договор, счёт и оплата в один день на крупную сумму), `ANOMALY_OUTLIER` (статья > 3σ от средней по программе — только если в БД ≥ 20 пакетов, иначе NOT_APPLICABLE).
 
+`ANOMALY_OUTLIER` подробно: выборка — суммы `amount` всех статей смет (`COST_ESTIMATE`, не удалённых, не `TYPE_UNKNOWN`) **других** пакетов той же программы из проекции rules; агрегат в PostgreSQL (`avg`, `stddev_pop`). `limit = round(mean + 3σ, 2)`; статья с `amount > limit` (строго) → WARNING, `expected = limit`, `actual` = наибольшая такая статья. Пакетов в выборке < 20 → NOT_APPLICABLE «Мало пакетов программы для сравнения: N из 20»; в смете нет статей → DATA_MISSING. Правки специалиста других пакетов в фон не входят.
+
 ## Параметры программы (данные `programs.params`, версия в протоколе)
 ```json
 {"rate": "0.50", "maxAmount": "3000000.00", "egrulMaxAgeDays": 30, "taxMaxAgeDays": 30,
