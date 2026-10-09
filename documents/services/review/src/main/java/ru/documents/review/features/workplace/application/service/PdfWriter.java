@@ -169,7 +169,7 @@ final class PdfWriter implements AutoCloseable {
         s.codePoints().forEach(cp -> {
             String ch = new String(Character.toChars(cp));
             try {
-                if (cp == '\n' || (!Character.isISOControl(cp) && regular.hasGlyph(cp))) {
+                if (cp == '\n' || !Character.isISOControl(cp) && regular.hasGlyph(cp)) {
                     b.append(ch);
                 } else {
                     b.append(Character.isWhitespace(cp) ? " " : "?");
