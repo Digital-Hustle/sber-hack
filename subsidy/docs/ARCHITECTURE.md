@@ -114,7 +114,7 @@ erDiagram
 | `package.package.v1` | `PackageCreated`, `PackageSubmitted`, `PackageDecided` | package | packageId, orgId, inn, programCode |
 | `package.file.v1` | `FileReceived`, `FileReplaced`, `FileRemoved` | package | fileId, packageId, version, mime, pages (**без имени файла**) |
 | `docproc.document.v1` | `StageChanged`, `DocumentsSegmented`, `DocumentParsed`, `DocumentUnreadable`, `DocumentFailed`, `TypeOverridden` | docproc | fileId, documentId, stage, type, typeConfidence, fields[], reasonCode |
-| `rules.package.v1` | `PackageChecked`, `FieldCorrected` | rules | packageId, protocolId, status, missing[], counts{failed, warnings} |
+| `rules.package.v1` | `PackageChecked`, `FieldCorrected` | rules | packageId, protocolId, version, protocolStatus, completeness (%), failed, warnings, needsReview |
 
 ## Безопасность (кратко, подробно — SECURITY.md)
 - Специалисты — Keycloak SSO (PKCE), роли `SPECIALIST`, `SENIOR_SPECIALIST` (TOTP, решения, программы), `AUDITOR` (только чтение протоколов и статистики).

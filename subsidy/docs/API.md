@@ -26,7 +26,7 @@ OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `su
 
 ## rules (`/rules/api/v1`)
 - `GET /packages/{id}/protocol` → последний протокол: `{protocolId, version, status: COMPLETE|INCOMPLETE|NEEDS_REVIEW, checklistVersion, rulesVersion, completeness: {items: [{item, type, condition, status, documents[]}], missing: [{type, reason}]}, results: [{rule, status, message, evidence: [{documentId, field, page, bbox?}], expected?, actual?}], createdAt}`
-- `GET /packages/{id}/protocols` → версии протоколов (история перепроверок)
+- `GET /packages/{id}/protocols` → версии протоколов `[{protocolId, version, status, completeness, failed, warnings, needsReview, createdAt}]`; `GET /packages/{id}/protocols/{version}` → конкретная версия. До первой проверки `GET .../protocol` → 409 `NOT_CHECKED_YET`
 - `PUT /packages/{id}/fields` `{documentId, field, value, reason}` → 202 — правка значения специалистом (данные, не вердикт); сервер перепроверяет и создаёт новую версию протокола
 - `GET /packages/{id}/protocol/export?format=docx|xlsx|pdf` → файл (B-02)
 - `GET /organizations/{inn}/history` → `[{at, by, action, packageId, details}]` (B-03)
