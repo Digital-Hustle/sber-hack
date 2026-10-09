@@ -1,5 +1,6 @@
 package ru.documents.review;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -25,7 +26,7 @@ import ru.documents.review.features.staff.gateway.KeycloakAdminGateway;
 import ru.documents.review.features.staff.gateway.StaffMailer;
 
 /** APP_MODE=dev: быстрый вход тестовыми сотрудниками и код сразу в ответе; код всё равно проверяет Keycloak. */
-@SpringBootTest(properties = "app.staff.mode=dev")
+@SpringBootTest(properties = {"app.staff.mode=dev", "app.staff.demo-emails=senior@documents.local"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class StaffTestModeIntegrationTest extends AbstractIntegrationTest {
@@ -57,5 +58,20 @@ class StaffTestModeIntegrationTest extends AbstractIntegrationTest {
         verify(keycloak).issueCode(eq("k1"), anyString(), eq(600L));
         mvc.perform(post("/api/v1/auth/test-code").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"nobody@x.ru\"}")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void invitedStaffCannotUseTestCode() throws Exception {
+        String real = "ivanov@company.ru";
+        var user = json.valueToTree(Map.of("id", "k2", "username", "ivanov", "email", real, "enabled", true,
+                "firstName", "Иван", "lastName", "Иванов"));
+        when(keycloak.users()).thenReturn(List.of((com.fasterxml.jackson.databind.JsonNode) user));
+        when(keycloak.findByEmail(real)).thenReturn(Optional.of(user));
+        when(keycloak.realmRoles("k2")).thenReturn(List.of("SENIOR_OPERATOR"));
+        mvc.perform(get("/api/v1/auth/mode")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.testUsers").isEmpty());
+        mvc.perform(post("/api/v1/auth/test-code").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + real + "\"}")).andExpect(status().isNotFound());
+        verify(keycloak, org.mockito.Mockito.never()).issueCode(eq("k2"), anyString(), anyLong());
     }
 }
