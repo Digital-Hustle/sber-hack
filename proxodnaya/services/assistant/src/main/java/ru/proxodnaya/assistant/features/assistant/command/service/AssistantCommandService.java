@@ -33,6 +33,7 @@ import ru.proxodnaya.assistant.features.assistant.command.repository.LlmRequestR
 import ru.proxodnaya.assistant.features.assistant.model.Answer;
 import ru.proxodnaya.assistant.features.assistant.model.LlmCall;
 import ru.proxodnaya.assistant.features.assistant.model.Source;
+import ru.proxodnaya.assistant.features.assistant.model.Table;
 import ru.proxodnaya.assistant.features.assistant.model.Validation;
 import ru.proxodnaya.assistant.features.assistant.validator.NumberValidator;
 import ru.proxodnaya.assistant.gateway.ShiftUnavailableException;
@@ -104,7 +105,8 @@ public class AssistantCommandService {
         if (sources.stream().noneMatch(Source::ok)) {
             boolean honest = !reply.content().isBlank() && new NumberValidator().allowText(question).unknown(reply.content()).isEmpty();
             journalVerdict(ask, honest ? Validation.OK : Validation.REFUSED);
-            return honest ? new Answer(reply.content(), Validation.OK, sources) : new Answer(NO_DATA, Validation.REFUSED, sources);
+            return honest ? new Answer(reply.content(), Validation.OK, sources, null)
+                    : new Answer(NO_DATA, Validation.REFUSED, sources, null);
         }
         return validated(ask, question, messages, reply, sources);
     }
@@ -115,7 +117,7 @@ public class AssistantCommandService {
         List<String> unknown = validator.unknown(reply.content());
         if (unknown.isEmpty() && !reply.content().isBlank()) {
             journalVerdict(ask, Validation.OK);
-            return new Answer(reply.content(), Validation.OK, sources);
+            return new Answer(reply.content(), Validation.OK, sources, table(sources));
         }
         messages.add(ChatMessage.assistant(reply.content(), List.of()));
         messages.add(ChatMessage.user("В ответе есть числа, которых нет в данных инструментов: " + String.join(", ", unknown)
@@ -123,10 +125,21 @@ public class AssistantCommandService {
         ChatRs retry = call(ask, new ChatRq(messages, List.of()));
         if (validator.unknown(retry.content()).isEmpty() && !retry.content().isBlank()) {
             journalVerdict(ask, Validation.REGENERATED);
-            return new Answer(retry.content(), Validation.REGENERATED, sources);
+            return new Answer(retry.content(), Validation.REGENERATED, sources, table(sources));
         }
         journalVerdict(ask, Validation.REFUSED);
-        return new Answer(REFUSAL, Validation.REFUSED, sources);
+        return new Answer(REFUSAL, Validation.REFUSED, sources, table(sources));
+    }
+
+    private Table table(List<Source> sources) {
+        Table table = null;
+        for (Source source : sources) {
+            AssistantTool tool = tools.get(source.tool());
+            if (source.ok() && tool != null) {
+                table = tool.table(source.result()).orElse(table);
+            }
+        }
+        return table;
     }
 
     private Source invoke(ToolCall toolCall) {
