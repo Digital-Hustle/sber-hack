@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "motion/react";
-import { AlertTriangle, ArrowLeft, Gavel, MessageSquarePlus, UserCheck, FileWarning, Timer, History, ListChecks } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { AlertTriangle, ArrowLeft, Check, Gavel, MessageSquarePlus, UserCheck, FileWarning, Timer, History, ListChecks } from "lucide-react";
 import { AppStatusBadge, dateRuFull, dateTimeRu, reviewApi, reviewKeys, waitingRu, type FieldCard } from "@/entities/application";
 import { StageBadge, confidenceTone, percent, reasonView, typeTitle } from "@/entities/document";
 import { can, useSession } from "@/entities/session";
@@ -18,7 +18,7 @@ import { AnimatedNumber, Button, Card, EmptyState, CardSkeleton, HeaderSkeleton,
 import { ApiError, errorText, useEventStream } from "@/shared/api";
 import { cn } from "@/shared/lib";
 import { routes } from "@/shared/const/router";
-import { fadeUp, popIn, stagger } from "@/shared/config/motion";
+import { fadeUp, popIn, spring, stagger, tween } from "@/shared/config/motion";
 
 /** Сколько минут ручного ввода экономит одно поле, заполненное моделью (оценка для счётчика FE-OP-06, см. EVAL.md). */
 const SECONDS_PER_FIELD = 20;
@@ -127,7 +127,7 @@ export const ApplicationPage = () => {
               return (
                 <li key={i} className="flex flex-wrap items-center gap-2 text-sm">
                   <Status tone={f.code === "MISSING_DOCUMENT" ? "danger" : "warning"}><AlertTriangle />{v?.text}</Status>
-                  {f.documentIds?.map((d) => <Button key={d} size="sm" variant="quiet" onClick={() => setDocId(d)}>{docs.find((x) => x.id === d)?.typeName ?? "документ"}</Button>)}
+                  {f.documentIds?.map((d) => <Button key={d} size="sm" variant="quiet" onClick={() => setDocId(d)}>{docs.find((x) => x.id === d)?.typeName ?? typeTitle(docs.find((x) => x.id === d)?.type)}</Button>)}
                 </li>
               );
             })}
@@ -143,17 +143,15 @@ export const ApplicationPage = () => {
             <Card className="h-96 overflow-hidden sm:h-svh lg:h-full">{doc && <DocumentViewer doc={doc} assigned={mine || can(s.roles, "decide")} highlight={field ? { page: field.page, bbox: field.bbox as number[] | null } : null} />}</Card>
           </div>
           <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Документы">
-              {docs.map((d) => (
-                <Button key={d.id} size="sm" role="tab" aria-selected={d.id === doc?.id} variant={d.id === doc?.id ? "inverse" : "secondary"} onClick={() => setDocId(d.id!)}>
-                  {d.attention && <AlertTriangle className="text-warning" />}{d.typeName ?? d.type ?? d.slotType ?? "Документ"}{d.confirmed && " ✓"}
-                </Button>
-              ))}
-            </div>
+            <Segmented label="Документы" value={doc?.id ?? ""} onChange={setDocId}
+              options={docs.map((d) => ({ value: d.id!, icon: d.attention ? <AlertTriangle className="text-warning" /> : d.confirmed ? <Check className="text-success" /> : undefined,
+                label: d.typeName ?? (d.type ? typeTitle(d.type) : d.slotType ? `${typeTitle(d.slotType)}?` : "Документ") }))} />
+            <AnimatePresence mode="wait" initial={false}>
             {doc && (
+              <motion.div key={doc.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, transition: tween.exit }} transition={{ ...spring.soft, opacity: tween.fast }}>
               <Card className="p-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-lg font-semibold">{doc.typeName ?? doc.type ?? "Вид не определён"}</h2>
+                  <h2 className="font-display text-lg font-semibold">{doc.typeName ?? (doc.type ? typeTitle(doc.type) : "Вид не определён")}</h2>
                   {doc.typeConfidence != null && <Status tone={confidenceTone(doc.typeConfidence)}>вид {percent(doc.typeConfidence)}</Status>}
                   <StageBadge stage={doc.stage} />
                   {doc.expiresOn && <Status tone="neutral"><Timer />до {dateRuFull(doc.expiresOn)}</Status>}
@@ -163,14 +161,22 @@ export const ApplicationPage = () => {
                 {doc.model && <p className="mt-1 text-xs text-muted-foreground">Модель {doc.model}{doc.promptVersion ? ` · промпт ${doc.promptVersion}` : ""}{doc.confirmedBy ? ` · подтвердил ${doc.confirmedBy} ${dateTimeRu(doc.confirmedAt)}` : ""}</p>}
                 <div className="mt-3"><DocumentActions appId={id} doc={doc} canAct={canAct && !decided} canReprocess={can(s.roles, "reprocess") && !decided} /></div>
               </Card>
+              </motion.div>
             )}
+            </AnimatePresence>
             <Segmented value={tab} onChange={setTab} label="Раздел" options={[{ value: "fields", label: "Поля", icon: <ListChecks /> }, { value: "history", label: "История", icon: <History /> }]} />
+            <AnimatePresence mode="wait" initial={false}>
             {tab === "fields" && doc ? (
-              <>
+              <motion.div key={`f-${doc.id}`} className="flex flex-col gap-3" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, transition: tween.exit }} transition={{ ...spring.soft, opacity: tween.fast }}>
                 <FieldsPanel appId={id} doc={doc} canAct={canAct && !decided} active={field?.name ?? null} onActive={setField} />
                 <p className="hidden text-xs text-muted-foreground lg:block">Клавиши: J/K — поле, E — править, Enter — подтвердить документ, N — следующая заявка. Ждёт {waitingRu(app.submittedAt ? (Date.now() - Date.parse(app.submittedAt)) / 1000 : null)}</p>
-              </>
-            ) : <Card className="p-4"><HistoryTimeline appId={id} /></Card>}
+              </motion.div>
+            ) : (
+              <motion.div key="history" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, transition: tween.exit }} transition={{ ...spring.soft, opacity: tween.fast }}>
+                <Card className="p-4"><HistoryTimeline appId={id} /></Card>
+              </motion.div>
+            )}
+            </AnimatePresence>
           </div>
         </div>
       )}

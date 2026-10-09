@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Send } from "lucide-react";
 import { reviewApi, reviewKeys, type DocumentCard } from "@/entities/application";
+import { typeTitle } from "@/entities/document";
 import { Button, Dialog, Field, Select, Textarea, toast } from "@/shared/ui";
 import { errorText } from "@/shared/api";
 
@@ -14,7 +15,7 @@ export const RequestDialog = ({ appId, docs, missing, open, onClose, onClosed }:
   const qc = useQueryClient();
   const options = [
     ...missing.map((t) => ({ value: `t:${t.type}`, label: `Загрузить: ${t.title}` })),
-    ...docs.map((d) => ({ value: `d:${d.id}`, label: `Переснять: ${d.typeName ?? d.type ?? "документ"}` })),
+    ...docs.map((d) => ({ value: `d:${d.id}`, label: `Переснять: ${d.typeName ?? typeTitle(d.type ?? d.slotType)}` })),
   ];
   const [target, setTarget] = useState<string>(options[0]?.value ?? "");
   const [reason, setReason] = useState("");

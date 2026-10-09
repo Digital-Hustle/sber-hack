@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarClock, ShieldCheck } from "lucide-react";
 import { can, useSession } from "@/entities/session";
 import { AppStatusBadge, dateRuFull, reviewApi, reviewKeys } from "@/entities/application";
+import { typeTitle } from "@/entities/document";
 import { ExportExpiringButton } from "@/features/export-documents";
 import { Button, Card, EmptyState, PageHeader, RowsSkeleton, Segmented, Status } from "@/shared/ui";
 import { errorText } from "@/shared/api";
@@ -32,7 +33,7 @@ export const ExpiringPage = () => {
             {items.map((it) => (
               <li key={it.documentId} className="border-t border-border first:border-t-0">
                 <Link to={routes.operatorApplication(it.applicationId!)} className="flex items-center gap-3 px-4 py-3 transition-colors duration-fast hover:bg-muted">
-                  <span className="min-w-0 flex-1"><span className="block truncate font-medium">{it.applicantName || "—"}</span><span className="block truncate text-xs text-muted-foreground">{it.typeName ?? it.type} · до {dateRuFull(it.expiresOn)}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate font-medium">{it.applicantName || "—"}</span><span className="block truncate text-xs text-muted-foreground">{it.typeName ?? typeTitle(it.type)} · до {dateRuFull(it.expiresOn)}</span></span>
                   <Status tone={(it.daysLeft ?? 0) < 0 ? "danger" : (it.daysLeft ?? 0) <= 14 ? "warning" : "neutral"}>{(it.daysLeft ?? 0) < 0 ? "истёк" : `${it.daysLeft} дн`}</Status>
                 </Link>
               </li>
@@ -48,7 +49,7 @@ export const ExpiringPage = () => {
               {items.map((it) => (
                 <tr key={it.documentId} className="border-b border-border last:border-0 hover:bg-muted">
                   <td className="p-3 font-medium"><Link to={routes.operatorApplication(it.applicationId!)} className="hover:underline">{it.applicantName || "—"}</Link></td>
-                  <td className="p-3">{it.typeName ?? it.type}</td>
+                  <td className="p-3">{it.typeName ?? typeTitle(it.type)}</td>
                   <td className="p-3 tabular-nums">{dateRuFull(it.expiresOn)}</td>
                   <td className="p-3"><Status tone={(it.daysLeft ?? 0) < 0 ? "danger" : (it.daysLeft ?? 0) <= 14 ? "warning" : "neutral"}>{(it.daysLeft ?? 0) < 0 ? "истёк" : `${it.daysLeft} дн`}</Status></td>
                   <td className="p-3"><AppStatusBadge status={it.status} /></td>

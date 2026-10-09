@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { motion } from "motion/react";
-import { ArrowRight, LogIn, LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
+import { SignIn } from "./SignIn";
 import { useSession, useOperatorAuth, can, roleLabel, type Perm } from "@/entities/session";
 import { Avatar, Button, Dialog, EmptyState, HeaderBar, Logo, NavTrack, OfflineBanner, PreferencesButton, Spinner, Status } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
-import { fadeUp, pageIn, stagger } from "@/shared/config/motion";
+import { pageIn } from "@/shared/config/motion";
 import { ModelStatusBadge } from "./ModelStatusBadge";
 
 const NAV: { to: string; label: string; perm: Perm; end?: boolean }[] = [
@@ -14,27 +15,6 @@ const NAV: { to: string; label: string; perm: Perm; end?: boolean }[] = [
   { to: routes.operatorMetrics, label: "Метрики", perm: "metrics" },
 ];
 
-/** Вход сотрудника: единый вход Keycloak (PKCE).  */
-const SignIn = ({ onSignIn }: { onSignIn: () => void }) => (
-  <div className="relative isolate flex min-h-svh flex-col">
-    <HeaderBar inner="max-w-6xl">
-      <Link to={routes.home} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="рабочее место" /></Link>
-      <div className="ml-auto flex shrink-0 items-center gap-1.5"><PreferencesButton /></div>
-    </HeaderBar>
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pb-16 pt-8 sm:px-6">
-      <motion.div variants={stagger(0.07)} initial="hidden" animate="show" className="flex flex-col items-center text-center">
-        <motion.p variants={fadeUp} className="text-sm font-medium text-brand">Операторы, старшие и аудиторы</motion.p>
-        <motion.h1 variants={fadeUp} className="mt-5 text-balance font-display text-4xl font-semibold leading-none tracking-hero sm:text-5xl">Вход в рабочее место</motion.h1>
-        <motion.p variants={fadeUp} className="mt-3 text-pretty text-base text-foreground/70">Единая корпоративная учётная запись. Права проверяет сервер</motion.p>
-      </motion.div>
-      <motion.section variants={fadeUp} initial="hidden" animate="show" className="mt-6 flex flex-col gap-5 overflow-hidden rounded-3xl bg-card/85 p-5 shadow-card backdrop-blur-xl sm:p-8">
-        <Button variant="brand" size="lg" block className="h-14 rounded-lg" onClick={onSignIn}><LogIn />Войти<ArrowRight /></Button>
-        <p className="text-center text-xs text-muted-foreground">Нет доступа — обратитесь к администратору стенда</p>
-      </motion.section>
-    </main>
-  </div>
-);
-
 /** FE-OP-01: зона оператора — SSO (PKCE), разделы по ролям, статус модели, тема. */
 export const OperatorShell = () => {
   useOperatorAuth();
@@ -42,7 +22,7 @@ export const OperatorShell = () => {
   const loc = useLocation();
   const [account, setAccount] = useState(false);
   if (!s.ready) return <div className="grid min-h-svh place-items-center"><Spinner className="size-8" /></div>;
-  if (!s.user) return <SignIn onSignIn={() => void s.signIn()} />;
+  if (!s.user) return <SignIn />;
   const items = NAV.filter((n) => can(s.roles, n.perm));
   return (
     <div className="relative isolate min-h-svh text-foreground">
