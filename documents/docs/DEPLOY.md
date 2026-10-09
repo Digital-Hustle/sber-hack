@@ -36,5 +36,12 @@ push в `main` → CI зелёный → `docker compose build` (те же Docke
 Включение: переменная репозитория `DOCS_DEPLOY_ENABLED=true` + секреты `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`. Секретов приложения в GitHub нет (кроме необязательного `DOCS_LLM_API_KEY` для eval в smoke CI).
 Пока сервера нет, CD выключен; стенд поднимается одной командой `docker compose up -d --build` из чистого клона.
 
+## Общий сервер (на нём живёт один кейс из трёх)
+Перед деплоем — `docker compose ls`: чужой стенд остановить без `-v`.
+Порты 80/443 держит общий edge-прокси (`../../edge/README.md`): TLS и маршрут по хосту. «Документы» за ним — в `infra/.env`:
+`PUBLIC_HOST=documents.<домен>`, `OIDC_ISSUER_URI=https://documents.<домен>/auth/realms/documents`,
+`PUBLIC_URL=https://documents.<домен>`, `CADDY_SCHEME=http://`, `HTTP_BIND=127.0.0.1:8180`, `HTTPS_BIND=127.0.0.1:8543`.
+Без этих переменных стенд, как раньше, сам слушает 80/443.
+
 ## Перед защитой
 Тег `docs-demo-final`, деплой тега, заморозка деплоя; маршрут судьи на сервере и на запасном ноутбуке; модели и образы — локально (`docker save` в архив).
