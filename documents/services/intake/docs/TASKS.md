@@ -17,4 +17,4 @@
 | IN-11 | FR-06 | Лимиты файлов и частоты, `TOO_MANY_FILES`, `RATE_LIMITED` | B1 | done `feat/IN-01-intake` |
 | IN-12 | FR-07 | Многостраничный файл с несколькими документами: разметка страниц от docproc → документы | B1 | done #45 — intake создаёт документ на каждый вид из `split` (пункт = вид, файлы исходного, `only_pages`), идемпотентно; повторно не делится; замена/удаление исходного удаляет выделенные |
 | IN-13 | FR-55 | `ResubmitRequested` от review → пункт «переснять» с причиной у соискателя | B1 | done `feat/IN-01-intake` |
-| IN-14 | B-07 | Скан только назначенному оператору или старшему: `applications.assignee` из `ApplicationAssigned`, 403 `FILE_NOT_ASSIGNED`; фронт — «Скан закрыт» и повтор после назначения | B1 | done #PR |
+| IN-14 | B-07 | Скан только назначенному оператору или старшему: `applications.assignee` из `ApplicationAssigned`, 403 `FILE_NOT_ASSIGNED`; фронт — «Скан закрыт» и повтор после назначения | B1 | done #87 |
