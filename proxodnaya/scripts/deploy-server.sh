@@ -20,7 +20,11 @@ for d in */src/main/resources/db/changelog; do svc=${d%%/*}
 done
 ./gradlew --no-daemon -q -Porg.gradle.java.installations.paths=$JAVA_HOME bootJar -x test
 cd "$CASE/infra"
-docker compose -p proxodnaya build
-docker compose -p proxodnaya up -d --wait --wait-timeout 900
+COMPOSE=(docker compose -p proxodnaya -f "$CASE/infra/docker-compose.yml")
+if grep -q '^SHARED_MAIL_ENABLED=true$' .env; then
+  COMPOSE+=(-f "$CASE/../shared/mail/proxodnaya.override.yml")
+fi
+"${COMPOSE[@]}" build
+"${COMPOSE[@]}" up -d --wait --wait-timeout 900
 docker image prune -f >/dev/null
 echo "✔ стенд поднят: https://$(grep -E '^PUBLIC_HOST=' .env | cut -d= -f2)"

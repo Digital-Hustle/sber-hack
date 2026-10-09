@@ -57,3 +57,4 @@
 - 2026-10-09 · miroslavrov (агент) · feat: PPL-05 device-токен ES256, JWKS, два издателя в сервисах и gateway (ADR-040, #91)
 - 2026-10-09 · miroslavrov (агент) · feat: PPL-13 вход персонала по коду из письма, `/staff`, журнал доступа (ADR-041, #96)
 - 2026-10-10 · miroslavrov (агент) · feat: PPL-14 HttpOnly refresh-cookie, пустой refresh, удаление cookie при выходе и ошибке (#111)
+- 2026-10-10 · miroslavrov (агент) · MAIL-01: shared/mail — единый SMTP-клиент, шаблоны для трёх кейсов; people через SharedStaffMailer при SHARED_MAIL_ENABLED; без SMTP — честная 503 (#113)

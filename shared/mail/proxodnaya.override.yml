@@ -1,0 +1,8 @@
+# Add after proxodnaya/infra/docker-compose.yml; private env keeps the API token.
+services:
+  people:
+    networks: [default, shared-mail]
+networks:
+  shared-mail:
+    external: true
+    name: digital-hustle-mail
