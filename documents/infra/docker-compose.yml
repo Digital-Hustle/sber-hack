@@ -119,6 +119,8 @@ services:
       INTAKE_URL: ${INTAKE_URL:-http://intake:8081}
       DOCPROC_URL: ${DOCPROC_URL:-http://docproc:8082}
       REVIEW_URL: ${REVIEW_URL:-http://review:8083}
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
     depends_on:
       keycloak: { condition: service_started }
 

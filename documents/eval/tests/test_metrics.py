@@ -62,3 +62,10 @@ def test_calibration_buckets_and_markdown():
     md = to_markdown(r, "t", {"Стенд": "x"})
     assert "| Тип: accuracy | 100.0% |" in md
     assert "SNILS.snils" in md
+
+
+def test_fields_not_measured_without_token():
+    r = evaluate([_o(predicted_fields=None)])
+    assert r.type_accuracy == 1.0
+    assert r.fields == {}
+    assert math.isnan(r.exact_match)

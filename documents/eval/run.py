@@ -92,6 +92,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--api", help="базовый URL стенда, например https://documents.example")
     ap.add_argument("--limit", type=int, default=0, help="взять первые N документов")
     ap.add_argument("--deadline", type=float, default=180.0, help="сколько ждать итоговой стадии, с")
+    ap.add_argument("--insecure", action="store_true", help="не проверять TLS (локальный стенд с внутренним CA)")
+    ap.add_argument("--max-errors", type=float, default=1.0,
+                    help="доля сбоев прогона, выше которой код выхода 1 (smoke: 0)")
     ap.add_argument("--out", type=Path, help="куда писать отчёт (по умолчанию reports/<дата>-<набор>.md)")
     args = ap.parse_args(argv)
 
@@ -111,15 +114,18 @@ def main(argv: list[str] | None = None) -> int:
     if problems:
         return 1
 
-    api = Api(args.api, os.environ.get("EVAL_OPERATOR_TOKEN"))
+    token = os.environ.get("EVAL_OPERATOR_TOKEN")
+    api = Api(args.api, token, insecure=args.insecure)
     report = evaluate(measure(rows, files_dir, api, args.deadline))
     md = to_markdown(report, f"Eval · {args.set} · {date.today().isoformat()}",
-                     {"Стенд": args.api, "Документов": str(len(rows))})
+                     {"Стенд": args.api, "Документов": str(len(rows)),
+                      "Поля": "меряются (токен оператора)" if token else "не меряются — нет EVAL_OPERATOR_TOKEN"})
     out = args.out or HERE / "reports" / f"{date.today().isoformat()}-{args.set}.md"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(md, encoding="utf-8")
     print(md)
-    return 0
+    error_share = len(report.errors) / len(rows) if rows else 0.0
+    return 1 if error_share > args.max_errors else 0
 
 
 if __name__ == "__main__":

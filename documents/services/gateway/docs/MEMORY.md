@@ -3,14 +3,18 @@
 Память модуля между сессиями и агентами. §1 — перезаписываемое текущее состояние (≤ 10 строк). §2 — карта, обновлять при новых пакетах/файлах. §3–4 — добавлять строки, неактуальное ~~зачёркивать~~. §5 — **только дописывать в конец** (`merge=union`). Решения для всей системы — ADR в `../../../docs/DECISIONS.md`.
 
 ## 1. Текущее состояние
-- Кода нет (до хакатона, п. 7.3). Первый шаг в Т0: GW-01 → GW-02 (после `init-backend.sh services`).
-- Открытые вопросы: реализация rate-limit без Redis (Bucket4j в памяти) — ADR в Т0.
+- GW-01..05 сделаны: маршруты `RewritePath`, JWT Keycloak, `/internal/**` → 404 до проверки токена, CORS только `https://${PUBLIC_HOST}`, лимит тела по маршрутам (intake 25 МБ, остальные 1 МБ), rate-limit по IP.
+- Rate-limit — свой фиксированное окно в памяти (`limit/RateLimiter`), без Redis/Bucket4j: один инстанс gateway. При масштабировании — вынести в Redis.
+- Тесты: `GatewaySecurityTest` (реальный сервер + локальный JWKS, матрица путь × токен), `RateLimiterTest`.
 
 ## 2. Карта модуля
 | Путь | Что |
 |---|---|
 | `docs/` | PRD, ARCHITECTURE, RULES, TASKS, MEMORY |
-| _появится в Т0_ | по `docs/ARCHITECTURE.md §Структура папок` |
+| `config/SecurityConfig` | цепочка Spring Security, CORS, JWT-декодер (JWKS внутр., issuer публичный) |
+| `config/InternalPathFilter` | 404 для любого сегмента `internal` (без учёта регистра, после декодирования) |
+| `limit/*` | `RateLimitProperties` (`app.rate-limit.rules`), `RateLimiter`, `RateLimitFilter` → 429 + `Retry-After`, `RATE_LIMITED` |
+| `resources/application.yml` | маршруты, `RequestSize`, правила лимитов |
 
 ## 3. Решения
 | Дата | Решение | Почему | Ссылка |
@@ -21,7 +25,9 @@
 ## 4. Известные баги и ограничения
 | Дата | Что | Обход / статус |
 |---|---|---|
-| — | — | — |
+| 2026-10-09 | Лимиты и SSE-хабы в памяти — только один инстанс | для демо достаточно; Redis при масштабировании |
+| 2026-10-09 | IP клиента — последний адрес `X-Forwarded-For` (его ставит Caddy) | без Caddy перед gateway лимит обходится подделкой заголовка |
 
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
+- 2026-10-09 · miroslavrov · feat(GW-04/05): internal → 404, CORS, лимиты тела и частоты, матричный тест

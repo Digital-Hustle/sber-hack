@@ -39,3 +39,19 @@ def test_measure_counts_errors(tmp_path):
     labels = tmp_path / "l.jsonl"
     labels.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
     assert len(run.load_labels(labels)) == 2
+
+
+def test_max_errors_exit_code(tmp_path, monkeypatch):
+    class Boom:
+        def __init__(self, *a, **kw):
+            pass
+
+        def process(self, *a, **kw):
+            raise ApiError("нет стенда")
+
+    monkeypatch.setattr(run, "Api", Boom)
+    out = tmp_path / "r.md"
+    args = ["--set", "synthetic", "--api", "https://x", "--limit", "1", "--out", str(out)]
+    assert run.main([*args, "--max-errors", "0"]) == 1
+    assert run.main(args) == 0
+    assert "Сбои прогона" in out.read_text(encoding="utf-8")

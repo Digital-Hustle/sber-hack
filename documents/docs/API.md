@@ -68,7 +68,7 @@
 | IMAGE_TOO_SMALL | 422 | Слишком маленькое изображение | Снимите ближе, весь документ в кадре |
 | DUPLICATE_FILE | 409 | Этот файл уже загружен ({title}) | Загрузите другой документ |
 | TOO_MANY_FILES | 422 | В заявке уже {max} файлов | Удалите лишние файлы |
-| RATE_LIMITED | 429 | Слишком много загрузок подряд | Подождите минуту |
+| RATE_LIMITED | 429 | Слишком много запросов подряд (gateway: создание заявки 20/10 мин, вход по коду 10/15 мин, загрузки 120/мин на IP; заголовок `Retry-After`) | Подождите минуту |
 | CONSENT_REQUIRED | 400 | Нужно согласие на обработку данных | Отметьте согласие |
 | APPLICATION_LOCKED | 409 | Заявка уже на проверке у оператора | Дождитесь ответа оператора |
 
@@ -91,6 +91,7 @@
 | MODEL_INVALID_OUTPUT | Модель вернула ответ не по схеме | Оператор проверит вручную |
 
 ## Внутренние API (только service accounts, `aud=<сервис>`)
+Снаружи их нет: gateway отвечает 404 на любой путь с сегментом `internal` (до проверки токена).
 - intake: `GET /internal/intake/files/{fileId}` → поток (только `svc-docproc`); `GET /internal/intake/applications/{id}/summary` (для review)
 - ocr: `POST /v1/extract` multipart `file` → `{pages: [{n, width, height, textLayer: bool, text, words: [{t, bbox, conf}], quality: {blur, brightness, cutOff, glare, dpi}}], mrz?: {raw, fields, checks}, durationMs}`; `POST /v1/render?page=` → PNG страницы (для vision-пути)
 - docproc: `GET /internal/docproc/documents/{id}/result` (для review)

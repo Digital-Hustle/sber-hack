@@ -11,16 +11,33 @@ spring:
             - id: intake
               uri: ${INTAKE_URL:http://localhost:8081}
               predicates: [ "Path=/intake/api/**" ]
-              filters: [ "RewritePath=/intake/(?<rest>.*), /$\\{rest}" ]
+              filters:
+                - "RewritePath=/intake/(?<rest>.*), /$\\{rest}"
+                - name: RequestSize
+                  args: { maxSize: "${GATEWAY_BODY_MAX_MB:25}MB" }  # чуть больше UPLOAD_MAX_MB: внятный отказ даёт intake
             - id: docproc
               uri: ${DOCPROC_URL:http://localhost:8082}
               predicates: [ "Path=/docproc/api/**" ]
-              filters: [ "RewritePath=/docproc/(?<rest>.*), /$\\{rest}" ]
+              filters:
+                - "RewritePath=/docproc/(?<rest>.*), /$\\{rest}"
+                - name: RequestSize
+                  args: { maxSize: 1MB }
             - id: review
               uri: ${REVIEW_URL:http://localhost:8083}
               predicates: [ "Path=/review/api/**" ]
-              filters: [ "RewritePath=/review/(?<rest>.*), /$\\{rest}" ]
+              filters:
+                - "RewritePath=/review/(?<rest>.*), /$\\{rest}"
+                - name: RequestSize
+                  args: { maxSize: 1MB }
 app:
+  cors:
+    allowed-origins: https://${PUBLIC_HOST:localhost}
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    rules:
+      - { id: create-application, method: POST, path: /intake/api/v1/applicant/applications, limit: 20, window: 10m }
+      - { id: resume, method: POST, path: /intake/api/v1/applicant/resume, limit: 10, window: 15m }
+      - { id: upload, method: POST, path: "/intake/api/v1/applicant/applications/*/documents/**", limit: 120, window: 1m }
   oidc:
     issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/documents}
     jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/documents/protocol/openid-connect/certs}

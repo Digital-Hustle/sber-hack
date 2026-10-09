@@ -4,8 +4,8 @@
 
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| GW-01 | NFR-15 | `new-service.sh gateway 8080 B1 --gateway`, health, Dockerfile | B1 | todo |
-| GW-02 | NFR-15 | Маршруты `RewritePath` intake/docproc/review, env-адреса, SSE без буферизации | B1 | todo |
-| GW-03 | FR-14/60 | JWT Keycloak + публичный путь соискателя (`/intake/api/v1/applicant/**`), тест «всё остальное → 401» | B1 | todo |
-| GW-04 | FR-64 | Блок `/internal/**` (404), CORS только свои origin, лимит тела по маршрутам | B1 | todo |
-| GW-05 | FR-06 | Rate-limit создания заявки и загрузок, 429 + Retry-After; матричный тест «путь × без токена/просроченный» | B1 | todo |
+| GW-01 | NFR-15 | `new-service.sh gateway 8080 B1 --gateway`, health, Dockerfile | B1 | done (до #27; тесты расширены в GW-04) |
+| GW-02 | NFR-15 | Маршруты `RewritePath` intake/docproc/review, env-адреса, SSE без буферизации | B1 | done (до #27; тесты расширены в GW-04) |
+| GW-03 | FR-14/60 | JWT Keycloak + публичный путь соискателя (`/intake/api/v1/applicant/**`), тест «всё остальное → 401» | B1 | done (до #27; тесты расширены в GW-04) |
+| GW-04 | FR-64 | Блок `/internal/**` (404), CORS только свои origin, лимит тела по маршрутам | B1 | review `feat/GW-04-gateway-hardening` |
+| GW-05 | FR-06 | Rate-limit создания заявки и загрузок, 429 + Retry-After; матричный тест «путь × без токена/просроченный» | B1 | review `feat/GW-04-gateway-hardening` |
