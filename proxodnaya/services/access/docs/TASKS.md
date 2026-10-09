@@ -9,7 +9,7 @@
 | ACC-03 | FR-03 | Атомарное гашение `qr_uses` + `QrConsumeIntegrationTest` (20 параллельно → 1) | B2 | done #3 |
 | ACC-04 | FR-02 | Проекции `device_keys`, `worker_state` из `people.*.v1` (идемпотентно) | B2 | done #3 |
 | ACC-05 | FR-01/06 | `POST /kiosk/attempts` → челлендж; `POST …/frames` | B2 | done #3 |
-| ACC-06 | FR-09/NFR-16 | Клиенты face/people/shift: параллельно, таймаут 1,5 с, CB, fail-closed + `FailClosedIntegrationTest` | B2 | review #3 (параллельно + таймаут + fail-closed; без circuit breaker и service-токена) |
+| ACC-06 | FR-09/NFR-16 | Клиенты face/people/shift: параллельно, таймаут 1,5 с, CB, fail-closed + `FailClosedIntegrationTest` | B2 | review #3, #8 (параллельно + таймаут + fail-closed + service-токен client-credentials; без circuit breaker) |
 | ACC-07 | FR-01/07 | `DecisionEngine` по порядку проверок, все коды из API.md + `DecisionEngineTest` | B2 | done #3 |
 | ACC-08 | FR-10/67 | Журнал: hash-chain, append-only тест, `POST /security/journal/verify` | B2 | done #3 |
 | ACC-09 | FR-08 | Anti-passback и вместимость зоны | B2 | todo |

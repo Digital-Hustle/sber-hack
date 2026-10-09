@@ -42,3 +42,4 @@
 - 2026-10-08 · miroslavrov · docs: документы сервиса (ADR-034)
 - 2026-10-08 · KIRI4444 · feat: ACC-01/02/05/07/08 — Gradle-каркас, миграции, QrParser+QrVerifier, KioskController, DecisionEngine, JournalService (hash-chain), libs/common, 36 unit-тестов
 - 2026-10-08 · miroslavrov · fix(access): ревью #3 — QR по контракту (workerId, P1363), проверка подписи и гашение в пути прохода, челлендж в БД, направление сервером, REPEAT_SCAN, fail-closed, hash-chain под advisory lock, outbox + relay, проекции people, роли Keycloak, миграции чинятся, тесты
+- 2026-10-09 · miroslavrov · feat(access): ACC-06 service-токен (OAuth2 client-credentials, клиент svc-access) на клиентах face/people/shift; зона пункта пропуска из people (`/internal/people/checkpoints/{id}`) → NO_ZONE_PERMIT, zone_id в попытках и PassDecided

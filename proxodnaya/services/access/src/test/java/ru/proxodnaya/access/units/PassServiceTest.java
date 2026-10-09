@@ -54,7 +54,7 @@ class PassServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-10-10T09:30:00Z");
     private static final WorkerProfile PROFILE = new WorkerProfile("w1", "ACTIVE", "Иван Петров", "Монтажник", "СтройМонтаж",
-            Set.of("d1"), LocalDate.of(2027, 1, 1), Set.of());
+            Set.of("d1"), LocalDate.of(2027, 1, 1), Set.of("z1"));
 
     private final QrCheck qrCheck = mock(QrCheck.class);
     private final PassQueryService query = mock(PassQueryService.class);
@@ -89,7 +89,21 @@ class PassServiceTest {
         verify(challenges).create(saved.capture());
         assertThat(saved.getValue().direction()).isEqualTo(Direction.OUT);
         assertThat(saved.getValue().expiresAt()).isEqualTo(NOW.plusSeconds(10));
+        assertThat(saved.getValue().zoneId()).isEqualTo("z1");
         verify(recorder, never()).deny(any());
+    }
+
+    @Test
+    void scan_unknownCheckpoint_notFoundWithoutJournal() {
+        // given
+        validQr();
+        when(people.checkpointZone("cp1")).thenReturn(Optional.empty());
+        when(people.accessProfile("w1")).thenReturn(Optional.of(PROFILE));
+
+        // when / then
+        assertThatThrownBy(() -> service.scan("qr", "cp1")).isInstanceOf(NotFoundException.class);
+        verify(recorder, never()).deny(any());
+        verify(challenges, never()).create(any());
     }
 
     @Test
@@ -214,6 +228,7 @@ class PassServiceTest {
 
     private void validQr() {
         when(qrCheck.check("qr", NOW)).thenReturn(QrCheckResult.ok("w1", "d1", 100L));
+        when(people.checkpointZone("cp1")).thenReturn(Optional.of("z1"));
     }
 
     private void echoRecorder() {
@@ -221,7 +236,7 @@ class PassServiceTest {
     }
 
     private void pending(Direction direction, Instant expiresAt) {
-        when(challenges.take(token())).thenReturn(Optional.of(new PendingAttempt(token(), "w1", "d1", 100L, direction, "cp1",
+        when(challenges.take(token())).thenReturn(Optional.of(new PendingAttempt(token(), "w1", "d1", 100L, direction, "cp1", "z1",
                 ChallengeAction.BLINK, 3, NOW.minusSeconds(3), expiresAt)));
     }
 

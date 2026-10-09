@@ -16,6 +16,7 @@ import ru.proxodnaya.access.shared.ReasonCode;
  * @param id           попытка
  * @param ts           время решения (микросекунды)
  * @param checkpointId проходная
+ * @param zoneId       зона проходной ({@code null} — не определена)
  * @param direction    направление
  * @param workerId     владелец QR, если известен
  * @param deviceId     устройство, если известно
@@ -33,6 +34,7 @@ public record PassRecord(
         UUID id,
         Instant ts,
         String checkpointId,
+        String zoneId,
         Direction direction,
         String workerId,
         String deviceId,

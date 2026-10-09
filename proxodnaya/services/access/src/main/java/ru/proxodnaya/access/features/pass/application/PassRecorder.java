@@ -70,7 +70,7 @@ public class PassRecorder {
         payload.put("attemptId", rec.id().toString());
         payload.put("workerId", rec.workerId());
         payload.put("checkpointId", rec.checkpointId());
-        payload.put("zoneId", null);
+        payload.put("zoneId", rec.zoneId());
         payload.put("direction", rec.direction().name());
         payload.put("decision", rec.decision().name());
         payload.put("reasonCode", rec.code().name());
@@ -82,8 +82,8 @@ public class PassRecorder {
     private static PassRecord reused(PassRecord rec) {
         Map<String, Object> details = new LinkedHashMap<>(rec.details());
         details.put("computedCode", rec.code().name());
-        return new PassRecord(rec.id(), rec.ts(), rec.checkpointId(), rec.direction(), rec.workerId(), rec.deviceId(), rec.window(),
-                rec.faceScore(), rec.livenessOk(), rec.action(), Decision.DENY, ReasonCode.QR_REUSED, rec.latencyMs(),
-                rec.source(), details);
+        return new PassRecord(rec.id(), rec.ts(), rec.checkpointId(), rec.zoneId(), rec.direction(), rec.workerId(),
+                rec.deviceId(), rec.window(), rec.faceScore(), rec.livenessOk(), rec.action(), Decision.DENY, ReasonCode.QR_REUSED,
+                rec.latencyMs(), rec.source(), details);
     }
 }

@@ -67,6 +67,7 @@ public class JournalRepository {
                 .set(PASS_ATTEMPTS.ID, rec.id())
                 .set(PASS_ATTEMPTS.TS, rec.ts().atOffset(ZoneOffset.UTC))
                 .set(PASS_ATTEMPTS.CHECKPOINT_ID, rec.checkpointId())
+                .set(PASS_ATTEMPTS.ZONE_ID, rec.zoneId())
                 .set(PASS_ATTEMPTS.DIRECTION, rec.direction().name())
                 .set(PASS_ATTEMPTS.CLAIMED_WORKER_ID, rec.workerId())
                 .set(PASS_ATTEMPTS.DEVICE_ID, rec.deviceId())

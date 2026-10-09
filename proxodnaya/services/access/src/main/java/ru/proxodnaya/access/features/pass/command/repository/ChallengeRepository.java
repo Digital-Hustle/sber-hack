@@ -40,6 +40,7 @@ public class ChallengeRepository {
                 .set(ATTEMPT_CHALLENGES.QR_WINDOW, attempt.window())
                 .set(ATTEMPT_CHALLENGES.DIRECTION, attempt.direction().name())
                 .set(ATTEMPT_CHALLENGES.CHECKPOINT_ID, attempt.checkpointId())
+                .set(ATTEMPT_CHALLENGES.ZONE_ID, attempt.zoneId())
                 .set(ATTEMPT_CHALLENGES.ACTION, attempt.action().name())
                 .set(ATTEMPT_CHALLENGES.FRAMES_REQUIRED, attempt.framesRequired())
                 .set(ATTEMPT_CHALLENGES.STARTED_AT, attempt.startedAt().atOffset(ZoneOffset.UTC))
@@ -58,7 +59,8 @@ public class ChallengeRepository {
                 .where(ATTEMPT_CHALLENGES.TOKEN.eq(token))
                 .returning()
                 .fetchOptional(row -> new PendingAttempt(row.getToken(), row.getWorkerId(), row.getDeviceId(), row.getQrWindow(),
-                        Direction.valueOf(row.getDirection()), row.getCheckpointId(), ChallengeAction.valueOf(row.getAction()),
+                        Direction.valueOf(row.getDirection()), row.getCheckpointId(), row.getZoneId(),
+                        ChallengeAction.valueOf(row.getAction()),
                         row.getFramesRequired(), row.getStartedAt().toInstant(), row.getExpiresAt().toInstant()));
     }
 
