@@ -24,3 +24,4 @@
 
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
+- 2026-10-09 · subsidy-agent · GW-04/05: `limit/LimitFilter` после Spring Security — 413 PAYLOAD_TOO_LARGE по Content-Length (загрузки 512 МБ, прочее 1 МБ), 429 RATE_LIMITED + Retry-After (окно минута на пользователя: загрузки 30, помощник 20), счётчики в памяти; GW-01..03 закрыты по факту (маршруты, JWT, /internal → 404 уже были)

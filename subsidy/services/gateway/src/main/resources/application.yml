@@ -25,6 +25,11 @@ spring:
               predicates: [ "Path=/assistant/api/**" ]
               filters: [ "RewritePath=/assistant/(?<rest>.*), /$\\{rest}" ]
 app:
+  limits:
+    uploads-per-minute: ${RATE_UPLOADS_PER_MINUTE:30}
+    questions-per-minute: ${RATE_QUESTIONS_PER_MINUTE:20}
+    upload-max-mb: ${GATEWAY_UPLOAD_MAX_MB:512}
+    body-max-kb: ${GATEWAY_BODY_MAX_KB:1024}
   oidc:
     issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/subsidy}
     jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/subsidy/protocol/openid-connect/certs}
