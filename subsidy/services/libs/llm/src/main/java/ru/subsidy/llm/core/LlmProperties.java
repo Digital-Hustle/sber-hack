@@ -15,7 +15,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param timeout         таймаут одного вызова
  * @param maxConcurrency  одновременных вызовов
  * @param retries         повторов при сетевой ошибке
- * @param jsonMode        для openai: json_schema | json_object
+ * @param jsonMode        для openai: json_schema | json_object | none (без response_format)
  * @param gigachatAuthKey ключ авторизации GigaChat (Basic)
  * @param gigachatScope   scope GigaChat
  * @param gigachatAuthUrl адрес OAuth GigaChat

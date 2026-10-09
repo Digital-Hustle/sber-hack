@@ -23,6 +23,7 @@ LLM_BASE_URL=http://ollama:11434
 LLM_MODEL=qwen3:8b               # текст: классификация и извлечение
 LLM_VISION_MODEL=qwen2.5vl:7b    # картинка страницы, если OCR слабый (VISION_FALLBACK_ENABLED)
 LLM_API_KEY=                     # только для облака, только в .env
+LLM_JSON_MODE=json_schema        # openai: json_schema | json_object | none — что умеет провайдер
 LLM_TIMEOUT_SECONDS=60
 LLM_MAX_CONCURRENCY=2
 GIGACHAT_SCOPE=GIGACHAT_API_PERS
@@ -33,6 +34,19 @@ GIGACHAT_SCOPE=GIGACHAT_API_PERS
 |---|---|---|
 | **API** | разработка, стенд, CI-smoke, если дадут ключ | `LLM_PROVIDER=openai` (+ `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`) или `gigachat` |
 | **Локально (Д6)** | показ без интернета, проверка судьями | `LLM_PROVIDER=ollama` + `docker compose --profile llm-local up -d` |
+
+Пример API-режима (ключ — только в `infra/.env` на сервере, не в git):
+```
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.example.com/v1
+LLM_MODEL=qwen3.8-flash          # id из GET $LLM_BASE_URL/models
+LLM_VISION_MODEL=qwen3-vl-plus
+LLM_API_KEY=sk-…
+LLM_JSON_MODE=json_object        # если провайдер отклоняет response_format=json_schema
+LLM_TIMEOUT_SECONDS=120
+```
+Запуск без профиля `llm-local`: `docker compose up -d` — контейнер ollama не поднимается. Проверка ключа и модели: `curl -s $LLM_BASE_URL/models -H "Authorization: Bearer $LLM_API_KEY"`; бейдж в рабочем месте — «openai · <модель> · доступна».
+Совместимость `response_format` (проверено на шлюзе стенда): `json_schema` — qwen3.8-flash, glm-5.3-flash, qwen3-vl-plus; deepseek-v4-flash — только `json_object`. Ответ в любом режиме проверяется по JSON Schema кодом (ниже), так что `json_object` безопасен.
 
 OpenAI-совместимые: DeepSeek, Qwen (DashScope), GLM (Z.ai), vLLM. Требования к модели: русский язык, structured output / JSON mode, контекст ≥ 16k; для vision-пути — модель с картинками.
 

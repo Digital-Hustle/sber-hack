@@ -21,12 +21,15 @@
 | kafka (KRaft, 1 брокер) | 1 ГБ |
 | jaeger | 256 МБ |
 | ollama: `qwen3:8b` + `qwen2.5vl:7b` (профиль `llm-local`) | 12 ГБ |
-| **Итого** | **≈ 19–20 ГБ** |
+| **Итого** | **≈ 19–20 ГБ** (с моделью по API — ≈ 7–8 ГБ, ollama не нужен) |
 
 ## Подготовка сервера (B1, один раз)
 1. Пользователь `deploy`, SSH-ключ, `ufw allow 22,80,443`; Docker + compose plugin.
 2. `git clone` в `/opt/sber-hack` (нужна `subsidy/infra/`), `subsidy/scripts/gen-env.sh` на сервере, вписать хост и ключи моделей.
-3. `docker login ghcr.io` (read-only токен); `docker compose --profile llm-local up -d`; `scripts/smoke.sh https://<host>`.
+3. `docker login ghcr.io` (read-only токен); `scripts/smoke.sh https://<host>` после запуска:
+   - модель локально: `LLM_PROVIDER=ollama`, `docker compose --profile llm-local up -d`;
+   - модель по API (OpenAI-совместимый шлюз): `LLM_PROVIDER=openai` + `LLM_BASE_URL`/`LLM_MODEL`/`LLM_VISION_MODEL`/`LLM_API_KEY`/`LLM_JSON_MODE` в `infra/.env` (пример — `docs/LLM.md`), `docker compose up -d` без профиля.
+   Переключение — правка `.env` и `docker compose up -d docproc assistant`, пересборка не нужна.
 
 ## CI на сервере (основной, ADR-017)
 GitHub Actions сейчас не стартуют (биллинг аккаунта), поэтому те же шаги гоняет `/root/sub-ci/run.sh pr-N` на сервере (под `flock`, своя БД `sub-pg` на 5434) и ставит commit status `server-ci`. Мерж — при зелёном `server-ci`. Подробно — в handoff агентов и `docs/WORKFLOW.md`.

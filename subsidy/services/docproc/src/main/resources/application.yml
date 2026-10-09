@@ -57,6 +57,7 @@ app:
     model: ${LLM_MODEL:qwen3:8b}
     vision-model: ${LLM_VISION_MODEL:qwen2.5vl:7b}
     api-key: ${LLM_API_KEY}
+    json-mode: ${LLM_JSON_MODE:json_schema}
     timeout: ${LLM_TIMEOUT_SECONDS:120}s
     max-concurrency: ${LLM_MAX_CONCURRENCY:2}
     gigachat-auth-key: ${GIGACHAT_AUTH_KEY:}
