@@ -16,4 +16,4 @@
 | SH-10 | B-03 | Опоздания и переработки | B3 | review #60 (`/analytics/late-overtime`) |
 | SH-11 | B-01/B-05 | Heartbeat, оповещения: покинул геозону/нет связи, скопление в зоне | B3 | review #65 (геозона и лимит зоны — из env: в people нет координат и событий зон) |
 | SH-12 | B-07/B-08 | Отказы по причинам и нагрузка по часам | B3 | review #62 (`/analytics/refusals`, `/analytics/load-by-hour`) |
-| SH-13 | B-04 | Напоминание о невыходе через 30 мин после смены (SSE worker) | B3 | todo |
+| SH-13 | B-04 | Напоминание о невыходе через 30 мин после смены (SSE worker) | B3 | review #69 (SSE worker `reminder.exit`, одно на смену) |
