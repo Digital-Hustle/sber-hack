@@ -7,7 +7,8 @@
 - 25 правил в `engine/rules`, полнота — `completeness/CompletenessEngine`, параметры/чек-лист — таблица `programs` (DEMO-2026 в контексте `demo`).
 - Протокол создаётся только когда все файлы в терминальной стадии; новая версия — только при изменении фактов.
 - Liquibase contexts: прод `prod`, демо-стенд `prod,demo` (env `LIQUIBASE_CONTEXTS`).
-- Нет: ANOMALY_OUTLIER, SUM_WORDS (RUL-17), пересборка проекции (RUL-18).
+- RUL-17: SUM_WORDS (#56), ANOMALY_OUTLIER — фон программы из `stats/EstimateBaselineRepository` (SQL-агрегат), порт `engine/ProgramBaseline`. RULES_VERSION 2026.10-2.
+- Нет: пересборка проекции (RUL-18).
 
 ## 2. Карта модуля
 | Путь | Что |
@@ -38,3 +39,4 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
 - 2026-10-09 · agent · feat(rules): RUL-01..16 — проекция, 25 правил, полнота, протоколы, экспорт, история, статистика (#43)
+- 2026-10-09 · agent · feat(rules): RUL-17 ANOMALY_OUTLIER — статья сметы > средняя + 3σ по программе (≥ 20 пакетов)
