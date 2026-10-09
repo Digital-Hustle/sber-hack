@@ -1,0 +1,244 @@
+# Стенд «Документы»: docker compose up -d --build (локальная модель: --profile llm-local).
+# Наружу торчит только caddy (80/443). Все данные — в PostgreSQL (volume pgdata).
+name: documents
+
+x-java: &java
+  restart: unless-stopped
+  environment: &java-env
+    SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+    OIDC_ISSUER_URI: ${OIDC_ISSUER_URI}
+    OIDC_JWK_SET_URI: http://keycloak:8080/auth/realms/documents/protocol/openid-connect/certs
+    KC_TOKEN_URI: http://keycloak:8080/auth/realms/documents/protocol/openid-connect/token
+    OTLP_ENDPOINT: ${OTLP_ENDPOINT:-http://jaeger:4318/v1/traces}
+    DB_HOST: postgres
+    SITE_ZONE: ${SITE_ZONE:-Europe/Moscow}
+    JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
+  depends_on: &java-deps
+    postgres: { condition: service_healthy }
+    kafka: { condition: service_healthy }
+  healthcheck: &java-health
+    test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/$${SERVER_PORT}"]
+    interval: 10s
+    timeout: 3s
+    retries: 30
+    start_period: 40s
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      INTAKE_DB_PASSWORD: ${INTAKE_DB_PASSWORD}
+      DOCPROC_DB_PASSWORD: ${DOCPROC_DB_PASSWORD}
+      REVIEW_DB_PASSWORD: ${REVIEW_DB_PASSWORD}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  kafka:
+    image: apache/kafka:3.9.1
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_HEAP_OPTS: "-Xmx384m -Xms384m"
+    volumes:
+      - kafkadata:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    restart: unless-stopped
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HOSTNAME: https://${PUBLIC_HOST}/auth
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      KC_SVC_DOCPROC_SECRET: ${KC_SVC_DOCPROC_SECRET}
+      KC_SVC_REVIEW_SECRET: ${KC_SVC_REVIEW_SECRET}
+      EXPIRING_DAYS: ${EXPIRING_DAYS:-30}
+      FIELD_REVIEW_THRESHOLD: ${FIELD_REVIEW_THRESHOLD:-0.8}
+      KC_DEMO_OPERATOR_PASSWORD: ${KC_DEMO_OPERATOR_PASSWORD}
+      KC_DEMO_SENIOR_PASSWORD: ${KC_DEMO_SENIOR_PASSWORD}
+      KC_DEMO_AUDITOR_PASSWORD: ${KC_DEMO_AUDITOR_PASSWORD}
+      JAVA_OPTS_KC_HEAP: "-Xms256m -Xmx512m"
+    volumes:
+      - ./keycloak/realm-documents.json:/opt/keycloak/data/import/realm-documents.json:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /auth/health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  jaeger:
+    image: jaegertracing/jaeger:2.10.0
+    restart: unless-stopped
+
+  gateway:
+    <<: *java
+    build: { context: ../services, args: { SERVICE: gateway } }
+    image: documents/gateway:${IMAGE_TAG:-latest}
+    environment:
+      <<: *java-env
+      SERVER_PORT: 8080
+      INTAKE_URL: ${INTAKE_URL:-http://intake:8081}
+      DOCPROC_URL: ${DOCPROC_URL:-http://docproc:8082}
+      REVIEW_URL: ${REVIEW_URL:-http://review:8083}
+    depends_on:
+      keycloak: { condition: service_started }
+
+  intake:
+    <<: *java
+    build: { context: ../services, args: { SERVICE: intake } }
+    image: documents/intake:${IMAGE_TAG:-latest}
+    environment:
+      <<: *java-env
+      SERVER_PORT: 8081
+      DB_PASSWORD: ${INTAKE_DB_PASSWORD}
+      FILES_ENCRYPTION_KEY: ${FILES_ENCRYPTION_KEY}
+      ACCESS_KEY_PEPPER: ${ACCESS_KEY_PEPPER}
+      UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-20}
+      UPLOAD_MAX_PAGES: ${UPLOAD_MAX_PAGES:-20}
+      UPLOAD_MAX_FILES: ${UPLOAD_MAX_FILES:-40}
+      IMAGE_MIN_PX: ${IMAGE_MIN_PX:-600}
+      RESUME_CODE_MAX_ATTEMPTS: ${RESUME_CODE_MAX_ATTEMPTS:-5}
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+
+  ocr:
+    restart: unless-stopped
+    build: { context: ../services/ocr }
+    image: documents/ocr:${IMAGE_TAG:-latest}
+    environment:
+      OCR_LANGS: ${OCR_LANGS:-rus+eng}
+      OCR_DPI: ${OCR_DPI:-300}
+      OCR_MAX_PAGES: ${UPLOAD_MAX_PAGES:-20}
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI}
+      OIDC_JWK_SET_URI: http://keycloak:8080/auth/realms/documents/protocol/openid-connect/certs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  docproc:
+    <<: *java
+    build: { context: ../services, args: { SERVICE: docproc } }
+    image: documents/docproc:${IMAGE_TAG:-latest}
+    environment:
+      <<: *java-env
+      SERVER_PORT: 8082
+      DB_PASSWORD: ${DOCPROC_DB_PASSWORD}
+      INTAKE_URL: ${INTAKE_URL:-http://intake:8081}
+      OCR_URL: ${OCR_URL:-http://ocr:8000}
+      KC_SVC_DOCPROC_SECRET: ${KC_SVC_DOCPROC_SECRET}
+      DOCPROC_WORKERS: ${DOCPROC_WORKERS:-4}
+      JOB_LEASE: ${JOB_LEASE:-2m}
+      JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-5}
+      CLASSIFY_MIN_CONFIDENCE: ${CLASSIFY_MIN_CONFIDENCE:-0.6}
+      FIELD_REVIEW_THRESHOLD: ${FIELD_REVIEW_THRESHOLD:-0.8}
+      VISION_FALLBACK_ENABLED: ${VISION_FALLBACK_ENABLED:-false}
+      OCR_MIN_CONFIDENCE: ${OCR_MIN_CONFIDENCE:-55}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:8b}
+      LLM_VISION_MODEL: ${LLM_VISION_MODEL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_JSON_MODE: ${LLM_JSON_MODE:-json_schema}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+      LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-2}
+      GIGACHAT_AUTH_KEY: ${GIGACHAT_AUTH_KEY:-}
+      GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}
+    depends_on:
+      <<: *java-deps
+      ocr: { condition: service_started }
+
+  review:
+    <<: *java
+    build: { context: ../services, args: { SERVICE: review } }
+    image: documents/review:${IMAGE_TAG:-latest}
+    environment:
+      <<: *java-env
+      SERVER_PORT: 8083
+      DB_PASSWORD: ${REVIEW_DB_PASSWORD}
+      INTAKE_URL: ${INTAKE_URL:-http://intake:8081}
+      DOCPROC_URL: ${DOCPROC_URL:-http://docproc:8082}
+      KC_SVC_REVIEW_SECRET: ${KC_SVC_REVIEW_SECRET}
+      EXPIRING_DAYS: ${EXPIRING_DAYS:-30}
+      FIELD_REVIEW_THRESHOLD: ${FIELD_REVIEW_THRESHOLD:-0.8}
+
+  caddy:
+    build: { context: .., dockerfile: frontend/Dockerfile }
+    image: documents/caddy:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on: [gateway, keycloak]
+
+  ollama:
+    image: ollama/ollama:0.12.6
+    profiles: [llm-local]
+    restart: unless-stopped
+    volumes: [ollama-models:/root/.ollama]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  ollama-pull:
+    image: ollama/ollama:0.12.6
+    profiles: [llm-local]
+    entrypoint: ["/bin/sh", "/pull.sh"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      LLM_MODEL: ${LLM_MODEL:-qwen3:8b}
+      LLM_VISION_MODEL: ${LLM_VISION_MODEL:-}
+    volumes: [./ollama/pull.sh:/pull.sh:ro]
+    depends_on:
+      ollama: { condition: service_healthy }
+    restart: "no"
+
+volumes:
+  pgdata:
+  kafkadata:
+  caddydata:
+  ollama-models:

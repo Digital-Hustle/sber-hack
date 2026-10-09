@@ -1,0 +1,59 @@
+server:
+  port: ${SERVER_PORT:8083}
+spring:
+  application:
+    name: review
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:review}
+    username: ${DB_USER:review}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL:16}
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+    listener:
+      auto-startup: ${KAFKA_LISTENERS_ENABLED:true}
+  jackson:
+    default-property-inclusion: non_null
+  mvc:
+    async:
+      request-timeout: -1
+app:
+  oidc:
+    issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/documents}
+    jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/documents/protocol/openid-connect/certs}
+  outbox:
+    enabled: ${OUTBOX_ENABLED:true}
+  service-account:
+    token-uri: ${KC_TOKEN_URI:http://localhost:8180/auth/realms/documents/protocol/openid-connect/token}
+    client-id: svc-review
+    client-secret: ${KC_SVC_REVIEW_SECRET}
+  review:
+    intake-url: ${INTAKE_URL:http://localhost:8081}
+    docproc-url: ${DOCPROC_URL:http://localhost:8082}
+    expiring-days: ${EXPIRING_DAYS:30}
+    field-review-threshold: ${FIELD_REVIEW_THRESHOLD:0.8}
+    ticket-ttl: ${STREAM_TICKET_TTL:30s}
+    zone: ${SITE_ZONE:Europe/Moscow}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+logging:
+  structured:
+    format:
+      console: ecs

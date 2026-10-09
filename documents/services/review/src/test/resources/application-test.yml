@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/review
+    username: postgres
+    password: postgres
+  kafka:
+    listener:
+      auto-startup: false
+app:
+  outbox:
+    enabled: false
+  service-account:
+    client-secret: test-only
+management:
+  tracing:
+    enabled: false

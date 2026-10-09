@@ -39,6 +39,15 @@
 
 ### ADR-013 Процесс агентов: draft PR, handoff, локальный CI, мерж по делегированию ← P-ADR-014, 034, 035, 037
 
+### ADR-014 Доступ к БД — Spring JdbcClient вместо jOOQ codegen; сборка образов внутри docker
+jOOQ codegen требует живую БД во время сборки — тогда `docker compose up --build` с чистого клона невозможен (Д1). Берём `JdbcClient` (Spring, SQL как есть, параметры биндятся), схема — Liquibase formatted SQL, миграции применяются при старте сервиса. `services/Dockerfile` собирает jar внутри образа (multi-stage). Цена: нет типобезопасных таблиц — компенсируем интеграционными тестами на настоящем PostgreSQL (CI service container).
+
+### ADR-015 Профиль checkstyle на хакатоне
+Форматирование, импорты, отступы, длина строки, пустые catch, фигурные скобки, структура классов — ошибкой сборки. Стилистические метрики (javadoc на каждом методе, минимальная длина имён, «магические» числа, повтор строковых литералов, метрики сложности) — подавлены в `config/checkstyle/checkstyle-suppressions.xml`: их смотрит ревью, а не сборка. Правила `be-check.mjs` и `guard.sh` — без ослаблений.
+
+### ADR-016 Keycloak под путём /auth того же хоста
+Один сертификат и один origin для SPA, API и SSO: `https://<host>/auth` (`KC_HTTP_RELATIVE_PATH=/auth`, `KC_HOSTNAME=https://<host>/auth`). Сервисы проверяют подпись по JWKS из внутренней сети (`http://keycloak:8080/...`), а `iss` — по публичному адресу. Service accounts `svc-docproc`, `svc-review` получают роли `SERVICE_DOCPROC`/`SERVICE_REVIEW`, ими закрыты `/internal/**`.
+
 ## Лицензии зависимостей
 | Зависимость | Лицензия | Кто добавил |
 |---|---|---|
@@ -60,8 +69,12 @@
 | Ollama / Qwen3 / Qwen2.5-VL-7B | MIT / Apache-2.0 / Apache-2.0 | B3 |
 | Apache POI / Apache PDFBox | Apache-2.0 | B3 |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
-| oidc-client-ts | Apache-2.0 | F2 |
-| react-dropzone / react-pdf (pdf.js) | MIT / MIT (pdf.js Apache-2.0) | F1/F2 |
+| oidc-client-ts (вход оператора, PKCE) | Apache-2.0 | агент (FE-S-03) |
+| @tanstack/react-query (кэш запросов) | MIT | агент (FE-S-03) |
+| ~~react-dropzone / react-pdf (pdf.js)~~ — не понадобились: свой drop-слот, страницы PNG от intake | — | — |
 | Остальное фронта (компоненты реестров, иконки, шрифты) | как в `../../proxodnaya/docs/DECISIONS.md` | F2 |
 
 **Запрещено (п. 5.8.4):** PyMuPDF/fitz (AGPL), pdf2image + poppler-utils (GPL), ghostscript (AGPL), iText (AGPL), MinIO (AGPL), ClamAV в составе образа (GPL), Qwen2.5-VL-3B (research), любые веса «non-commercial».
+
+### ADR-017 Вес проверок для полей без проверок — 0.7
+В ADR-011 для поля, к которому нет ни одной детерминированной проверки (ФИО, место рождения), компонент checks = 0.3. На синтетике это отправляло почти каждый документ в NEEDS_REVIEW. Принято: `checksNotApplicable = 0.7` (настройка `app.docproc.confidence.checks-not-applicable`), проверка, которая упала, по-прежнему даёт 0. Значение пересматривается при калибровке (DP-16, EVAL.md).

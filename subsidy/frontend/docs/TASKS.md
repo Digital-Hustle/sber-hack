@@ -5,8 +5,8 @@
 ## Каркас и shared (F2) — первые 45 минут
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| FE-S-01 | — | Vite + React 19 + TS strict + Tailwind 4 + shadcn в эту папку, ESLint/Prettier, `gen:api`, `gen:tokens`, `typecheck` | F2 | todo |
-| FE-S-02 | — | `tokens.ts` + `motion.ts` из скилла, `gen:tokens`, шрифты SB Sans | F2 | todo |
+| FE-S-01 | — | Vite + React 19 + TS strict + Tailwind 4 + shadcn в эту папку, ESLint/Prettier, `gen:api`, `gen:tokens`, `typecheck` | F2 | done |
+| FE-S-02 | — | `tokens.ts` + `motion.ts` из скилла, `gen:tokens`, шрифты SB Sans | F2 | done |
 | FE-S-03 | FR-60/66 | `$api` (problem+json, refresh), `oidc-client-ts`, `RequireAuth`/`RequireRole`, роутер `/specialist` | F2 | todo |
 | FE-S-04 | — | `shared/ui`: Button, Input, Card, Badge, Dialog/Sheet, Select/Combobox, Tabs, Table, Toast, Skeleton, Empty/Error/Offline, Dropzone | F2 | todo |
 | FE-S-05 | FR-62 | `sse.ts` + `useEventStream`, `useOnline`, `ErrorBoundary`; entities Package, PackageFile, Document, ParsedField, Protocol, RuleResult; `shared/lib/money.ts` (только формат) | F2 | todo |

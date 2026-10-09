@@ -44,6 +44,9 @@ Kafka доставляет «файл принят», воркеры берут 
 
 ### ADR-015 Процесс агентов: draft PR, handoff, локальный CI, мерж по делегированию ← P-ADR-014, 034, 035, 037
 
+### ADR-016 Превью страниц рендерит package (PDFBox / ImageIO), кэш в `page_previews`
+Превью работает без ocr: не нужен сетевой хоп и передача расшифрованного файла. ocr `/v1/render` остаётся для тяжёлых сканов. PDFBox — Apache-2.0, в разрешённом списке.
+
 ## Лицензии зависимостей
 | Зависимость | Лицензия | Кто добавил |
 |---|---|---|
@@ -59,7 +62,7 @@ Kafka доставляет «файл принят», воркеры берут 
 | Tesseract 5 + tessdata `rus`, `eng` / pytesseract | Apache-2.0 | B2 |
 | networknt json-schema-validator | Apache-2.0 | B2 |
 | Ollama / Qwen3 / Qwen2.5-VL-7B | MIT / Apache-2.0 / Apache-2.0 | B3 |
-| Apache POI / Apache PDFBox | Apache-2.0 | B3 |
+| Apache POI / Apache PDFBox / TwelveMonkeys ImageIO | Apache-2.0 / Apache-2.0 / BSD-3 | B3 |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
 | oidc-client-ts / pdfjs-dist / react-dropzone / recharts | Apache-2.0 / Apache-2.0 / MIT / MIT | F1/F2 |
 | Остальное фронта (компоненты реестров, иконки, шрифты) | как в `../../proxodnaya/docs/DECISIONS.md` | F2 |

@@ -27,7 +27,26 @@
 ## Как запустить
 ```bash
 cd documents/eval
-uv run python run.py --set synthetic                   # CI
-EVAL_OPEN_DIR=~/datasets/documents-open uv run python run.py --set open --api https://<host>
+uv sync                                                 # Python ≥ 3.11, зависимости из uv.lock
+uv run python run.py --set synthetic                    # CI: проверка набора (файлы, разметка, контрольные суммы)
+uv run ruff check . && uv run pytest -q                 # CI: линтер и тесты метрик/генератора/прогона
+uv run python gen_synthetic.py                          # пересобрать синтетику (детерминированно, seed)
+
+# Полный замер через публичный API стенда
+EVAL_OPERATOR_TOKEN=<access_token оператора> uv run python run.py --set synthetic --api https://<host>
+EVAL_OPEN_DIR=~/datasets/documents-open EVAL_OPERATOR_TOKEN=... uv run python run.py --set open --api https://<host>
 ```
-`run.py` грузит файлы через **публичный API** (как соискатель), ждёт итоговую стадию и сравнивает поля оператора-API с разметкой — то есть меряем систему целиком, а не отдельную функцию.
+- `run.py` для каждого файла создаёт **отдельную заявку** как соискатель (`POST /intake/api/v1/applicant/applications`), грузит файл в «Другие документы» (без пункта — тип определяет система), ждёт итоговую стадию через кабинет соискателя и читает результат модели `GET /docproc/api/v1/documents/{id}/result` (до правок оператора). Меряем систему целиком, а не отдельную функцию.
+- Токен оператора: у клиента `documents-operator` нет выдачи по паролю (только PKCE), поэтому `access_token` берётся из сессии оператора (вкладка Network) и передаётся через `EVAL_OPERATOR_TOKEN`. В git и отчёты не попадает.
+- Открытый / свой набор: `EVAL_OPEN_DIR` / `EVAL_OWN_DIR` — каталог с файлами и `labels.jsonl` в том же формате.
+- Отчёт: `eval/reports/<дата>-<набор>.md` — итог, поля (precision/recall/«выдумано»), калибровка уверенности, категории (`degradation`/`category` из разметки), матрица ошибок типа, сбои прогона.
+
+## Синтетика (`eval/synthetic/`, `eval/labels/synthetic.jsonl`)
+- 28 файлов: по 3 на каждый из 8 видов (деградации по кругу: `clean`, `rotated`, `noisy`, `soft`) + 4 заведомо непригодных (`unreadable` — ожидается стадия `UNREADABLE`).
+- Люди, номера, организации — сгенерированы; СНИЛС, ИНН и MRZ — с верными контрольными цифрами. Признаки видов — из `DOC-TYPES.md`, не из открытого набора.
+- Разметка — нормализованные значения (даты ISO, ФИО в верхнем регистре). Сравнение тоже нормализует обе стороны (`docs_eval/metrics.normalize`): даты в любом из форматов → ISO, номера → только буквы и цифры, текст → верхний регистр, ё → е, без пунктуации.
+- Тест `test_committed_labels_match_generator` следит, чтобы разметка в git совпадала с генератором.
+
+## Ограничения
+- Синтетика чище реальных фото: высокая метрика на ней не обещает такую же на закрытом наборе — смотрим открытый и свой наборы.
+- Полный прогон через API в CI не запускается (нужен стенд и токен) — он идёт в smoke на main / вручную.

@@ -77,12 +77,9 @@ jobs:
         with: { distribution: temurin, java-version: '21' }
       - if: matrix.svc.kind == 'java'
         uses: gradle/actions/setup-gradle@v4
-      - name: БД сервиса + Liquibase + jOOQ
+      - name: БД сервиса (миграции Liquibase применяет сам сервис в тестах, ADR-014)
         if: matrix.svc.kind == 'java' && matrix.svc.db
-        working-directory: documents/services
-        run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "create database ${{ matrix.svc.name }}"
-          ./gradlew --no-daemon :${{ matrix.svc.name }}:update :${{ matrix.svc.name }}:generateJooq
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -c "create database ${{ matrix.svc.name }}"
       - name: check (компиляция, checkstyle, unit + integration, jacoco)
         if: matrix.svc.kind == 'java'
         working-directory: documents/services
@@ -105,6 +102,9 @@ jobs:
       # ---- Python (ocr) ----
       - if: matrix.svc.kind == 'python'
         uses: astral-sh/setup-uv@v6
+      - name: Tesseract (rus+eng)
+        if: matrix.svc.kind == 'python'
+        run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-rus fonts-liberation
       - name: ruff, mypy, pytest
         if: matrix.svc.kind == 'python'
         working-directory: documents/services/${{ matrix.svc.name }}

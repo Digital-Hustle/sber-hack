@@ -1,0 +1,9 @@
+<!DOCTYPE suppressions PUBLIC "-//Puppy Crawl//DTD Suppressions 1.1//EN" "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
+<suppressions>
+    <suppress files=".*[\\/]src[\\/].*test[\\/].*" checks="FileLength" />
+    <suppress files=".*.generated.*" checks="." />
+    <!-- ADR-015: профиль хакатона. Форматирование, импорты, безопасность и структура — строго;
+         стилистические метрики (javadoc у каждого метода, длина имён, «магические» числа, повтор строк,
+         сложность) — не блокируют сборку, их смотрит ревью. -->
+    <suppress files=".*" checks="JavadocMethod|MultipleStringLiterals|MagicNumber|LocalVariableName|ParameterName|LambdaParameterName|CatchParameterName|MemberName|ReturnCount|NPathComplexity|CyclomaticComplexity|ClassFanOutComplexity|ClassDataAbstractionCoupling|ExecutableStatementCount|JavaNCSS|MethodLength|IllegalCatch|InnerTypeLast|VariableDeclarationUsageDistance|MissingNullCaseInSwitch|ParameterNumber|BooleanExpressionComplexity|NestedIfDepth|TrailingComment|DeclarationOrder|SummaryJavadoc|JavadocStyle|AnonInnerLength|LambdaBodyLength|MethodCount|FileLength|HiddenField|RegexpSinglelineJava|DescendantToken|IllegalType|WhenShouldBeUsed|ConstructorsDeclarationGrouping" />
+</suppressions>
