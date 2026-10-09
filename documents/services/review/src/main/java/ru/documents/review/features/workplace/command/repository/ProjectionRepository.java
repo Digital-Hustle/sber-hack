@@ -87,9 +87,28 @@ public class ProjectionRepository {
         jdbc.sql("delete from field_overrides where document_id = ?").param(doc).update();
     }
 
-    /** DocumentRemoved. */
+    /** DocumentRemoved (NFR-10): кэш результата и правки оператора стираются. */
     public void removed(UUID doc, Instant now) {
-        jdbc.sql("update documents set removed = true, updated_at = ? where id = ?").params(RowMappers.ts(now), doc).update();
+        jdbc.sql("""
+                update documents set removed = true, result = null, result_id = null, reasons = null, expires_on = null,
+                    updated_at = ? where id = ?""").params(RowMappers.ts(now), doc).update();
+        jdbc.sql("delete from field_overrides where document_id = ?").param(doc).update();
+    }
+
+    /**
+     * ApplicationDeleted (NFR-10): все документы заявки сняты, ФИО и комментарии решений стёрты, статус DELETED.
+     * Не зависит от того, пришли ли уже DocumentRemoved по каждому документу.
+     */
+    public void deleted(UUID app, Instant now) {
+        jdbc.sql("delete from field_overrides where document_id in (select id from documents where application_id = ?)")
+                .param(app).update();
+        jdbc.sql("""
+                update documents set removed = true, result = null, result_id = null, reasons = null, expires_on = null,
+                    updated_at = ? where application_id = ?""").params(RowMappers.ts(now), app).update();
+        jdbc.sql("update decisions set comment = null where application_id = ?").param(app).update();
+        jdbc.sql("""
+                update applications set status = 'DELETED', applicant_name = null, missing = '[]'::jsonb, updated_at = ?
+                where id = ?""").params(RowMappers.ts(now), app).update();
     }
 
     /** StageChanged. */

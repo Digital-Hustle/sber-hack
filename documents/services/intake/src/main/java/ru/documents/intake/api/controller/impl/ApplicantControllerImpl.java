@@ -100,6 +100,12 @@ public class ApplicantControllerImpl implements ApplicantController {
     }
 
     @Override
+    public ResponseEntity<Void> deleteApplication(ApplicantPrincipal me, UUID id) {
+        commands.delete(own(me, id));
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
     public SubmitRs submit(ApplicantPrincipal me, UUID id) {
         return new SubmitRs("SUBMITTED", commands.submit(own(me, id)));
     }

@@ -86,6 +86,11 @@ public class ProjectionService {
                 history.add(app, doc, "applicant", HistoryWriter.APPLICANT, "DOCUMENT_REMOVED", Map.of());
                 derive(app);
             }
+            case "ApplicationDeleted" -> {
+                repo.deleted(app, now);
+                history.redact(app);
+                history.add(app, null, "applicant", HistoryWriter.APPLICANT, "APPLICATION_DELETED", Map.of());
+            }
             case "StageChanged" -> {
                 String stage = text(p, "stage");
                 repo.stage(doc, app, stage, text(p, "type"), text(p, "reasonCode"), now);
@@ -118,7 +123,7 @@ public class ProjectionService {
     @Transactional
     public void cache(UUID doc, JsonNode result) {
         Optional<DocRow> d = repo.doc(doc);
-        if (d.isEmpty()) {
+        if (d.isEmpty() || d.get().removed()) {
             return;
         }
         String type = result.hasNonNull("type") ? result.get("type").asText() : null;

@@ -42,7 +42,7 @@ intake/
 `applicants`, `applications(profile jsonb, status, access_key_hash, resume_code_hash)`, `documents(slot_type?, current_file_id, stage, detected_type?)`, `document_files(version, sha256, phash, mime, size, pages, content_enc, nonce)`, `doc_requirements(profile_rule jsonb, doc_type, required)`, `outbox`, `processed_events`.
 
 ## События
-Публикует `intake.application.v1` (`ApplicationCreated/ProfileChanged/Submitted`), `intake.document.v1` (`DocumentReceived/FileReplaced/DocumentRemoved`). Слушает `docproc.document.v1` (стадии, тип), `review.application.v1` (`ResubmitRequested`, `ApplicationDecided`).
+Публикует `intake.application.v1` (`ApplicationCreated/ProfileChanged/Submitted/ApplicationDeleted`), `intake.document.v1` (`DocumentReceived/FileReplaced/DocumentRemoved`). Слушает `docproc.document.v1` (стадии, тип), `review.application.v1` (`ResubmitRequested`, `ApplicationDecided`).
 
 ## Зависимости
 Keycloak (JWKS операторов и service accounts). Сам никого не вызывает синхронно.

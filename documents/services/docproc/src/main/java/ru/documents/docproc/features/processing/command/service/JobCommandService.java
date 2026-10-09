@@ -85,10 +85,15 @@ public class JobCommandService {
         stageChanged(doc, app, Stages.QUEUED, null, null, null);
     }
 
-    /** Документ удалён соискателем. */
+    /**
+     * Документ (или вся заявка) удалён соискателем (NFR-10): разбор отменён, текст, выходы стадий, результаты и поля
+     * стёрты. Остаются только стадии с длительностями (stage_events) и журнал вызовов модели — без ПДн.
+     */
     @Transactional
     public void removed(UUID doc) {
         jobs.cancel(doc, clock.instant());
+        outputs.deleteExcept(doc, List.of());
+        results.deleteAll(doc);
     }
 
     /** Разобрать заново (FR-30): прошлые результаты остаются в истории. */
