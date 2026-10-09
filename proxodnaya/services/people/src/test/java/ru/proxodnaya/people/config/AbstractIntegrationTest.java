@@ -62,6 +62,7 @@ public abstract class AbstractIntegrationTest {
     @DynamicPropertySource
     static void tokenKey(DynamicPropertyRegistry registry) {
         registry.add("people.tokens.signing-key", () -> SIGNING_KEY);
+        registry.add("people.shared-mail.token", () -> java.util.UUID.randomUUID().toString());
     }
 
     private static String signingKey() {

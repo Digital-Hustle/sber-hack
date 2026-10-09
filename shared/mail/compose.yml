@@ -1,0 +1,23 @@
+name: digital-hustle-mail
+services:
+  mail:
+    build: .
+    restart: unless-stopped
+    env_file: ${SHARED_MAIL_ENV_FILE:-/etc/digital-hustle/mail.env}
+    networks:
+      shared-mail:
+        aliases: [digital-hustle-mail]
+    ports: ["127.0.0.1:8390:8080"]
+    mem_limit: 128m
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+networks:
+  shared-mail:
+    name: digital-hustle-mail

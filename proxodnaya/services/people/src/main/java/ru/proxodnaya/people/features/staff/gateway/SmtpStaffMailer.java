@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -18,6 +19,7 @@ import ru.proxodnaya.people.config.properties.StaffProperties;
  * {@code STAFF_LOG_CODES=true} — это для локальной разработки, на стенде флаг выключен.
  */
 @Component
+@ConditionalOnProperty(name = "people.shared-mail.enabled", havingValue = "false", matchIfMissing = true)
 public class SmtpStaffMailer implements StaffMailer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SmtpStaffMailer.class);

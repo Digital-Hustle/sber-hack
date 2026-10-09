@@ -60,6 +60,11 @@ spring:
             token-uri: ${OIDC_TOKEN_URI:${OIDC_ISSUER_URI}/protocol/openid-connect/token}
 
 people:
+  shared-mail:
+    enabled: ${SHARED_MAIL_ENABLED:false}
+    url: ${SHARED_MAIL_URL:http://digital-hustle-mail:8080}
+    token: ${SHARED_MAIL_TOKEN}
+    timeout: 8s
   invite:
     ttl: ${INVITE_TTL:72h}
     pepper: ${INVITE_PEPPER}
@@ -86,7 +91,7 @@ people:
     max-attempts: 5
     access-ttl: ${STAFF_ACCESS_TTL:10m}
     session-ttl: 12h
-    login-url: ${PUBLIC_URL}/admin/login
+    login-url: ${PUBLIC_URL}/login
     mail-from: ${SMTP_FROM:Проходная <no-reply@proxodnaya.local>}
     bootstrap-email: ${STAFF_BOOTSTRAP_ADMIN_EMAIL:}
     log-codes: ${STAFF_LOG_CODES:false}
