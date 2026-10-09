@@ -4,14 +4,31 @@
 
 ## Быстрый старт (≤ 10 минут)
 ```bash
-git clone <repo> && cd <repo>/documents
-scripts/gen-env.sh               # infra/.env со случайными секретами; локальная модель: LLM_PROVIDER=ollama
+git clone https://github.com/Digital-Hustle/sber-hack && cd sber-hack/documents
+scripts/gen-env.sh               # infra/.env со случайными секретами; PUBLIC_HOST, локальная модель: LLM_PROVIDER=ollama
 cd infra && docker compose --profile llm-local up -d --build
 ```
-- Соискатель: `https://<host>/apply` → анкета → загрузка файлов, ссылка-ключ для возврата к заявке
-- Оператор: `https://<host>/operator` → вход через Keycloak (демо-оператор `operator` / `KC_DEMO_OPERATOR_PASSWORD`)
-- Keycloak: `https://auth.<host>`
-- Health: `https://<host>/actuator/health`, сервисы — внутри сети, `scripts/smoke.sh https://<host>`
+- Всё на одном домене за Caddy (`infra/caddy/Caddyfile`, образ — `frontend/Dockerfile`: статика фронта + reverse proxy).
+- Соискатель: `https://<host>/apply` → согласие → анкета → загрузка файлов (или камера телефона); ссылка-ключ `#k=…` и код возобновления — чтобы вернуться к заявке.
+- Оператор: `https://<host>/operator` → вход через Keycloak. Демо-пользователи (пароли — в `infra/.env`): `operator` (`KC_DEMO_OPERATOR_PASSWORD`), `senior` (`KC_DEMO_SENIOR_PASSWORD`), `auditor` (`KC_DEMO_AUDITOR_PASSWORD`). Сценарий — [docs/DEMO.md](docs/DEMO.md).
+- Keycloak: `https://<host>/auth` (realm `documents`).
+- Health: `https://<host>/actuator/health`, сервисы — внутри сети, `scripts/smoke.sh https://<host>`.
+
+## Проверки локально
+```bash
+cd documents/frontend && npm ci && npm run gen:api && npm run gen:tokens -- --check && npm run lint && npm run typecheck && npm run build && npm run fsd-check
+npm run build && npx vite preview --port 4173 & CHROME=$(which chromium) node scripts/smoke-ui.mjs   # скриншоты /tmp/e2e-*.png
+cd ../services && ./gradlew check                 # JDK 21; интеграционным тестам нужен PostgreSQL 16 (postgres/postgres, базы intake, docproc, review)
+cd ../eval && uv sync && uv run ruff check . && uv run pytest -q && uv run python run.py --set synthetic
+cd ../.. && git add -A documents && sh documents/scripts/guard.sh
+```
+Качество разбора на стенде: `EVAL_OPERATOR_TOKEN=… uv run python run.py --set synthetic --api https://<host>` ([docs/EVAL.md](docs/EVAL.md)).
+
+## Ограничения
+- Сервис review держит SSE-подписки в памяти процесса — запускать **в одном экземпляре** (то же для потоков intake).
+- Выгрузки — DOCX и XLSX, PDF нет.
+- DP-14 не сделан: многостраничный файл с несколькими документами не разбивается — каждый документ грузите отдельным файлом.
+- Вход оператора не переживает перезагрузку страницы (токены только в памяти); Keycloak пускает обратно по SSO без пароля.
 
 ## Документация
 | Файл | О чём |
@@ -24,7 +41,7 @@ cd infra && docker compose --profile llm-local up -d --build
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | схемы, сервисы, конвейер разбора, модель данных |
 | [docs/API.md](docs/API.md) | контракт, стадии и коды отказов |
 | [docs/LLM.md](docs/LLM.md) | слой модели и **инструкция по локальному провайдеру** |
-| [docs/EVAL.md](docs/EVAL.md) | как честно меряем качество разбора, без подгонки |
+| [docs/EVAL.md](docs/EVAL.md) · `eval/` | как честно меряем качество разбора, без подгонки; синтетика и `run.py` |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | журнал решений и лицензии |
 | [docs/SECURITY.md](docs/SECURITY.md) | вход, ПДн, модель угроз, аудит |
 | [docs/STACK.md](docs/STACK.md) · [docs/DEPLOY.md](docs/DEPLOY.md) | стек и лицензии, сервер и CI/CD |
