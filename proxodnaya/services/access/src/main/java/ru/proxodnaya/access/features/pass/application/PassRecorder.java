@@ -1,6 +1,7 @@
 package ru.proxodnaya.access.features.pass.application;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import ru.proxodnaya.access.features.pass.command.service.PresenceService;
 import ru.proxodnaya.access.features.pass.model.PassRecord;
 import ru.proxodnaya.access.features.qr.api.QrUses;
 import ru.proxodnaya.access.messaging.outbox.Outbox;
+import ru.proxodnaya.access.shared.AttemptSource;
 import ru.proxodnaya.access.shared.Decision;
 import ru.proxodnaya.access.shared.Direction;
 import ru.proxodnaya.access.shared.ReasonCode;
@@ -86,11 +88,33 @@ public class PassRecorder {
         return record;
     }
 
+    /**
+     * Фиксирует историю симулятора (FR-34, ADR-007): журнал и {@code access.pass.v1} с {@code source = SIMULATOR}, как у
+     * реальных проходов, но присутствие не трогается — симулятор не может «впустить» или «выпустить» живого человека.
+     *
+     * @param records попытки по времени, {@code source = SIMULATOR}
+     * @throws IllegalArgumentException если среди них не симулятор
+     */
+    @Transactional
+    public void simulated(List<PassRecord> records) {
+        for (PassRecord rec : records) {
+            if (rec.source() != AttemptSource.SIMULATOR) {
+                throw new IllegalArgumentException("не симулятор: " + rec.id());
+            }
+            journal.append(rec);
+            publish(rec);
+        }
+    }
+
     private void write(PassRecord rec) {
         journal.append(rec);
         if (rec.decision() == Decision.ALLOW || rec.decision() == Decision.MANUAL) {
             presence.apply(rec.workerId(), rec.direction(), rec.ts());
         }
+        publish(rec);
+    }
+
+    private void publish(PassRecord rec) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("attemptId", rec.id().toString());
         payload.put("workerId", rec.workerId());

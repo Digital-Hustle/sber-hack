@@ -196,7 +196,7 @@ public class PipelineRunner {
             return List.of();
         }
         boolean missing = pages.stream().filter(page -> page.page() >= fromPage && page.page() <= toPage)
-                .anyMatch(page -> !page.hasText());
+                .anyMatch(PageText::needsImage);
         return missing ? texts.images(content.get(), job.mime(), fromPage, toPage) : new ArrayList<>();
     }
 

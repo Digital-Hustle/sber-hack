@@ -13,6 +13,7 @@ public final class PathConstants {
     public static final String WORKER_ATTEMPTS = API_V1 + "/worker/attempts";
     public static final String SECURITY = API_V1 + "/security";
     public static final String JOURNAL_VERIFY = "/journal/verify";
+    public static final String SIMULATOR_RUNS = API_V1 + "/simulator/runs";
 
     private PathConstants() {
     }

@@ -17,6 +17,6 @@
 | DP-11 | FR-29 | `PUT /documents/{id}/type` → переизвлечение, история результатов | B2 | done |
 | DP-12 | FR-32 | Таблицы позиций (pdfplumber tables / строки по bbox) | B2 | done #67 |
 | DP-13 | FR-34/53 | `parse_results` с версиями, `llm_calls`, `/model/status` | B2 | done |
-| DP-14 | FR-26 | Vision-путь при слабом OCR + замер | B2 | todo |
+| DP-14 | FR-26 | Vision-путь при слабом OCR + замер | B2 | partial #81: OCR_WEAK по meanConf → картинка модели; замер на открытом наборе — на стенде |
 | DP-15 | B-08 | Калибровка уверенности типа на открытом наборе, отчёт | B2 | blocked: открытого набора нет ни в репо, ни на сервере; инструмент готов — метрика `docproc_type_confidence` (#80) + `eval/run.py` |
 | DP-16 | NFR-07 | Метрики стадий и уверенности | B2 | done #80 |

@@ -60,6 +60,11 @@ access:
     people-url: ${PEOPLE_URL:http://people:8081}
     shift-url: ${SHIFT_URL:http://shift:8083}
     timeout: ${DEPS_TIMEOUT:1500ms}
+  # демо-история (FR-34): source=SIMULATOR, аналитика по умолчанию её исключает; с реальными людьми — выключить
+  simulator:
+    enabled: ${SIMULATOR_ENABLED:true}
+    max-workers: 50
+    max-days: 30
 
 server:
   port: 8082
