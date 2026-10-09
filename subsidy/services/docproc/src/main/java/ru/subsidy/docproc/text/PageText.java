@@ -20,15 +20,6 @@ public record PageText(int page, String text, String source, String tables) {
     public static final String NONE = "NONE";
 
     /**
-     * Есть ли на странице текст.
-     *
-     * @return true, если текст не пустой
-     */
-    public boolean hasText() {
-        return !NONE.equals(source) && text != null && !text.isBlank();
-    }
-
-    /**
      * Страница без таблиц.
      *
      * @param page номер
@@ -37,6 +28,15 @@ public record PageText(int page, String text, String source, String tables) {
      */
     public PageText(int page, String text, String source) {
         this(page, text, source, null);
+    }
+
+    /**
+     * Есть ли на странице текст.
+     *
+     * @return true, если текст не пустой
+     */
+    public boolean hasText() {
+        return !NONE.equals(source) && text != null && !text.isBlank();
     }
 
     /**
