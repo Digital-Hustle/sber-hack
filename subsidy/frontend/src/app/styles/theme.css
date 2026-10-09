@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
+:root, .light {
   --background: #E2F5E9;
   --foreground: #172419;
   --card: #FFFFFF;
@@ -141,6 +141,8 @@
   --elev-pop: inset 0 0 0 1px rgb(255 255 255 / 0.07), 0 28px 64px -16px rgb(0 0 0 / 0.8);
   --elev-glow: 0 12px 34px -8px rgb(63 200 106 / 0.4);
   --elev-scrim: 0 0 0 100vmax rgb(0 0 0 / 0.6);
+  --gradient-page: var(--gradient-page-dark);
+  --gradient-glow: var(--gradient-glow-dark);
 }
 
 @theme {
@@ -184,6 +186,7 @@
   --text-5xl--line-height: 62px;
   --text-6xl: 72px;
   --text-6xl--line-height: 76px;
+  --radius-2xs: 6px;
   --radius-xs: 10px;
   --radius-sm: 14px;
   --radius-md: 18px;
@@ -212,6 +215,9 @@
   --color-sber-cyan: #32B8D3;
   --color-sber-deep: #0B5E2A;
   --color-sber-ocean: #0A4F6B;
+  --tracking-display: -0.03em;
+  --tracking-hero: -0.055em;
+  --tracking-caps: 0.06em;
 }
 
 @theme inline {
@@ -294,6 +300,14 @@
   transition-duration: 450ms;
 }
 
+@utility duration-draw {
+  transition-duration: 420ms;
+}
+
+@utility duration-zoom {
+  transition-duration: 630ms;
+}
+
 @utility duration-loop {
   transition-duration: 2400ms;
 }
@@ -346,8 +360,31 @@
   background-image: var(--gradient-brand);
 }
 
-@utility bg-brand-gradient-conic {
+@utility bg-glow {
+  background-image: var(--gradient-glow);
+}
+
+@utility bg-brand-deep {
+  background-image: var(--gradient-brand-deep);
+}
+
+@utility bg-brand-conic {
   background-image: var(--gradient-brand-conic);
+}
+
+@utility bg-sheen {
+  background-image: var(--gradient-sheen);
+}
+
+@utility bg-vignette {
+  background-image: var(--gradient-vignette);
+}
+
+/* фон страниц: мятный градиент Сбера, не уезжает при прокрутке */
+@utility bg-page {
+  background-color: var(--background);
+  background-image: var(--gradient-page);
+  background-attachment: fixed;
 }
 
 @utility text-brand-gradient {
@@ -356,15 +393,52 @@
   color: transparent;
 }
 
+/* шторка: не выше экрана с учётом выреза */
+@utility max-h-sheet {
+  max-height: calc(100dvh - 16px - env(safe-area-inset-top));
+}
+
+/* место под нижнюю навигацию телефона */
+@utility pb-nav {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+/* чат помощника на всю доступную высоту */
+@utility h-chat {
+  height: calc(100dvh - 248px - env(safe-area-inset-bottom));
+  min-height: 420px;
+  @media (width >= 64rem) {
+    height: calc(100dvh - 216px);
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   * { @apply border-border outline-ring/50; }
-  html { -webkit-tap-highlight-color: transparent; }
+  /* фон html = фон темы: никаких чёрных полос под вырезом и при оттягивании страницы */
+  html { -webkit-tap-highlight-color: transparent; background-color: var(--background); }
+  /* место под полосу прокрутки зарезервировано всегда: центровка не прыгает между страницами и при открытии модалки */
+  html { scrollbar-gutter: stable; }
+  /* смена темы: плавный перелив через View Transitions */
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 450ms; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  /* органичные скругления: суперэллипс вместо дуги окружности (Chrome 139+, остальные — обычный радиус) */
+  @supports (corner-shape: squircle) {
+    [class*="rounded-"]:not(.rounded-full) { corner-shape: squircle; }
+  }
   body {
-    @apply bg-background text-foreground font-sans text-sm antialiased;
+    @apply bg-page text-foreground font-sans text-sm antialiased;
     font-feature-settings: "tnum" 1; /* табличные цифры: время, счётчики, табель */
   }
-  h1, h2, h3 { @apply font-display font-semibold; }
-  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  h1, h2, h3 { @apply font-display font-semibold; letter-spacing: -0.03em; }
+  input, select, textarea, button { font: inherit; }
+  ::selection { background: var(--success-soft); color: var(--success-soft-foreground); }
+  * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
   @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after { transition-duration: 0ms !important; scroll-behavior: auto !important; }
   }

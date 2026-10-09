@@ -61,16 +61,56 @@ export const mainRole = (roles: Role[]): Role | null =>
   roles.includes("SENIOR_SPECIALIST") ? "SENIOR_SPECIALIST" : roles.includes("SPECIALIST") ? "SPECIALIST" : roles.includes("AUDITOR") ? "AUDITOR" : null;
 export const roleLabel = (r: Role | null) => (r ? LABEL[r] : "нет роли");
 
-/** Каждый запрос — с Bearer-токеном; 401 → сессия сброшена, RequireAuth уведёт на вход. */
+/**
+ * Тихий вход при открытии вкладки: токены живут только в памяти, но сессия Keycloak (cookie) жива —
+ * один редирект с prompt=none возвращает токены без формы входа. Не вышло (login_required) — показываем вход.
+ * Неудачная попытка запоминается до следующего успешного входа, чтобы не зациклиться.
+ */
+const SSO_TRIED = "subsidy.sso";
+const NEXT = "subsidy.next";
+const trySilent = () => {
+  if (sessionStorage.getItem(SSO_TRIED)) return false;
+  sessionStorage.setItem(SSO_TRIED, "1");
+  sessionStorage.setItem(NEXT, location.pathname + location.search);
+  void userManager.signinRedirect({ prompt: "none", state: { next: location.pathname + location.search } });
+  return true;
+};
+
+/** Токен, которому осталось жить меньше этого, обновляем до запроса (фоновые вкладки пропускают таймер автообновления). */
+const REFRESH_AHEAD_S = 20;
+let refreshing: Promise<User | null> | null = null;
+const fresh = async (): Promise<User | null> => {
+  const u = state.user;
+  if (!u) return null;
+  if (!u.expired && (u.expires_in ?? 0) > REFRESH_AHEAD_S) return u;
+  refreshing ??= userManager.signinSilent().catch(() => null).finally(() => { refreshing = null; });
+  return refreshing;
+};
+const bearer = async () => {
+  const u = await fresh();
+  return u && !u.expired ? `Bearer ${u.access_token}` : null;
+};
+const unauthorized = () => { if (state.user?.expired) void userManager.removeUser(); };
+
+/**
+ * Каждый запрос — с Bearer-токеном; 401 → сессия сброшена, оболочка покажет вход.
+ * Источник токена ставим синхронно при рендере оболочки — до того, как дочерние страницы начнут запросы
+ * (эффекты детей выполняются раньше эффектов родителя, иначе первые запросы уходили без токена и получали 401).
+ */
 export const useSpecialistAuth = () => {
+  setAuth(bearer, unauthorized);
   useEffect(() => {
-    setAuth(() => (state.user && !state.user.expired ? `Bearer ${state.user.access_token}` : null), () => {
-      if (state.user?.expired) void userManager.removeUser();
-    });
     if (!state.ready) {
-      userManager.getUser().then((u) => set({ user: u && !u.expired ? u : null, ready: true })).catch(() => set({ ready: true }));
+      userManager.getUser()
+        .then((u) => (u && !u.expired ? set({ user: u, ready: true }) : trySilent() || set({ user: null, ready: true })))
+        .catch(() => set({ ready: true }));
     }
   }, []);
+};
+
+const signedIn = (u: User) => {
+  sessionStorage.removeItem(SSO_TRIED); // вошли — при следующей перезагрузке снова можно тихо
+  set({ user: u, ready: true });
 };
 
 export const useSession = () => {
@@ -95,8 +135,18 @@ export const useSession = () => {
 
 /** Возврат из Keycloak: обмен кода на токены, затем — туда, откуда ушли на вход. */
 export const completeSignIn = async (): Promise<string> => {
-  const u = await userManager.signinRedirectCallback();
-  set({ user: u, ready: true });
+  let u: User;
+  try {
+    u = await userManager.signinRedirectCallback();
+  } catch (e) {
+    // тихий вход не удался (нет сессии Keycloak) — это не ошибка: обратно, там покажется форма входа
+    if ((e as { error?: string }).error === "login_required") {
+      set({ user: null, ready: true });
+      return sessionStorage.getItem(NEXT) ?? routes.packages;
+    }
+    throw e;
+  }
+  signedIn(u);
   const next = (u.state as { next?: string } | undefined)?.next;
   return next && next.startsWith(routes.specialist) && next !== routes.callback ? next : routes.packages;
 };

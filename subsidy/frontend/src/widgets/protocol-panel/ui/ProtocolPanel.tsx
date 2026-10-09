@@ -45,7 +45,7 @@ const Result = ({ r, onEvidence }: { r: RuleResult; onEvidence: (documentId: str
   return (
     <li className="flex flex-col gap-1 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Status tone={v.tone} dot>{v.label}</Status>
+        <Status tone={v.tone}>{v.label}</Status>
         <span className="text-xs text-muted-foreground">{r.rule}</span>
       </div>
       <p className="text-sm">{r.message}</p>

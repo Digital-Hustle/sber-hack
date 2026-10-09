@@ -74,6 +74,8 @@ done
 REPO=$(git rev-parse --show-toplevel)
 [ -f services/settings.gradle.kts ] && { node "$REPO/.agents/skills/backend-spring/scripts/be-check.mjs" services >/dev/null || F "be-check: нарушены правила backend-spring (запусти его без >/dev/null)"; }
 GEN="$REPO/.agents/skills/frontend-fsd/scripts/gen-tokens.mjs"
+# у фронта кейса свой генератор (версия песочницы: градиенты тёмной темы, утилиты bg-page/pb-nav) — проверяем им
+[ -f frontend/scripts/gen-tokens.mjs ] && GEN="$CASE/frontend/scripts/gen-tokens.mjs"
 if node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=6)?0:1)' 2>/dev/null; then
   if [ -f frontend/src/shared/config/tokens.ts ]; then
     (cd frontend && node --experimental-strip-types --no-warnings "$GEN" src/shared/config/tokens.ts --css src/app/styles/theme.css --md docs/DESIGN.md --check >/dev/null) \

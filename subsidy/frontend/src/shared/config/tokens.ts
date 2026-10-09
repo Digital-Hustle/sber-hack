@@ -218,7 +218,7 @@ export const control = { xs: 32, sm: 36, md: 44, lg: 52, xl: 64 } as const;
  * Радиусы (px). Крупнее, чем у Сбера, потому что все скругления — суперэллипс (corner-shape: squircle, см. squircle в gen-tokens):
  * он визуально «съедает» ~30 % радиуса и даёт органичную плавную форму. Вложенный = внешний − отступ.
  */
-export const radius = { xs: 10, sm: 14, md: 18, lg: 26, xl: 34, "2xl": 44, "3xl": 56 } as const;
+export const radius = { "2xs": 6, xs: 10, sm: 14, md: 18, lg: 26, xl: 34, "2xl": 44, "3xl": 56 } as const;
 
 /** Суперэллипс для всех скруглений (кроме rounded-full). 2 = squircle. */
 export const cornerShape = "squircle" as const;
@@ -259,6 +259,8 @@ export const motion = {
     fast: 0.2,
     base: 0.3,
     slow: 0.45,
+    draw: 0.42,    // прорисовка галочки по контуру (pathLength)
+    zoom: 0.63,    // медленное приближение картинки при наведении
     loop: 2.4,     // зацикленные подсказки (сканер, челлендж)
   },
   spring: {
@@ -269,6 +271,8 @@ export const motion = {
     sheet: { type: "spring", bounce: 0.16, visualDuration: 0.42 },        // шторка, модалка
     page: { type: "spring", bounce: 0.18, visualDuration: 0.45 },         // смена страницы
     bar: { type: "spring", bounce: 0.3, visualDuration: 0.7 },            // полосы прогресса, графики
+    hover: { type: "spring", bounce: 0, visualDuration: 0.35 },           // наведение: без отскока, иначе карточка «дрожит»
+    glide: { type: "spring", bounce: 0.12, visualDuration: 0.4 },         // выбор дня, перетекание подсветки, высота карточки
     counter: { stiffness: 110, damping: 13, mass: 0.9 },                  // useSpring для счётчиков: заметный перелёт
   },
   stagger: { step: 0.045, max: 0.3 },
@@ -276,8 +280,8 @@ export const motion = {
   aurora: { speed: 0.06, resolution: 0.5 },
   /** Сжатие шапки при прокрутке */
   header: { shrinkAt: 24 },
-  distance: { enter: 14, exit: 8 },
-  scale: { hover: 1.015, tap: 0.96, popIn: 0.94, popOut: 0.98 },
+  distance: { enter: 14, exit: 8, lift: 4, slide: 28 }, // slide — сдвиг при смене месяца
+  scale: { hover: 1.015, zoom: 1.04, tap: 0.96, popIn: 0.94, popOut: 0.98 },
   swipe: { offset: 96, velocity: 500 },
   kiosk: {
     resultHoldMs: 4000, challengeTimeoutMs: 10000,
@@ -285,6 +289,8 @@ export const motion = {
     motion: { sampleMs: 200, holdMs: 6000, pixelDelta: 26, ratio: 0.02, width: 64, height: 48 },
   },
   toast: { durationMs: 3600, errorDurationMs: 6000 },
+  /** Съёмка лица в профиле: длительность скана (кольцо заполняется ровно за это время) и пауза на «галочке» перед просмотром */
+  face: { scanMs: 3600, successHoldMs: 900 },
 } as const;
 
 /** Ссылка на CSS-переменную для мест, где нужен цвет строкой (recharts, canvas, SVG). */

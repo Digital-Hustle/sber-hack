@@ -4,7 +4,7 @@ import type { PackageStatus, ProtocolStatus } from "../model/types";
 
 export const PackageStatusBadge = ({ status }: { status: PackageStatus }) => {
   const v = PACKAGE_STATUS[status] ?? { label: status, tone: "neutral" as const };
-  return <Status tone={v.tone} dot>{v.label}</Status>;
+  return <Status tone={v.tone}>{v.label}</Status>;
 };
 
 export const ProtocolStatusBadge = ({ status }: { status: ProtocolStatus | null | undefined }) => {
