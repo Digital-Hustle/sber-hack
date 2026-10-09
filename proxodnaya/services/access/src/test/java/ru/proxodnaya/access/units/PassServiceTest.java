@@ -171,7 +171,7 @@ class PassServiceTest {
         when(face.verify(eq("w1"), anyList(), any())).thenReturn(new FaceResult(true, 0.9, true, 0.8, null));
         when(people.accessProfile("w1")).thenReturn(Optional.of(PROFILE));
         when(shift.activeShift("w1", NOW)).thenReturn(Optional.of(new ActiveShift("s1", NOW, NOW, true)));
-        when(recorder.finish(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(recorder.finish(any(), any())).thenAnswer(inv -> inv.getArgument(0));
 
         // when
         PassOutcome outcome = service.submitFrames(token(), List.of("a", "b", "c"));
@@ -191,7 +191,7 @@ class PassServiceTest {
         });
         when(people.accessProfile("w1")).thenReturn(Optional.of(PROFILE));
         ArgumentCaptor<PassRecord> rec = ArgumentCaptor.forClass(PassRecord.class);
-        when(recorder.finish(rec.capture())).thenAnswer(inv -> inv.getArgument(0));
+        when(recorder.finish(rec.capture(), any())).thenAnswer(inv -> inv.getArgument(0));
 
         // when
         PassOutcome outcome = service.submitFrames(token(), List.of("a", "b", "c"));
@@ -213,7 +213,7 @@ class PassServiceTest {
 
         // then
         assertThat(outcome.code()).isEqualTo(ReasonCode.CHALLENGE_EXPIRED);
-        verify(recorder, never()).finish(any());
+        verify(recorder, never()).finish(any(), any());
         verify(face, never()).verify(anyString(), anyList(), any());
     }
 

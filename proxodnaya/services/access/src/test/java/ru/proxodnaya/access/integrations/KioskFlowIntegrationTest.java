@@ -43,6 +43,7 @@ class KioskFlowIntegrationTest extends AbstractIntegrationTest {
 
     private static final String SCAN = "/api/v1/kiosk/attempts";
     private static final String FRAMES = "/frames";
+    private static final long NEXT_WINDOW_SECONDS = 30;
 
     @MockitoBean
     private FaceGateway face;
@@ -110,6 +111,30 @@ class KioskFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.decision").value("DENY"))
                 .andExpect(jsonPath("$.code").value("NO_ZONE_PERMIT"));
+    }
+
+    @Test
+    void frames_zoneAtCapacity_zoneFull_thenFreeAfterExit() throws Exception {
+        // given: в зоне на одно место уже стоит другой человек
+        String zone = "zone-" + workerId;
+        when(people.checkpointZone(any())).thenReturn(Optional.of(zone));
+        when(people.zoneCapacity(any())).thenReturn(Optional.of(1));
+        when(people.accessProfile(workerId)).thenReturn(Optional.of(new WorkerProfile(workerId, "ACTIVE", "Пётр Иванов",
+                "Монтажник", "СтройМонтаж", Set.of(deviceId), LocalDate.now().plusYears(1), Set.of(zone))));
+        jdbc.update("insert into worker_state (worker_id, inside, zone_id, last_in_at, updated_at) values (?, true, ?, now(), now())",
+                "other-" + workerId, zone);
+
+        // when / then
+        mockMvc.perform(guard(post(SCAN + "/" + token(qrNow()) + FRAMES)).content(framesBody()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.decision").value("DENY"))
+                .andExpect(jsonPath("$.code").value("ZONE_FULL"));
+        assertThat(jdbc.queryForObject("select count(*) from worker_state where worker_id = ? and inside", Integer.class, workerId))
+                .isZero();
+        jdbc.update("update worker_state set inside = false where worker_id = ?", "other-" + workerId);
+        mockMvc.perform(guard(post(SCAN + "/" + token(qrNext()) + FRAMES)).content(framesBody()))
+                .andExpect(jsonPath("$.decision").value("ALLOW"));
+        assertThat(jdbc.queryForObject("select zone_id from worker_state where worker_id = ?", String.class, workerId)).isEqualTo(zone);
     }
 
     @Test
@@ -218,6 +243,10 @@ class KioskFlowIntegrationTest extends AbstractIntegrationTest {
 
     private String qrNow() {
         return keys.qr(workerId, deviceId, TestKeys.window(Instant.now()));
+    }
+
+    private String qrNext() {
+        return keys.qr(workerId, deviceId, TestKeys.window(Instant.now().plusSeconds(NEXT_WINDOW_SECONDS)));
     }
 
     private String token(String passQr) throws Exception {

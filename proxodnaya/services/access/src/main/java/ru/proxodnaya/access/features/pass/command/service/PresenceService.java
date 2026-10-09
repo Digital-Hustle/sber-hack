@@ -46,16 +46,34 @@ public class PresenceService implements WorkerStatusProjection {
     }
 
     /**
+     * Заполнена ли зона (FR-08, ACC-17): под блокировкой зоны до конца транзакции считает, сколько человек внутри,
+     * кроме входящего. Блокировка держится до коммита, поэтому параллельный вход увидит уже записанный.
+     *
+     * @param zoneId   зона
+     * @param capacity вместимость
+     * @param workerId входящий
+     * @param moment   момент прохода
+     * @param ttl      сколько считаем человека внутри после входа
+     * @return {@code true}, если мест нет
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean zoneFull(String zoneId, int capacity, String workerId, Instant moment, Duration ttl) {
+        repository.lockZone(zoneId);
+        return repository.insideZone(zoneId, moment.minus(ttl), workerId) >= capacity;
+    }
+
+    /**
      * Отмечает проход. Только в транзакции решения.
      *
      * @param workerId  рабочий
+     * @param zoneId    зона прохода
      * @param direction направление
-     * @param moment        время
+     * @param moment    время
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void apply(String workerId, Direction direction, Instant moment) {
+    public void apply(String workerId, String zoneId, Direction direction, Instant moment) {
         if (direction == Direction.IN) {
-            repository.markIn(workerId, moment);
+            repository.markIn(workerId, zoneId, moment);
         } else {
             repository.markOut(workerId, moment);
         }

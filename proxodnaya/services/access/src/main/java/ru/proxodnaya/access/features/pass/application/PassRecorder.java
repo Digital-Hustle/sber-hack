@@ -48,13 +48,17 @@ public class PassRecorder {
      * киоске. Пропуск сверяется с присутствием под блокировкой: вход того, кто уже внутри, — {@code ALREADY_INSIDE},
      * выход того, кто уже вышел, — {@code NOT_INSIDE}. Присутствие при этом не меняется.</p>
      *
-     * @param record итог, посчитанный DecisionEngine
+     * <p>Вместимость (FR-08, ACC-17): вход в зону с {@code capacity} сверяется со счётчиком «внутри» под блокировкой зоны;
+     * мест нет — {@code ZONE_FULL}. Порядок блокировок: QR → присутствие → зона → журнал.</p>
+     *
+     * @param record   итог, посчитанный DecisionEngine
+     * @param capacity вместимость зоны или {@code null} — без ограничения
      * @return записанный итог
      */
     @Transactional
-    public PassRecord finish(PassRecord record) {
+    public PassRecord finish(PassRecord record, Integer capacity) {
         boolean consumed = qrUses.consume(record.deviceId(), record.window(), record.id(), record.ts());
-        PassRecord result = consumed ? passback(record) : replaced(record, ReasonCode.QR_REUSED);
+        PassRecord result = consumed ? passback(record, capacity) : replaced(record, ReasonCode.QR_REUSED);
         write(result);
         return result;
     }
@@ -109,7 +113,7 @@ public class PassRecorder {
     private void write(PassRecord rec) {
         journal.append(rec);
         if (rec.decision() == Decision.ALLOW || rec.decision() == Decision.MANUAL) {
-            presence.apply(rec.workerId(), rec.direction(), rec.ts());
+            presence.apply(rec.workerId(), rec.zoneId(), rec.direction(), rec.ts());
         }
         publish(rec);
     }
@@ -128,15 +132,17 @@ public class PassRecorder {
         outbox.add(Topics.ACCESS_PASS_V1, "PassDecided", rec.workerId() == null ? rec.id().toString() : rec.workerId(), payload);
     }
 
-    private PassRecord passback(PassRecord rec) {
+    private PassRecord passback(PassRecord rec, Integer capacity) {
         if (rec.decision() != Decision.ALLOW) {
             return rec;
         }
         Direction actual = presence.lockDirection(rec.workerId(), rec.ts(), props.presenceTtl());
-        if (actual == rec.direction()) {
-            return rec;
+        if (actual != rec.direction()) {
+            return replaced(rec, rec.direction() == Direction.IN ? ReasonCode.ALREADY_INSIDE : ReasonCode.NOT_INSIDE);
         }
-        return replaced(rec, rec.direction() == Direction.IN ? ReasonCode.ALREADY_INSIDE : ReasonCode.NOT_INSIDE);
+        boolean full = rec.direction() == Direction.IN && capacity != null && rec.zoneId() != null
+                && presence.zoneFull(rec.zoneId(), capacity, rec.workerId(), rec.ts(), props.presenceTtl());
+        return full ? replaced(rec, ReasonCode.ZONE_FULL) : rec;
     }
 
     private static PassRecord replaced(PassRecord rec, ReasonCode code) {

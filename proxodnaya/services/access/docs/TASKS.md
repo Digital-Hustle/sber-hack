@@ -20,4 +20,4 @@
 | ACC-14 | FR-34 | Симулятор проходов `source=SIMULATOR` через тот же движок, флаг | B2 | review #82 |
 | ACC-15 | FR-70 | Офлайн-снимок (подпись, TTL 12 ч) и приём `offline-attempts` с конфликтами | B2 | todo |
 | ACC-16 | FR-42 | `/internal/access/stats` для assistant | B2 | todo |
-| ACC-17 | FR-08 | Вместимость зоны → `ZONE_FULL` (нужна `capacity` зоны из people + счётчик внутри под блокировкой) | B2 | todo |
+| ACC-17 | FR-08 | Вместимость зоны → `ZONE_FULL` (нужна `capacity` зоны из people + счётчик внутри под блокировкой) | B2 | review #90 |

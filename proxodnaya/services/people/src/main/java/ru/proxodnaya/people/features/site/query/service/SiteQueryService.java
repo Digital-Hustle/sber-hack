@@ -67,6 +67,16 @@ public class SiteQueryService implements ZoneDirectory {
         return repository.checkpoint(id).orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "Проходная не найдена"));
     }
 
+    /**
+     * Вместимость зоны.
+     *
+     * @param zoneId зона
+     * @return вместимость или {@code null} — без ограничения или зоны нет
+     */
+    public Integer zoneCapacity(UUID zoneId) {
+        return repository.zone(zoneId).map(Zone::capacity).orElse(null);
+    }
+
     @Override
     public Set<UUID> missing(Set<UUID> zoneIds) {
         if (zoneIds.isEmpty()) {
