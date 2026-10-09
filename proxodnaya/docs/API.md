@@ -33,7 +33,8 @@
 - `POST /kiosk/offline-attempts` `{attempts: [{localId, ts, qr, direction, guardDecision, guardReason, prevHash, hash}]}` → `{accepted, conflicts: [...]}`
 
 ## Admin / Manager (people: workers/zones/checkpoints/staff; access: attempts/security; shift: shifts/intervals/analytics/reports/stream/alerts; assistant)
-- `GET|POST|PATCH /workers`, `POST /workers/{id}/face` (кадры) → `{quality, accepted}`, `POST /workers/{id}/invite` → `{inviteCode, qrPayload, expiresAt}`, `POST /workers/{id}/block`
+- **[есть, PPL-02]** `GET /workers?q&filter=all|active|blocked&cursor&limit` → `{items: WorkerRs[], page: {next, total}}` (новые сверху, `limit` 1..200, по умолчанию 50; `inside` считает shift, а не people); `GET /workers/{id}`; `POST /workers` `{fullName, position, contractor}` → 201 `WorkerRs`; `PATCH /workers/{id}` (пустое поле не меняется); `POST /workers/{id}/block|unblock`; `DELETE /workers/{id}` → 204 (мягкое удаление, `WorkerDeleted`). `WorkerRs = {id, fullName, position, contractor, status: ACTIVE|BLOCKED, createdAt, updatedAt}`. Читают ADMIN/MANAGER/SECURITY_OFFICER, меняет ADMIN. Событие `people.worker.v1`: `WorkerCreated|WorkerUpdated|WorkerBlocked|WorkerDeleted`, payload `{workerId, status, fullName, position, contractor}`
+- `POST /workers/{id}/face` (кадры) → `{quality, accepted}`, `POST /workers/{id}/invite` → `{inviteCode, qrPayload, expiresAt}`, `POST /workers/{id}/block`
 - `GET|DELETE /workers/{id}/devices`
 - `GET|POST /zones`, `GET|POST /checkpoints`, `POST /checkpoints/{id}/pairing-code`
 - `GET|POST /shifts`, `POST /shifts/bulk` `{workerIds, from, to, days: [{weekday 0..6 (0=Пн), start, end}]}` (своё время на каждый день недели), `GET|POST /shift-templates`
