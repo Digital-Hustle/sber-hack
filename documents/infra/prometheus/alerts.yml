@@ -1,0 +1,37 @@
+# Сигналы для дежурного (NFR-07). Пороги — для стенда защиты; меняются здесь, проверка — promtool в CI.
+groups:
+  - name: documents
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations: { summary: "{{ $labels.instance }} не отвечает на сбор метрик" }
+      - alert: ModelUnavailable
+        expr: sum(docproc_jobs{stage="WAITING_MODEL"}) > 0
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "Документы ждут модель больше 5 минут (WAITING_MODEL) — проверьте LLM_PROVIDER / ollama" }
+      - alert: QueueGrowing
+        expr: sum(docproc_jobs{stage="QUEUED"}) > 50
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Очередь разбора больше 50 документов 10 минут — добавьте DOCPROC_WORKERS" }
+      - alert: LlmErrors
+        expr: sum(rate(llm_request_seconds_count{outcome!="OK"}[10m])) / clamp_min(sum(rate(llm_request_seconds_count[10m])), 1e-9) > 0.2
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Больше 20% обращений к модели неуспешны" }
+      - alert: LlmSchemaInvalid
+        expr: sum(increase(llm_schema_invalid_total[30m])) > 5
+        labels: { severity: info }
+        annotations: { summary: "Модель отвечает не по схеме — проверьте промпт или модель" }
+      - alert: UploadRejectsSpike
+        expr: sum(increase(intake_rejects_total[10m])) > 30
+        labels: { severity: info }
+        annotations: { summary: "Много отказов при загрузке за 10 минут — подсказки непонятны или кто-то перебирает" }
+      - alert: OcrSlow
+        expr: histogram_quantile(0.95, sum(rate(ocr_page_seconds_bucket[15m])) by (le)) > 20
+        for: 15m
+        labels: { severity: info }
+        annotations: { summary: "OCR: p95 страницы больше 20 с — не хватает CPU" }
