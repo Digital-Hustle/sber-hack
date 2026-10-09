@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import { Segmented } from "./Segmented";
 
 type Mode = "light" | "dark" | "system";
-const KEY = "documents.theme";
-const read = (): Mode => (localStorage.getItem(KEY) as Mode) || "system";
+const THEME_SLOT = "documents.theme";
+const read = (): Mode => (localStorage.getItem(THEME_SLOT) as Mode) || "system";
 const resolve = (m: Mode) => m === "dark" || (m === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
 
-/** Применить сохранённую тему (дублирует no-flash скрипт в index.html — на случай SPA-переходов). */
+/** Применить сохранённую тему (inline-скриптов нет из-за CSP script-src 'self', вызывается до первого рендера). */
 export const applyStoredTheme = () => document.documentElement.classList.toggle("dark", resolve(read()));
 
 /** Смена темы плавным переливом (View Transitions), если тема действительно меняется. */
@@ -22,7 +22,7 @@ const applyAnimated = () => {
 export const useThemeMode = () => {
   const [mode, setMode] = useState<Mode>(read);
   useEffect(() => {
-    localStorage.setItem(KEY, mode);
+    localStorage.setItem(THEME_SLOT, mode);
     applyAnimated();
     if (mode !== "system") return;
     const mq = matchMedia("(prefers-color-scheme: dark)");
