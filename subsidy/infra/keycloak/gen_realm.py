@@ -50,7 +50,10 @@ realm = {
             "redirectUris": [HOST + SL + "specialist" + SL + "*"],
             "webOrigins": [HOST],
             "attributes": {"pkce.code.challenge.method": "S256", "post.logout.redirect.uris": HOST + SL + "*"},
-            "protocolMappers": [{
+            "protocolMappers": [*[{
+                "name": f"aud-{s}", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+                "config": {"included.custom.audience": s, "access.token.claim": "true", "id.token.claim": "false"},
+            } for s in SERVICES], {
                 "name": "realm-roles", "protocol": "openid-connect",
                 "protocolMapper": "oidc-usermodel-realm-role-mapper",
                 "config": {"claim.name": "roles", "multivalued": "true", "access.token.claim": "true", "jsonType.label": "String"},
