@@ -3,14 +3,19 @@
 Память сервиса между сессиями и агентами. §1 — перезаписываемое текущее состояние (≤ 10 строк). §2 — карта, обновлять при новых пакетах/файлах. §3–4 — добавлять строки, неактуальное ~~зачёркивать~~. §5 — **только дописывать в конец** (`merge=union`). Решения для всей системы — ADR в `../../../docs/DECISIONS.md`.
 
 ## 1. Текущее состояние
-- Кода нет (до хакатона). Первый шаг: SH-01 → SH-03 (нужен access к интеграции №1) → SH-04.
-- Открытые вопросы: Часовой пояс площадки (Ростов, UTC+3) — фиксировать в настройках. Допуск опоздания — 10 мин?
+- Есть ядро (#37): смены и шаблоны, массовое назначение, `active-shift` для access, консьюмер `access.pass.v1` → интервалы, автозакрытие, `/intervals`, `/analytics/summary|hours`, `/worker/me|shifts`.
+- Дальше: SSE (SH-08), XLSX (SH-09), опоздания/переработки (SH-10), heartbeat/оповещения (SH-11), отказы и нагрузка (SH-12) — `pass_events` для них уже копится.
+- Пояс площадки — `SITE_ZONE` (Europe/Moscow), допуск раннего входа — `SHIFT_EARLY_ENTRY` (60 мин).
 
 ## 2. Карта сервиса
 | Путь | Что |
 |---|---|
 | `docs/` | PRD, ARCHITECTURE, RULES, TASKS, MEMORY |
-| _появится в Т0_ | по `docs/ARCHITECTURE.md §Структура папок` |
+| `features/shift` | смены, шаблоны, `ShiftPlanner` (недельный график → даты, ночь, DST), `api/ShiftLookup` (active-shift) |
+| `features/interval` | `IntervalPlan` (правила интервалов), `IntervalService` (проход → интервалы + outbox, автозакрытие), `AutoCloseJob`, `api/PresenceLookup` |
+| `features/analytics` | SQL сводки и часов, `method` в ответе |
+| `features/worker` | статус рабочего (`/worker/me`) |
+| `messaging/consumer/PassEventsConsumer` | `access.pass.v1` → `pass_events` + интервалы, идемпотентно |
 
 ## 3. Решения
 | Дата | Решение | Почему | Ссылка |
@@ -18,6 +23,8 @@
 | до Т0 | notify влит в shift | см. ADR | ADR-030 |
 | до Т0 | Kafka + outbox, идемпотентные потребители | см. ADR | ADR-024 |
 | до Т0 | SSE вместо WebSocket | см. ADR | ADR-008 |
+| 2026-10-09 | пересечение смен — под `pg_advisory_xact_lock` рабочего, а не exclusion constraint | `btree_gist` требует расширения, которого может не быть у роли сервиса | #37 |
+| 2026-10-09 | повторный вход без выхода закрывает прежний интервал `REENTRY` + `UNCONFIRMED_EXIT`, а не «как будто вышел» | честность цифр (rules.md) | #37 |
 
 ## 4. Известные баги и ограничения
 | Дата | Что | Обход / статус |
@@ -26,3 +33,4 @@
 
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-08 · miroslavrov · docs: документы сервиса (ADR-034)
+- 2026-10-09 · miroslavrov · feat(shift): SH-01..07 — каркас, смены/шаблоны/массовое назначение, active-shift для access, интервалы из access.pass.v1, автозакрытие, summary/hours, worker/me
