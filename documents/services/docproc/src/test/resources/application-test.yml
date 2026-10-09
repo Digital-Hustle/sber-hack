@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/docproc
+    username: postgres
+    password: postgres
+  kafka:
+    listener:
+      auto-startup: false
+app:
+  outbox:
+    enabled: false
+  service-account:
+    client-secret: test-only
+  docproc:
+    workers-enabled: false
+    waiting-model-retry: 0s
+  llm:
+    api-key: ""
+management:
+  tracing:
+    enabled: false

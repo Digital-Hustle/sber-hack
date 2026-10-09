@@ -1,0 +1,323 @@
+{
+  "components" : {
+    "schemas" : {
+      "Field" : {
+        "properties" : {
+          "bbox" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "checks" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "confidence" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "raw" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Item" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "JsonNode" : { },
+      "ModelStatusRs" : {
+        "properties" : {
+          "checkedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "error" : {
+            "type" : "string"
+          },
+          "model" : {
+            "type" : "string"
+          },
+          "provider" : {
+            "type" : "string"
+          },
+          "reachable" : {
+            "type" : "boolean"
+          },
+          "visionModel" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "QueueStatsRs" : {
+        "properties" : {
+          "avgSecondsByStage" : {
+            "additionalProperties" : {
+              "format" : "double",
+              "type" : "number"
+            },
+            "type" : "object"
+          },
+          "failed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "inProgress" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "needsReview" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "p95Seconds" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "parsed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "unreadable" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "waiting" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "waitingModel" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ResultRs" : {
+        "properties" : {
+          "applicationId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "attempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "documentId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "durations" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "evidence" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "fields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Field"
+            },
+            "type" : "array"
+          },
+          "lastError" : {
+            "type" : "string"
+          },
+          "model" : {
+            "type" : "string"
+          },
+          "mrz" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "pages" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "promptVersion" : {
+            "type" : "string"
+          },
+          "quality" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "reasons" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "schemaVersion" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stage" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "typeConfidence" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "typeName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TypeRs" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      }
+    }
+  },
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/api/v1/documents/{id}/reprocess" : {
+      "post" : {
+        "operationId" : "reprocess",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Разобрать заново",
+        "tags" : [ "docproc" ]
+      }
+    },
+    "/api/v1/documents/{id}/result" : {
+      "get" : {
+        "operationId" : "result",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResultRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Результат разбора документа",
+        "tags" : [ "docproc" ]
+      }
+    },
+    "/api/v1/model/status" : {
+      "get" : {
+        "operationId" : "model",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ModelStatusRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Состояние модели",
+        "tags" : [ "docproc" ]
+      }
+    },
+    "/api/v1/queue/stats" : {
+      "get" : {
+        "operationId" : "stats",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/QueueStatsRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Состояние очереди",
+        "tags" : [ "docproc" ]
+      }
+    },
+    "/api/v1/types" : {
+      "get" : {
+        "operationId" : "types",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TypeRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Виды документов",
+        "tags" : [ "docproc" ]
+      }
+    }
+  },
+  "servers" : [ {
+    "description" : "Generated server url",
+    "url" : "http://localhost"
+  } ]
+}
