@@ -158,7 +158,8 @@ jobs:
 
   smoke:
     needs: [changes, services, frontend, security]
-    if: always() && github.ref == 'refs/heads/main' && needs.changes.outputs.has_infra == 'true' && (needs.services.result == 'success' || needs.services.result == 'skipped') && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') && needs.security.result == 'success'
+    # стенд целиком имеет смысл, когда в репо есть фронт (SPA) — до тех пор smoke пропускается
+    if: always() && github.ref == 'refs/heads/main' && needs.changes.outputs.has_infra == 'true' && needs.changes.outputs.has_frontend == 'true' && (needs.services.result == 'success' || needs.services.result == 'skipped') && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') && needs.security.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

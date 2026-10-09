@@ -31,6 +31,8 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${OIDC_ISSUER_URI}
+          # ключи — из внутренней сети (в compose: http://keycloak:8080/...), iss сверяется с issuer-uri
+          jwk-set-uri: ${OIDC_JWKS_URI:${OIDC_ISSUER_URI}/protocol/openid-connect/certs}
           audiences: shift
 
 shift:

@@ -21,6 +21,7 @@
 | Стек, деплой, LLM | `STACK.md`, `DEPLOY.md`, `LLM.md` |
 | Скиллы и MCP | `AGENT_SKILLS.md`, `../../.agents/skills/` |
 | Модули | `../services/{gateway,people,access,face,shift,assistant}/`, `../frontend/` — у каждого `AGENTS.md` + `docs/` |
+| Стенд | `../infra/` — `docker-compose.yml`, `Caddyfile`, `keycloak/realm-proxodnaya.json`, `postgres/init.sh`, `.env.example` |
 | Скрипты | `../scripts/` — task-start, ci-local, handoff, open-pr, verify, guard, new-migration, gen-env, smoke |
 
 ## 3. Решения уровня проекта (кратко, подробно — ADR)
@@ -39,6 +40,7 @@
 | Распознавание лиц не уложится по качеству/времени | B2 прогоняет модели до Т0 в песочнице; fallback — ручное подтверждение (FR-14) |
 | Слабый интернет на площадке | образы/модели/кэши скачаны заранее (PLAN.md), Ollama локально |
 | Кейс выдадут жеребьёвкой другой | общий каркас подходит ко всем кейсам (PLAN.md) |
+| Smoke-job CI на `main` собирает стенд `--build`, а jar-ы/образы и фронт в нём не собираются | довести в PLT-03 (CD-образы в GHCR) |
 | `rules.md §1.11` говорит «репо создаём в день мероприятия», а репо уже есть | уточнить у организаторов; продуктового кода до старта нет |
 
 ## 5. Журнал (дописывать в конец)
@@ -46,3 +48,4 @@
 - 2026-10-08 · miroslavrov · docs: документы модулей, токены, мультиагентный процесс, локальный CI (ADR-033/034/035)
 - 2026-10-08 · KIRI4444 · feat: B2 access — Gradle-каркас, libs/common, ACC-01/02/05/07/08 (QrParser, QrVerifier, DecisionEngine, JournalService, KioskController, 36 unit-тестов)
 - 2026-10-09 · miroslavrov (агент) · contract: предложены правка/удаление объектов, зон, проходных и проверка эталона лица при оформлении (ADR-047 песочницы, `docs/API.md`)
+- 2026-10-09 · miroslavrov (агент) · feat(infra): PLT-02/05 — docker-compose стенда, Caddy, realm Keycloak с ролями и service accounts, БД на сервис (ADR-039, #53)

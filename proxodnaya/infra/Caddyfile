@@ -1,0 +1,39 @@
+# Единственный вход снаружи: TLS (Let's Encrypt для домена, внутренний CA для localhost).
+# Keycloak — под /auth, API — через gateway, остальное — SPA. Сервисы и Kafka наружу не публикуются.
+{$PUBLIC_HOST} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# внутренние ручки и face снаружи не существуют (gateway их тоже режет — второй рубеж)
+	@hidden path /internal/* /face/* */internal/*
+	handle @hidden {
+		respond 404
+	}
+
+	handle /auth/* {
+		reverse_proxy keycloak:8080
+	}
+
+	# health gateway — с его management-порта, остальной actuator не наружу
+	handle /actuator/health* {
+		reverse_proxy gateway:8079
+	}
+
+	@api path /people/* /access/* /shift/* /assistant/*
+	handle @api {
+		# SSE shift: без буферизации
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}

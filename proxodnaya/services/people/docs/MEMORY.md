@@ -43,3 +43,4 @@
 - 2026-10-08 · miroslavrov · feat: PPL-03/04 — инвайты, активация телефона, список/отвязка устройств
 - 2026-10-08 · miroslavrov · feat: PPL-06/08 — объекты, зоны, проходные, допуски, access-profile
 - 2026-10-09 · miroslavrov · PPL-10/12: эталон лица через face, каскад удаления, `faceEnrolledAt`
+- 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)

@@ -34,3 +34,4 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-08 · miroslavrov · docs: документы сервиса (ADR-034)
 - 2026-10-09 · miroslavrov · feat(shift): SH-01..07 — каркас, смены/шаблоны/массовое назначение, active-shift для access, интервалы из access.pass.v1, автозакрытие, summary/hours, worker/me
+- 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)
