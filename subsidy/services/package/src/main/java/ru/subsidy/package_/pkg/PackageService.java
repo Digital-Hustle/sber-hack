@@ -94,7 +94,7 @@ public class PackageService {
                 .execute();
         outbox.append(Topics.PACKAGE_PACKAGE_V1, "PackageCreated", newId.toString(), Map.of(
                 "packageId", newId.toString(), "orgId", org.id().toString(), "inn", org.inn(),
-                "programCode", programCode));
+                "programCode", programCode, "createdBy", userId));
         return get(newId);
     }
 
