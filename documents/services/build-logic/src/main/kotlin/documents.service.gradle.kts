@@ -25,7 +25,6 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation(lib("springdoc-webmvc"))
-    implementation(lib("resilience4j-spring-boot"))
     implementation(lib("uuid-creator"))
     implementation(lib("mapstruct"))
 
@@ -52,7 +51,7 @@ tasks.named<Jar>("jar") { enabled = false }
 tasks.register<Test>("exportOpenApi") {
     group = "verification"
     description = "Выгружает OpenAPI сервиса в contracts/openapi"
-    val test = the<SourceSetContainer>()["test"]
+    val test = project.extensions.getByType<SourceSetContainer>()["test"]
     testClassesDirs = test.output.classesDirs
     classpath = test.runtimeClasspath
     useJUnitPlatform()

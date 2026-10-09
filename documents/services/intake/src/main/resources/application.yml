@@ -1,0 +1,60 @@
+server:
+  port: ${SERVER_PORT:8081}
+spring:
+  application:
+    name: intake
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:intake}
+    username: ${DB_USER:intake}
+    password: ${DB_PASSWORD}
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  servlet:
+    multipart:
+      max-file-size: 64MB
+      max-request-size: 65MB
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+    listener:
+      auto-startup: ${KAFKA_LISTENERS_ENABLED:true}
+  jackson:
+    default-property-inclusion: non_null
+  mvc:
+    async:
+      request-timeout: -1
+app:
+  oidc:
+    issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/documents}
+    jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/documents/protocol/openid-connect/certs}
+  outbox:
+    enabled: ${OUTBOX_ENABLED:true}
+  intake:
+    max-mb: ${UPLOAD_MAX_MB:20}
+    max-pages: ${UPLOAD_MAX_PAGES:20}
+    max-files: ${UPLOAD_MAX_FILES:40}
+    image-min-px: ${IMAGE_MIN_PX:600}
+    files-key: ${FILES_ENCRYPTION_KEY}
+    pepper: ${ACCESS_KEY_PEPPER}
+    resume-max-attempts: ${RESUME_CODE_MAX_ATTEMPTS:5}
+    public-url: ${PUBLIC_URL:https://localhost}
+    uploads-per-minute: ${UPLOADS_PER_MINUTE:30}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+logging:
+  structured:
+    format:
+      console: ecs
