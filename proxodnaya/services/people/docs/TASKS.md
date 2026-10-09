@@ -17,4 +17,4 @@
 | PPL-11 | FR-65 | `EndpointSecurityMatrixTest`, IDOR-тесты | B1 | todo |
 | PPL-13 | FR-60/61 | Вход персонала по коду из письма, сессии, `/staff` CRUD, роли, LAST_ADMIN, журнал доступа, SMTP | B1 | review #96: ADR-041 |
 | PPL-12 | FR-13 | Эталон лица из кабинета: `POST/DELETE /workers/{id}/face`, `POST /workers/face/check` → face, `faceEnrolledAt` в карточке | B1 | review #44 |
-| PPL-14 | FR-60/61 | Refresh персонала в HttpOnly-cookie, восстановление входа после перезагрузки | B1 | doing `feat/PPL-14-staff-cookie` |
+| PPL-14 | FR-60/61 | Refresh персонала в HttpOnly-cookie, восстановление входа после перезагрузки | B1 | review #111 |
