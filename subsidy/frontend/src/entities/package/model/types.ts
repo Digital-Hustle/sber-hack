@@ -1,6 +1,7 @@
 /** Типы ответов package и docproc (docs/API.md). Деньги и даты — строки, как пришли с сервера. */
 export type PackageStatus = "COLLECTING" | "PROCESSING" | "CHECKED" | "DECIDED";
-export type ProtocolStatus = "COMPLETE" | "INCOMPLETE" | "NEEDS_REVIEW";
+export type ProtocolStatus =
+  | "COMPLETE" | "INCOMPLETE" | "NEEDS_REVIEW";
 export type Decision = "APPROVE" | "REJECT" | "RETURN";
 export type OrgRef = { inn: string; name: string | null };
 

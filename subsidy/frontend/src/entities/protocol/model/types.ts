@@ -1,11 +1,15 @@
 /** Типы ответов rules (docs/API.md §rules). Статусы и суммы считает сервер — клиент только показывает. */
-export type RuleStatus = "PASSED" | "FAILED" | "WARNING" | "DATA_MISSING" | "NOT_APPLICABLE" | "ERROR";
+export type RuleStatus =
+  | "PASSED" | "FAILED" | "WARNING" | "DATA_MISSING" | "NOT_APPLICABLE" | "ERROR";
+/** Итог протокола — вычисляет rules. */
+export type ProtocolState =
+  | "COMPLETE" | "INCOMPLETE" | "NEEDS_REVIEW";
 export type Evidence = { documentId: string | null; field: string | null; page: number | null };
 export type RuleResult = { rule: string; status: RuleStatus; message: string; evidence: Evidence[] | null; expected: string | null; actual: string | null };
 export type ChecklistItem = { item: string; title: string; kind: string; types: string[]; condition: string | null; status: string; documents: string[] };
 export type MissingItem = { item: string; type: string; reason: string };
 export type Protocol = {
-  protocolId: string; packageId: string; version: number; status: "COMPLETE" | "INCOMPLETE" | "NEEDS_REVIEW"; programCode: string;
+  protocolId: string; packageId: string; version: number; status: ProtocolState; programCode: string;
   programVersion: number; checklistVersion: number; rulesVersion: string;
   completeness: { percent: number; items: ChecklistItem[]; missing: MissingItem[]; request: string | null };
   results: RuleResult[]; failed: number; warnings: number; needsReview: number; createdAt: string;
