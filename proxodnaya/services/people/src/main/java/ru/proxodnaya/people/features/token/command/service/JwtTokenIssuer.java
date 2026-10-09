@@ -15,6 +15,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,8 @@ import ru.proxodnaya.people.features.token.api.TokenIssuer;
 public class JwtTokenIssuer implements TokenIssuer {
 
     private static final int FIELD_BITS = 256;
+    private static final BigInteger THREE = BigInteger.valueOf(3);
+    private static final String EC = "EC";
     private static final String ROLES = "realm_access";
     private static final String ALGORITHM = "SHA256withECDSA";
 
@@ -63,7 +66,8 @@ public class JwtTokenIssuer implements TokenIssuer {
     @Override
     public Issued issue(String subject, List<String> roles, Duration ttl, Map<String, Object> claims) {
         Instant now = clock.instant();
-        Instant expires = now.plus(ttl);
+        // exp в JWT — целые секунды: отдаём клиенту тот же момент
+        Instant expires = now.plus(ttl).truncatedTo(ChronoUnit.SECONDS);
         JwtClaimsSet.Builder set = JwtClaimsSet.builder()
                 .issuer(props.issuer())
                 .subject(subject)
@@ -94,13 +98,13 @@ public class JwtTokenIssuer implements TokenIssuer {
     static ECKey parse(String base64) {
         try {
             byte[] der = Base64.getMimeDecoder().decode(base64.strip());
-            ECPrivateKey privateKey = (ECPrivateKey) KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(der));
+            ECPrivateKey privateKey = (ECPrivateKey) KeyFactory.getInstance(EC).generatePrivate(new PKCS8EncodedKeySpec(der));
             ECParameterSpec params = privateKey.getParams();
             if (params.getCurve().getField().getFieldSize() != FIELD_BITS) {
                 throw new IllegalStateException("DEVICE_TOKEN_SIGNING_KEY: нужна кривая P-256");
             }
             ECPoint point = multiply(params, privateKey.getS());
-            ECPublicKey publicKey = (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(new ECPublicKeySpec(point, params));
+            ECPublicKey publicKey = (ECPublicKey) KeyFactory.getInstance(EC).generatePublic(new ECPublicKeySpec(point, params));
             checkPair(privateKey, publicKey);
             ECKey key = new ECKey.Builder(Curve.P_256, publicKey).privateKey(privateKey).keyUse(KeyUse.SIGNATURE).build();
             return new ECKey.Builder(key).keyIDFromThumbprint().build();
@@ -109,7 +113,13 @@ public class JwtTokenIssuer implements TokenIssuer {
         }
     }
 
-    /** {@code k·G} в аффинных координатах (double-and-add); ключ проверяется подписью в {@link #checkPair}. */
+    /**
+     * {@code k·G} в аффинных координатах (double-and-add); пара затем проверяется подписью в {@link #checkPair}.
+     *
+     * @param params параметры кривой
+     * @param scalar закрытый скаляр
+     * @return открытая точка
+     */
     private static ECPoint multiply(ECParameterSpec params, BigInteger scalar) {
         BigInteger prime = ((ECFieldFp) params.getCurve().getField()).getP();
         BigInteger coefA = params.getCurve().getA();
@@ -125,22 +135,17 @@ public class JwtTokenIssuer implements TokenIssuer {
     }
 
     private static ECPoint add(ECPoint left, ECPoint right, BigInteger prime, BigInteger coefA) {
-        if (ECPoint.POINT_INFINITY.equals(left)) {
-            return right;
+        if (ECPoint.POINT_INFINITY.equals(left) || ECPoint.POINT_INFINITY.equals(right)) {
+            return ECPoint.POINT_INFINITY.equals(left) ? right : left;
         }
-        if (ECPoint.POINT_INFINITY.equals(right)) {
-            return left;
-        }
-        BigInteger slope;
-        if (left.equals(right)) {
-            BigInteger num = left.getAffineX().pow(2).multiply(BigInteger.valueOf(3)).add(coefA);
-            slope = num.multiply(left.getAffineY().shiftLeft(1).modInverse(prime)).mod(prime);
-        } else if (left.getAffineX().equals(right.getAffineX())) {
+        boolean doubling = left.equals(right);
+        if (!doubling && left.getAffineX().equals(right.getAffineX())) {
             return ECPoint.POINT_INFINITY;
-        } else {
-            BigInteger num = right.getAffineY().subtract(left.getAffineY());
-            slope = num.multiply(right.getAffineX().subtract(left.getAffineX()).modInverse(prime)).mod(prime);
         }
+        BigInteger slope = doubling
+                ? left.getAffineX().pow(2).multiply(THREE).add(coefA).multiply(left.getAffineY().shiftLeft(1).modInverse(prime))
+                : right.getAffineY().subtract(left.getAffineY()).multiply(right.getAffineX().subtract(left.getAffineX()).modInverse(prime));
+        slope = slope.mod(prime);
         BigInteger sumX = slope.pow(2).subtract(left.getAffineX()).subtract(right.getAffineX()).mod(prime);
         BigInteger sumY = slope.multiply(left.getAffineX().subtract(sumX)).subtract(left.getAffineY()).mod(prime);
         return new ECPoint(sumX, sumY);
