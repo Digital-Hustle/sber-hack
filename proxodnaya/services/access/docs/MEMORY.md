@@ -46,4 +46,4 @@
 - 2026-10-09 · miroslavrov · feat(access): ACC-06 service-токен (OAuth2 client-credentials, клиент svc-access) на клиентах face/people/shift; зона пункта пропуска из people (`/internal/people/checkpoints/{id}`) → NO_ZONE_PERMIT, zone_id в попытках и PassDecided
 - 2026-10-09 · KIRI4444, miroslavrov · feat(access): ACC-09/11/13 — anti-passback под блокировкой присутствия, журнал `GET /attempts` и `/worker/attempts` (keyset-курсор, `{items, page}`), ручной проход `POST /kiosk/manual` (MANUAL_GUARD, присутствие, охранник и причина в журнале)
 - 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)
-- 2026-10-09 · miroslavrov (агент) · feat: ACC-17 вместимость зоны → `ZONE_FULL` (`worker_state.zone_id`, блокировка зоны, `zoneCapacity` от people) (#PR)
+- 2026-10-09 · miroslavrov (агент) · feat: ACC-17 вместимость зоны → `ZONE_FULL` (`worker_state.zone_id`, блокировка зоны, `zoneCapacity` от people) (#90)
