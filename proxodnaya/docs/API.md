@@ -13,7 +13,7 @@
 - `POST /auth/device/challenge` `{deviceId}` → `{challenge, expiresAt}`
 - `POST /auth/device/token` `{deviceId, challenge, signature}` → `{accessToken (ES256, 10 мин)}`
 - `POST /auth/kiosk/pair` (GUARD) `{pairingCode, publicKeyJwk}` → `{kioskId, checkpoint}`; далее все `/kiosk/*` подписываются: `X-Kiosk-Id`, `X-Ts`, `X-Nonce`, `X-Signature`
-- `GET /shift/api/v1/stream/ticket` → `{ticket}` одноразовый на 30 с для `EventSource`
+- **[есть, SH-08]** `GET /shift/api/v1/stream/ticket` (ADMIN/MANAGER/SECURITY_OFFICER/GUARD/WORKER) → `{ticket, stream: situation|worker, expiresAt}` — одноразовый на 30 с (`STREAM_TICKET_TTL`) для `EventSource`; рабочему — на свой поток, персоналу — на обстановку. Открытие: `GET /shift/api/v1/stream/{situation|worker}?ticket=` (без токена); повтор, чужой поток или истёкший тикет → `403 FORBIDDEN`. Каждое событие несёт `id` (`<эпоха>-<номер>`); браузер при переподключении шлёт `Last-Event-ID` и получает пропущенное из буфера (последние 500); после рестарта shift досылки нет — перечитайте сводку. Пульс — комментарий раз в 15 с, соединение закрывается через 30 мин (`EventSource` переподключится сам)
 
 ## Worker (device-токен; профиль — people, смены и поток — shift, история — access)
 - **QR без запроса к серверу**: `v1.<workerId>.<deviceId>.<window>.<sig>`, `window = floor(unixTime / 30)`, `sig = base64url(ECDSA-P256-SHA256("v1|workerId|deviceId|window"))` в формате WebCrypto (P1363, r‖s, 64 байта; DER тоже принимается). Как в BACKEND-CONTRACT.md и песочнице. Телефон перерисовывает QR каждые 30 с с таймером; часы сверяет по `serverTime` при онлайне.
@@ -23,7 +23,7 @@
 - `POST /worker/heartbeat` `{lat, lon, accuracy}`
 - `DELETE /worker/me/device` — сотрудник отвязывает свой телефон («Выйти с этого телефона»)
 - `POST /people/api/v1/worker/me/face` `{at, signature, photo, liveness: {frames}}` → `{status: PENDING}`; `signature = ECDSA-P256-SHA256("face|workerId|deviceId|at")` ключом телефона, `|now−at| ≤ 5 мин`. Эталон с телефона включается только после `POST /workers/{id}/face/review` (ADR-046)
-- `GET /stream/worker` (SSE): `attempt.result`, `reminder.exit`
+- `GET /stream/worker` (SSE) **[есть, SH-08: `attempt.result`]**: `attempt.result` `{attemptId, checkpointId, zoneId, direction, decision, reasonCode, ts, simulated}` — только свои проходы; `reminder.exit` — SH-13
 
 ## Kiosk (access: `/access/api/v1/kiosk/...`; роль GUARD + подпись ключом киоска)
 - `POST /kiosk/attempts` `{qr, checkpointId}` → `ScanRs` = `{kind: "decision", result: DecisionRs}` | `{kind: "challenge", token, challenge: {kind: turn-left|turn-right|blink|nod, text, timeoutMs}, worker: {id, fullName, position, contractor}}`. Направление выводит сервер (ADR-037): внутри и вход моложе `PRESENCE_TTL` (16 ч) → OUT, иначе IN. Успешный проход того же человека меньше 30 с назад → `REPEAT_SCAN`. `checkpointId` в теле временно — до подписи запросов киоска (ACC-12), потом берётся из ключа киоска.
@@ -49,7 +49,7 @@
 - **[есть, SH-06/07]** `GET /analytics/summary` → `{at, inside, byZone: [{zoneId, inside}], incomplete, passesToday: {allowed, manual, denied}, method}`; `GET /analytics/hours?from&to&worker&zone` (ADMIN/MANAGER, период ≤ 93 дней) → `{from, to, items: [{workerId, workedMinutes, intervals, incomplete}], method}`. Симулятор исключён
 - `GET /analytics/late-overtime|refusals|load-by-hour|occupancy` (+ общие фильтры)
 - `GET /reports/timesheet.xlsx?from&to&contractor`
-- `GET /stream/situation` (SSE): `presence.changed`, `attempt.created`, `alert.created`
+- `GET /stream/situation` (SSE) **[есть, SH-08: `presence.changed`, `attempt.created`]**: `attempt.created` `{attemptId, workerId?, checkpointId, zoneId, direction, decision, reasonCode, source, ts, simulated}` (любое решение, после записи в shift); `presence.changed` `{workerId, zoneId, inside, at, closeReason?, simulated}`; `alert.created` — SH-11
 - `GET /alerts`, `POST /alerts/{id}/ack`
 - `POST /assistant/ask` `{question, history?}` → `{text, sources, table?, validation}`; с `Accept: text/event-stream` — поток `tool {name}` / `delta {text}` / `done {…ответ}` / `error {detail}`, остановка — закрытие соединения; `GET /assistant/insights`; `GET /assistant/status`
 - `GET|PUT /settings` (порог лица, окна смены, допуск часов QR)
