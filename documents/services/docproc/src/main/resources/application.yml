@@ -64,6 +64,7 @@ app:
     timeout: ${LLM_TIMEOUT_SECONDS:60}s
     max-concurrency: ${LLM_MAX_CONCURRENCY:2}
     json-mode: ${LLM_JSON_MODE:json_schema}
+    num-thread: ${LLM_NUM_THREAD:0}
     gigachat-auth-key: ${GIGACHAT_AUTH_KEY:}
     gigachat-scope: ${GIGACHAT_SCOPE:GIGACHAT_API_PERS}
 management:
