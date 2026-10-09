@@ -36,3 +36,4 @@
 | FE-OP-08 | B-03/B-08 | `CrossCheckPanel` (расхождения между документами), `HistoryTimeline` | F2 | done #27 |
 | FE-OP-09 | B-04/B-05 | Истекающие документы + `export-expiring`, `export-hr-card` | F2 | done #27 |
 | FE-OP-10 | B-06/B-07 | `QueueMetrics` с «как посчитано», маскирование ПДн для AUDITOR | F2 | done #27 |
+| FE-OP-11 | FR-54 | Переключатель «только требующие проверки» в панели полей; текст замечания `NUMBER_ELSEWHERE` | F2 | review #PR |

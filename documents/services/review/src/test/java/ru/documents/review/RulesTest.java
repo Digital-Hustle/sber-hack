@@ -11,6 +11,7 @@ import ru.documents.review.features.workplace.rules.CrossChecker;
 import ru.documents.review.features.workplace.rules.DocFacts;
 import ru.documents.review.features.workplace.rules.Masking;
 import ru.documents.review.features.workplace.rules.NameMatcher;
+import ru.documents.review.features.workplace.rules.NumberKeys;
 
 class RulesTest {
 
@@ -48,5 +49,21 @@ class RulesTest {
         assertThat(Masking.number("123-456-789 01")).isEqualTo("•••-•••-•89 01");
         assertThat(Masking.text("Иванов Иван")).isEqualTo("И••• И•••");
         assertThat(Masking.contact("user@mail.ru")).isEqualTo("u•••@mail.ru");
+    }
+
+    @Test
+    void numberKeysNormalizeAndJoinSeries() {
+        DocFacts rf = new DocFacts(UUID.randomUUID(), "PASSPORT_RF", "Паспорт РФ",
+                Map.of("series", "45 06", "number", "123456"));
+        DocFacts foreign = new DocFacts(UUID.randomUUID(), "PASSPORT_FOREIGN", "Паспорт",
+                Map.of("documentNumber", "ab-1234567"));
+        DocFacts shortNo = new DocFacts(UUID.randomUUID(), "INN", "ИНН", Map.of("inn", "123"));
+        DocFacts unknown = new DocFacts(UUID.randomUUID(), null, null, Map.of("documentNumber", "AB1234567"));
+
+        Map<String, DocFacts> keys = NumberKeys.of(List.of(rf, foreign, shortNo, unknown));
+
+        assertThat(keys).containsOnlyKeys("PASSPORT_RF:number:4506123456", "PASSPORT_FOREIGN:documentNumber:AB1234567");
+        assertThat(NumberKeys.normalize("АБ 12-34 56")).isEqualTo("АБ123456");
+        assertThat(NumberKeys.normalize("12 34")).isNull();
     }
 }

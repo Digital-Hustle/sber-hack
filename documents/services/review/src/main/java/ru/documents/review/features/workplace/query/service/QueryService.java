@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import ru.documents.common.exception.DomainException;
@@ -32,6 +33,7 @@ import ru.documents.review.features.workplace.model.FieldOverride;
 import ru.documents.review.features.workplace.model.Finding;
 import ru.documents.review.features.workplace.model.HistoryEntry;
 import ru.documents.review.features.workplace.model.Metrics;
+import ru.documents.review.features.workplace.model.OtherDoc;
 import ru.documents.review.features.workplace.model.QueueFilter;
 import ru.documents.review.features.workplace.model.QueueItem;
 import ru.documents.review.features.workplace.model.QueuePage;
@@ -41,6 +43,7 @@ import ru.documents.review.features.workplace.rules.DocFacts;
 import ru.documents.review.features.workplace.rules.DocTypes;
 import ru.documents.review.features.workplace.rules.Fields;
 import ru.documents.review.features.workplace.rules.Masking;
+import ru.documents.review.features.workplace.rules.NumberKeys;
 
 /**
  * Чтение для оператора: очередь, карточка, история, отчёт, метрики.
@@ -157,7 +160,8 @@ public class QueryService {
                     d.confirmedAt(), att, fields));
         }
         cards.sort(Comparator.comparing((DocumentCard c) -> !c.attention()));
-        List<Finding> findings = CrossChecker.check(facts, a.requiredTypes());
+        List<Finding> findings = new ArrayList<>(CrossChecker.check(facts, a.requiredTypes()));
+        findings.addAll(numbersElsewhere(id, facts));
         int confirmedDocs = (int) cards.stream().filter(DocumentCard::confirmed).count();
         return new CardView(a, summary == null ? null : summary.get("profile"),
                 summary == null ? null : summary.get("requests"),
@@ -165,6 +169,50 @@ public class QueryService {
                 summary == null ? null : text(summary, "contactEmail"), cards, findings,
                 read.decision(id).orElse(null), read.history(id, HISTORY_IN_CARD),
                 new CardView.Counters(total, attention, corrected, confirmedDocs, cards.size()));
+    }
+
+    /**
+     * Тот же номер документа уже есть в другой заявке (FR-03): замечание оператору, номер не раскрываем.
+     *
+     * @param app   заявка
+     * @param facts документы заявки
+     * @return замечания NUMBER_ELSEWHERE
+     */
+    private List<Finding> numbersElsewhere(UUID app, List<DocFacts> facts) {
+        Map<String, DocFacts> mine = NumberKeys.of(facts);
+        if (mine.isEmpty()) {
+            return List.of();
+        }
+        Set<String> types = new TreeSet<>();
+        Set<String> digits = new TreeSet<>();
+        mine.values().forEach(d -> types.add(d.type()));
+        for (DocFacts d : mine.values()) {
+            for (String f : NumberKeys.FIELDS) {
+                String v = d.get(f);
+                String n = v == null ? "" : v.replaceAll("[^0-9]", "");
+                if (n.length() >= 4) {
+                    digits.add(n);
+                }
+            }
+        }
+        Map<String, Set<UUID>> apps = new LinkedHashMap<>();
+        for (OtherDoc o : read.numbersElsewhere(app, types, NumberKeys.FIELDS, digits).values()) {
+            for (String k : NumberKeys.of(List.of(o.facts())).keySet()) {
+                if (mine.containsKey(k)) {
+                    apps.computeIfAbsent(k, x -> new TreeSet<>()).add(o.applicationId());
+                }
+            }
+        }
+        List<Finding> out = new ArrayList<>();
+        apps.forEach((k, others) -> {
+            DocFacts d = mine.get(k);
+            String field = k.split(":", 3)[1];
+            String name = d.typeName() != null ? d.typeName() : DocTypes.name(d.type());
+            name = name != null ? name : d.type();
+            out.add(new Finding("NUMBER_ELSEWHERE", field, List.of(d.id()),
+                    Map.of("doc", name, "count", String.valueOf(others.size()))));
+        });
+        return out;
     }
 
     /**

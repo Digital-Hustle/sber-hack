@@ -217,6 +217,27 @@ class ReviewFlowIntegrationTest extends AbstractIntegrationTest {
         assertThat(json.readTree(t).path("ticket").asText()).hasSizeGreaterThan(30);
     }
 
+    @Test
+    void sameNumberInAnotherApplicationIsFlagged() throws Exception {
+        submitWithTwoParsedDocuments();
+        setUp();
+        submitWithTwoParsedDocuments();
+
+        String card = mvc.perform(get("/api/v1/applications/" + app).with(op("op1"))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode c = json.readTree(card);
+        List<JsonNode> hits = new java.util.ArrayList<>();
+        c.path("findings").forEach(f -> {
+            if ("NUMBER_ELSEWHERE".equals(f.path("code").asText())) {
+                hits.add(f);
+            }
+        });
+        assertThat(hits).extracting(f -> f.path("field").asText()).contains("documentNumber", "passportNumber");
+        assertThat(hits).anySatisfy(f -> assertThat(f.path("documentIds").get(0).asText()).isEqualTo(passport.toString()));
+        assertThat(hits).allSatisfy(f -> assertThat(f.path("params").path("count").asInt()).isPositive());
+        assertThat(c.toString()).doesNotContain("AB1234567");
+    }
+
     private void submitWithTwoParsedDocuments() {
         event("ApplicationCreated", Map.of(APP, app.toString(), "source", "WEB"));
         event("ProfileChanged", Map.of(APP, app.toString(), "requiredTypes",
