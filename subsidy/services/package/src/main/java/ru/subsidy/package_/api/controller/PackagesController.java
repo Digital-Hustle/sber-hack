@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,6 +18,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 import ru.subsidy.common.security.CurrentUser;
+import ru.subsidy.package_.pkg.PackageQueryService;
+import ru.subsidy.package_.pkg.PackageQueryService.QueueFilter;
+import ru.subsidy.package_.pkg.PackageQueryService.QueuePage;
 import ru.subsidy.package_.pkg.PackageService;
 import ru.subsidy.package_.pkg.PackageService.PackageView;
 
@@ -28,14 +32,17 @@ import ru.subsidy.package_.pkg.PackageService.PackageView;
 public class PackagesController {
 
     private final PackageService packages;
+    private final PackageQueryService queue;
 
     /**
      * Конструктор.
      *
      * @param packages сервис пакетов
+     * @param queue очередь пакетов
      */
-    public PackagesController(PackageService packages) {
+    public PackagesController(PackageService packages, PackageQueryService queue) {
         this.packages = packages;
+        this.queue = queue;
     }
 
     /**
@@ -54,6 +61,25 @@ public class PackagesController {
                                   CurrentUser user) {
         return PackageResponse.of(packages.create(request.orgInn(), request.programCode(), idempotencyKey,
                 user.userId()));
+    }
+
+    /**
+     * Очередь пакетов (FR-61).
+     *
+     * @param status статус
+     * @param inn ИНН заявителя
+     * @param program код программы
+     * @param cursor курсор из page.next
+     * @param limit размер страницы (до 100)
+     * @return страница очереди
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('SPECIALIST','SENIOR_SPECIALIST','AUDITOR')")
+    public QueuePage list(@RequestParam(required = false) String status, @RequestParam(required = false) String inn,
+                          @RequestParam(required = false) String program,
+                          @RequestParam(required = false) String cursor,
+                          @RequestParam(required = false) Integer limit) {
+        return queue.list(new QueueFilter(status, inn, program), cursor, limit);
     }
 
     /**
