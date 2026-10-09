@@ -38,13 +38,15 @@ import ru.proxodnaya.gateway.exception.Problems;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
+    /** Терминал: запросы подписаны его ключом, подпись, время и nonce проверяет access (ACC-12); регистрация — без подписи. */
+    static final String KIOSK = "/access/api/v1/kiosk/**";
     /** Пути без токена — явный список (RULES gateway). */
     static final String[] PUBLIC_POST = {"/people/api/v1/auth/worker/activate", "/people/api/v1/auth/device/challenge",
         "/people/api/v1/auth/device/token", "/people/api/v1/auth/staff/code", "/people/api/v1/auth/staff/code/verify",
-        "/people/api/v1/auth/staff/refresh"};
+        "/people/api/v1/auth/staff/refresh", KIOSK};
     // Actuator gateway (/actuator/**) — только на management-порту (наружу не публикуется); на основном порту маршрута нет → 404
     static final String[] PUBLIC_GET = {"/actuator/health", "/actuator/health/**", "/actuator/prometheus", "/actuator/info",
-        "/shift/api/v1/stream/situation", "/shift/api/v1/stream/worker"};
+        "/shift/api/v1/stream/situation", "/shift/api/v1/stream/worker", KIOSK};
     private static final long CORS_MAX_AGE = 3600L;
     private static final String REQUEST_ID = "X-Request-Id";
 

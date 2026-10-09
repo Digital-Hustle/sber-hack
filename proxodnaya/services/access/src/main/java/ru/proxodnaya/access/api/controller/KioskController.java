@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import ru.proxodnaya.access.api.constants.PathConstants;
@@ -29,14 +31,15 @@ public interface KioskController {
     /**
      * Скан QR.
      *
-     * @param request QR и проходная
+     * @param request   QR и проходная
+     * @param principal терминал из подписи ({@code KioskPrincipal}, проходная — его) или охранник с токеном
      * @return решение (отказ) или челлендж
      */
     @Operation(summary = "Скан QR: сразу отказ или челлендж живости")
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('GUARD')")
-    ScanRs scan(@Valid @RequestBody ScanRq request);
+    @PreAuthorize("hasAnyRole('KIOSK', 'GUARD')")
+    ScanRs scan(@Valid @RequestBody ScanRq request, @Parameter(hidden = true) @AuthenticationPrincipal Object principal);
 
     /**
      * Кадры челленджа.
@@ -48,6 +51,6 @@ public interface KioskController {
     @Operation(summary = "Кадры челленджа → решение о проходе")
     @PostMapping(PathConstants.FRAMES)
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('GUARD')")
+    @PreAuthorize("hasAnyRole('KIOSK', 'GUARD')")
     DecisionRs submitFrames(@PathVariable UUID token, @Valid @RequestBody FramesRq request);
 }

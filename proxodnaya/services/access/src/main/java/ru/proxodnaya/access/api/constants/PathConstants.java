@@ -9,6 +9,14 @@ public final class PathConstants {
     public static final String KIOSK_ATTEMPTS = API_V1 + "/kiosk/attempts";
     public static final String FRAMES = "/{token}/frames";
     public static final String KIOSK_MANUAL = API_V1 + "/kiosk/manual";
+    public static final String KIOSK_SELF = API_V1 + "/kiosk";
+    public static final String REGISTER = "/register";
+    public static final String KIOSK_REGISTER = KIOSK_SELF + REGISTER;
+    public static final String ME = "/me";
+    public static final String KIOSKS = API_V1 + "/kiosks";
+    public static final String PAIR = "/pair";
+    public static final String KIOSK_ID = "/{id}";
+    public static final String UNPAIR = "/{id}/unpair";
     public static final String ATTEMPTS = API_V1 + "/attempts";
     public static final String SETTINGS = API_V1 + "/settings";
     public static final String WORKER_ATTEMPTS = API_V1 + "/worker/attempts";
