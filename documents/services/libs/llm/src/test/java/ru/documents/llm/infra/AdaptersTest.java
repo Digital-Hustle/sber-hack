@@ -53,6 +53,7 @@ class AdaptersTest {
             assertThat(body.path("stream").asBoolean()).isFalse();
             assertThat(body.path("options").path("temperature").asInt()).isZero();
             assertThat(body.path("options").path("num_thread").asInt()).isEqualTo(4);
+            assertThat(body.path("options").path("num_predict").asInt()).isEqualTo(2048);
             assertThat(body.path("messages").get(1).path("images").get(0).asText()).isEqualTo("AQID");
         }
     }

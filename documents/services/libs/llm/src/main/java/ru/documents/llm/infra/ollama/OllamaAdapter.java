@@ -20,6 +20,10 @@ import ru.documents.llm.infra.HttpSupport;
 public class OllamaAdapter implements LlmProvider {
 
     private static final int NUM_CTX = 8192;
+
+    // Потолок ответа: реальный JSON полей ~600–800 токенов; без него зациклившаяся модель держит CPU до таймаута (X-07).
+
+    private static final int NUM_PREDICT = 2048;
     private static final int SEED = 42;
 
     private final HttpSupport http;
@@ -58,7 +62,8 @@ public class OllamaAdapter implements LlmProvider {
         body.put("stream", false);
         body.put("think", false);
         body.put("keep_alive", "30m");
-        Map<String, Object> options = new LinkedHashMap<>(Map.of("temperature", 0, "seed", SEED, "num_ctx", NUM_CTX));
+        Map<String, Object> options = new LinkedHashMap<>(
+                Map.of("temperature", 0, "seed", SEED, "num_ctx", NUM_CTX, "num_predict", NUM_PREDICT));
         if (numThread > 0) {
             // Потоков меньше, чем ядер: при чужой нагрузке на сервере llama.cpp иначе замедляется в десятки раз (X-07).
             options.put("num_thread", numThread);
