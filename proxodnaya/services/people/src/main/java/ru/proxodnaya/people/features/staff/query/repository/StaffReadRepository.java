@@ -33,6 +33,8 @@ public class StaffReadRepository {
     private static final StaffSessions SESSIONS = Tables.STAFF_SESSIONS;
     private static final StaffAccessLog LOG = Tables.STAFF_ACCESS_LOG;
 
+    private static final String PERCENT = "%";
+
     private final DSLContext dsl;
 
     public StaffReadRepository(DSLContext dsl) {
@@ -114,7 +116,8 @@ public class StaffReadRepository {
     private static Condition matching(StaffFilter filter) {
         Condition condition = DSL.trueCondition();
         if (filter.query() != null && !filter.query().isBlank()) {
-            String like = "%" + filter.query().strip().toLowerCase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+            String like = PERCENT + filter.query().strip().toLowerCase().replace("\\", "\\\\").replace(PERCENT, "\\%")
+                    .replace("_", "\\_") + PERCENT;
             condition = condition.and(DSL.lower(STAFF.NAME).like(like, '\\').or(DSL.lower(STAFF.EMAIL).like(like, '\\')));
         }
         if (filter.role() != null) {

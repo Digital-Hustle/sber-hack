@@ -32,7 +32,7 @@ public final class PathConstants {
     public static final String STAFF_ME = "/staff/me";
     public static final String STAFF_LOGOUT = "/staff/logout";
     public static final String STAFF = API_V1 + "/staff";
-    public static final String STAFF_ID = "/{id}";
+    public static final String STAFF_ID = WORKER_ID;
     public static final String STAFF_DISABLE = "/{id}/disable";
     public static final String STAFF_ENABLE = "/{id}/enable";
     public static final String ACCESS_LOG = "/access-log";

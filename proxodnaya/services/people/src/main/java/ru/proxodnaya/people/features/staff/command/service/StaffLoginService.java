@@ -36,6 +36,7 @@ import ru.proxodnaya.people.features.token.api.TokenIssuer;
 public class StaffLoginService {
 
     private static final String INVALID = "Неверный код";
+    private static final String ASK_NEW = INVALID + " — запросите новый";
 
     private final LoginCodeRepository codes;
     private final StaffRepository staff;
@@ -100,7 +101,7 @@ public class StaffLoginService {
         String email = normalize(rawEmail);
         Instant now = clock.instant();
         LoginCodeRepository.CodeRow row = codes.lock(email)
-                .orElseThrow(() -> new DomainException(ErrorCode.LOGIN_CODE_INVALID, INVALID + " — запросите новый"));
+                .orElseThrow(() -> new DomainException(ErrorCode.LOGIN_CODE_INVALID, ASK_NEW));
         if (row.attempts() >= props.maxAttempts()) {
             throw locked();
         }
@@ -116,7 +117,7 @@ public class StaffLoginService {
         }
         codes.delete(email);
         StaffUser user = staff.lockByEmail(email).filter(found -> found.status() != StaffStatus.DISABLED)
-                .orElseThrow(() -> new DomainException(ErrorCode.LOGIN_CODE_INVALID, INVALID + " — запросите новый"));
+                .orElseThrow(() -> new DomainException(ErrorCode.LOGIN_CODE_INVALID, ASK_NEW));
         if (user.status() == StaffStatus.INVITED) {
             staff.setStatus(user.id(), StaffStatus.ACTIVE);
             user = new StaffUser(user.id(), user.name(), user.email(), user.role(), StaffStatus.ACTIVE, now);

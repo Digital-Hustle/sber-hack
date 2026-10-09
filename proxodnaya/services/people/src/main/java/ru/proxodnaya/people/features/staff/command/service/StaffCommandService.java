@@ -32,7 +32,8 @@ import ru.proxodnaya.people.features.staff.model.StaffUser;
 public class StaffCommandService {
 
     private static final Logger LOG = LoggerFactory.getLogger(StaffCommandService.class);
-    private static final Map<StaffRole, String> LABELS = Map.of(StaffRole.ADMIN, "Администратор",
+    private static final String ADMIN_LABEL = "Администратор";
+    private static final Map<StaffRole, String> LABELS = Map.of(StaffRole.ADMIN, ADMIN_LABEL,
             StaffRole.SECURITY_OFFICER, "Служба безопасности", StaffRole.MANAGER, "Руководитель участка",
             StaffRole.INSTALLER, "Инженер терминалов", StaffRole.GUARD, "Охранник");
 
@@ -71,7 +72,7 @@ public class StaffCommandService {
         }
         journal.write(actor, user, AccessAction.INVITE, null, now);
         try {
-            mailer.invitation(user.email(), user.name(), LABELS.get(role), actor.name() == null ? "Администратор" : actor.name());
+            mailer.invitation(user.email(), user.name(), LABELS.get(role), actor.name() == null ? ADMIN_LABEL : actor.name());
         } catch (DomainException error) {
             LOG.warn("Приглашение {} создано, но письмо не ушло", user.id());
         }
@@ -150,10 +151,13 @@ public class StaffCommandService {
             return;
         }
         staff.lockAdmins();
-        if (staff.any()) {
-            return;
+        if (!staff.any()) {
+            createAdmin(email);
         }
-        StaffUser admin = new StaffUser(UuidCreator.getTimeOrderedEpoch(), "Администратор", email.strip().toLowerCase(Locale.ROOT),
+    }
+
+    private void createAdmin(String email) {
+        StaffUser admin = new StaffUser(UuidCreator.getTimeOrderedEpoch(), ADMIN_LABEL, email.strip().toLowerCase(Locale.ROOT),
                 StaffRole.ADMIN, StaffStatus.INVITED, null);
         Instant now = clock.instant();
         staff.insert(admin, now);

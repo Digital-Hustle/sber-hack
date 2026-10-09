@@ -24,6 +24,8 @@ public class LoginCodes {
     private static final int SALT_BYTES = 16;
     private static final int TOKEN_BYTES = 32;
     private static final String HMAC = "HmacSHA256";
+    private static final String HIDDEN = "•••••";
+    private static final int SHOWN = 3;
 
     private final SecureRandom random = new SecureRandom();
     private final SecretKeySpec key;
@@ -93,13 +95,13 @@ public class LoginCodes {
      * @return маска
      */
     public static String mask(String email) {
-        int at = email.indexOf('@');
-        if (at < 1) {
-            return "•••••";
+        int atSign = email.indexOf('@');
+        if (atSign < 1) {
+            return HIDDEN;
         }
-        String local = email.substring(0, at);
-        String shown = local.length() <= 2 ? local.substring(0, 1) : local.substring(0, Math.min(3, local.length() - 1));
-        return shown + "•••••" + email.substring(at);
+        String local = email.substring(0, atSign);
+        String shown = local.length() <= 2 ? local.substring(0, 1) : local.substring(0, Math.min(SHOWN, local.length() - 1));
+        return shown + HIDDEN + email.substring(atSign);
     }
 
     private String mac(String value) {

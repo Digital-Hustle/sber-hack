@@ -124,11 +124,10 @@ class StaffLoginIntegrationTest extends AbstractIntegrationTest {
     void admin_invitesGuard_changesRole_disables_sessionEnds_lastAdminProtected() throws Exception {
         // given
         String email = "guard-" + UUID.randomUUID().toString().substring(0, 6) + "@gate.test";
-        JsonNode invited = body(mockMvc.perform(as("ADMIN", post(STAFF))
+        String guardId = body(mockMvc.perform(as("ADMIN", post(STAFF))
                         .content(objectMapper.writeValueAsString(Map.of("name", "Охранник Тест", "email", email, "role", "GUARD"))))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("INVITED")).andReturn().getResponse()
-                .getContentAsString());
-        String guardId = invited.path("id").asText();
+                .getContentAsString()).path("id").asText();
         verify(mailer).invitation(eq(email), eq("Охранник Тест"), eq("Охранник"), anyString());
         mockMvc.perform(as("ADMIN", post(STAFF)).content(objectMapper.writeValueAsString(Map.of("name", "Дубль", "email",
                 email.toUpperCase(), "role", "GUARD")))).andExpect(status().isConflict());
