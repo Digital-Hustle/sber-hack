@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .pathMatchers("/actuator/health/**", "/actuator/health", "/actuator/prometheus").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/intake/api/v1/applicant/**", "/intake/api/v1/files/**").permitAll()
+                        // вход сотрудника: запрос кода и режим стенда; ручка тестового кода сама отвечает 404 в prod
+                        .pathMatchers("/review/api/v1/auth/**").permitAll()
                         .pathMatchers("/*/api/v1/stream", "/*/api/v1/stream/events").permitAll()
                         .pathMatchers("/intake/**", "/docproc/**", "/review/**").authenticated()
                         .anyExchange().denyAll())

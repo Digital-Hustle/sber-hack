@@ -37,6 +37,8 @@ app:
     rules:
       - { id: create-application, method: POST, path: /intake/api/v1/applicant/applications, limit: 20, window: 10m }
       - { id: resume, method: POST, path: /intake/api/v1/applicant/resume, limit: 10, window: 15m }
+      - { id: staff-code, method: POST, path: /review/api/v1/auth/code, limit: 10, window: 15m }
+      - { id: staff-test-code, method: POST, path: /review/api/v1/auth/test-code, limit: 60, window: 15m }
       - { id: upload, method: POST, path: "/intake/api/v1/applicant/applications/*/documents/**", limit: 120, window: 1m }
   oidc:
     issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/documents}

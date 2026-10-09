@@ -1,21 +1,24 @@
 package ru.documents.review.features.staff.service;
 
-import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Секрет TOTP в формате Keycloak: строка, ключ HMAC — её байты UTF-8; приложению отдаём их в Base32 (RFC 4648).
+ * Одноразовый код = TOTP (RFC 6238, HMAC-SHA1, 6 цифр) в формате Keycloak: секрет — строка, ключ HMAC — её байты.
+ * Шаг — срок жизни кода из письма; проверяет код сам Keycloak.
  */
 public final class Totp {
 
     private static final String ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final String BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
     private static final int LENGTH = 32;
-    private static final int BITS = 5;
-    private static final int BYTE = 8;
-    private static final int MASK = 31;
-    private static final int OCTET = 0xFF;
+    private static final int DIGITS = 1_000_000;
+    private static final int LAST = 19;
+    private static final int NIBBLE = 0xF;
+    private static final int SIGN = 0x7FFFFFFF;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private Totp() {
@@ -31,45 +34,23 @@ public final class Totp {
     }
 
     /**
-     * Base32 без выравнивания.
+     * Код на момент времени.
      *
-     * @param value секрет Keycloak
-     * @return то, что вводят в приложение
+     * @param secret      секрет Keycloak
+     * @param epochSecond время, секунды Unix
+     * @param period      шаг, секунды
+     * @return 6 цифр
      */
-    public static String base32(String value) {
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        StringBuilder out = new StringBuilder();
-        int buffer = 0;
-        int left = 0;
-        for (byte b : bytes) {
-            buffer = buffer << BYTE | b & OCTET;
-            left += BYTE;
-            while (left >= BITS) {
-                out.append(BASE32.charAt((buffer >> (left - BITS)) & MASK));
-                left -= BITS;
-            }
+    public static String code(String secret, long epochSecond, long period) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA1");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA1"));
+            byte[] h = mac.doFinal(ByteBuffer.allocate(Long.BYTES).putLong(epochSecond / period).array());
+            int o = h[LAST] & NIBBLE;
+            int v = ByteBuffer.wrap(h, o, Integer.BYTES).getInt() & SIGN;
+            return String.format("%06d", v % DIGITS);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("HmacSHA1 недоступен", e);
         }
-        if (left > 0) {
-            out.append(BASE32.charAt((buffer << (BITS - left)) & MASK));
-        }
-        return out.toString();
-    }
-
-    /**
-     * Ссылка для QR.
-     *
-     * @param issuer подпись
-     * @param login  логин
-     * @param value  секрет Keycloak
-     * @return otpauth://totp/…
-     */
-    public static String uri(String issuer, String login, String value) {
-        String label = enc(issuer) + ":" + enc(login);
-        return "otpauth://totp/" + label + "?secret=" + base32(value) + "&issuer=" + enc(issuer)
-                + "&algorithm=SHA1&digits=6&period=30";
-    }
-
-    private static String enc(String s) {
-        return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }

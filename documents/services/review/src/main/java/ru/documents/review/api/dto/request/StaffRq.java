@@ -8,11 +8,11 @@ import ru.documents.review.features.staff.model.StaffRole;
 /**
  * Новый сотрудник.
  *
- * @param login     логин (латиница, 3–32)
+ * @param email     почта (она же логин)
  * @param firstName имя
  * @param lastName  фамилия
  * @param role      роль
  */
-public record StaffRq(@NotBlank @Size(max = 32) String login, @NotBlank @Size(max = 64) String firstName,
+public record StaffRq(@NotBlank @Size(max = 254) String email, @NotBlank @Size(max = 64) String firstName,
                       @NotBlank @Size(max = 64) String lastName, @NotNull StaffRole role) {
 }

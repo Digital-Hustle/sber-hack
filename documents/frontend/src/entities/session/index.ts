@@ -1,1 +1,1 @@
-export { useSession, useOperatorAuth, signInWithCode, recentLogins, forgetLogin, SignInFailure, can, roleLabel, type Role, type Perm, type SignInError } from "./model/session";
+export { useSession, useOperatorAuth, signInWithCode, requestLoginCode, authMode, testCode, SignInFailure, can, roleLabel, type Role, type Perm, type SignInError, type CodeSent, type TestUser, type AuthMode } from "./model/session";

@@ -1,6 +1,7 @@
 package ru.documents.review.features.staff.gateway;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import ru.documents.common.security.ServiceTokenProvider;
 
 /**
  * Admin REST Keycloak (realm documents) от имени svc-review: у него только manage-users / view-users / query-users.
+ * Код из письма хранится в Keycloak как OTP-учётные данные (TOTP с шагом = сроку кода), проверяет его Keycloak.
  */
 @Component
 public class KeycloakAdminGateway {
@@ -63,6 +65,26 @@ public class KeycloakAdminGateway {
     }
 
     /**
+     * Пользователь по почте.
+     *
+     * @param email почта (в нижнем регистре)
+     * @return пользователь или пусто
+     */
+    public Optional<JsonNode> findByEmail(String email) {
+        JsonNode list = call(() -> http.get().uri("/users?exact=true&briefRepresentation=false&email={e}", email)
+                .header(AUTH, bearer()).retrieve().body(JsonNode.class));
+        if (list == null) {
+            return Optional.empty();
+        }
+        for (JsonNode u : list) {
+            if (email.equalsIgnoreCase(u.path("email").asText())) {
+                return Optional.of(u);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Realm-роли пользователя.
      *
      * @param id идентификатор Keycloak
@@ -79,33 +101,33 @@ public class KeycloakAdminGateway {
     }
 
     /**
-     * Есть ли у пользователя код (OTP).
+     * Когда выдан текущий код (создан OTP).
      *
      * @param id идентификатор Keycloak
-     * @return да/нет
+     * @return время или пусто, если кода нет
      */
-    public boolean hasCode(String id) {
-        return !otpIds(id).isEmpty();
+    public Optional<Instant> codeIssuedAt(String id) {
+        return otps(id).stream().filter(c -> c.hasNonNull("createdDate"))
+                .map(c -> Instant.ofEpochMilli(c.path("createdDate").asLong())).max(Instant::compareTo);
     }
 
     /**
-     * Создать сотрудника сразу с кодом: пароля нет вовсе.
+     * Создать сотрудника: пароля нет, код появится при первом запросе входа.
      *
-     * @param login     логин
+     * @param login     логин (почта)
      * @param firstName имя
      * @param lastName  фамилия
-     * @param secret    секрет TOTP (формат Keycloak)
+     * @param email     почта
      * @param roles     realm-роли
      */
-    public void create(String login, String firstName, String lastName, String secret, List<String> roles) {
+    public void create(String login, String firstName, String lastName, String email, List<String> roles) {
         try {
             http.post().uri("/users").header(AUTH, bearer()).contentType(MediaType.APPLICATION_JSON)
                     .body(Map.of("username", login, "firstName", firstName, "lastName", lastName,
-                            "email", login + "@documents.local", "emailVerified", true, "enabled", true,
-                            "credentials", List.of(credential(secret))))
+                            "email", email, "emailVerified", true, "enabled", true))
                     .retrieve().toBodilessEntity();
         } catch (HttpClientErrorException.Conflict e) {
-            throw new DomainException("LOGIN_TAKEN", 409, "Логин уже занят", "Выберите другой логин");
+            throw new DomainException("EMAIL_TAKEN", 409, "Сотрудник с такой почтой уже есть", "Проверьте адрес");
         } catch (RestClientException e) {
             throw unavailable();
         }
@@ -126,20 +148,20 @@ public class KeycloakAdminGateway {
     }
 
     /**
-     * Перевыпустить код: старые коды удаляются, сессии закрываются.
+     * Выдать новый код: прежний перестаёт действовать, открытые сессии не трогаем.
      *
-     * @param id     идентификатор Keycloak
-     * @param secret новый секрет
+     * @param id         идентификатор Keycloak
+     * @param secret     новый секрет
+     * @param periodSec  шаг TOTP, секунды (= срок кода)
      */
-    public void replaceCode(String id, String secret) {
-        for (String c : otpIds(id)) {
-            call(() -> http.delete().uri(USER + "/credentials/{c}", id, c).header(AUTH, bearer()).retrieve()
-                    .toBodilessEntity());
+    public void issueCode(String id, String secret, long periodSec) {
+        for (JsonNode c : otps(id)) {
+            call(() -> http.delete().uri(USER + "/credentials/{c}", id, c.path("id").asText()).header(AUTH, bearer())
+                    .retrieve().toBodilessEntity());
         }
         call(() -> http.put().uri(USER, id).header(AUTH, bearer()).contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("credentials", List.of(credential(secret)), "requiredActions", List.of()))
+                .body(Map.of("credentials", List.of(credential(secret, periodSec)), "requiredActions", List.of()))
                 .retrieve().toBodilessEntity());
-        logout(id);
     }
 
     /**
@@ -160,24 +182,25 @@ public class KeycloakAdminGateway {
         call(() -> http.post().uri(USER + "/logout", id).header(AUTH, bearer()).retrieve().toBodilessEntity());
     }
 
-    private List<String> otpIds(String id) {
+    private List<JsonNode> otps(String id) {
         JsonNode list = call(() -> http.get().uri(USER + "/credentials", id).header(AUTH, bearer()).retrieve()
                 .body(JsonNode.class));
-        List<String> out = new ArrayList<>();
+        List<JsonNode> out = new ArrayList<>();
         if (list != null) {
             list.forEach(c -> {
                 if (OTP.equals(c.path("type").asText())) {
-                    out.add(c.path("id").asText());
+                    out.add(c);
                 }
             });
         }
         return out;
     }
 
-    private static Map<String, Object> credential(String secret) {
-        return Map.of("type", OTP, "userLabel", "Приложение-аутентификатор",
+    private static Map<String, Object> credential(String secret, long periodSec) {
+        return Map.of("type", OTP, "userLabel", "Код из письма",
                 "secretData", "{\"value\":\"" + secret + "\"}",
-                "credentialData", "{\"subType\":\"totp\",\"digits\":6,\"period\":30,\"algorithm\":\"HmacSHA1\",\"counter\":0}");
+                "credentialData", "{\"subType\":\"totp\",\"digits\":6,\"period\":" + periodSec
+                        + ",\"algorithm\":\"HmacSHA1\",\"counter\":0}");
     }
 
     private String bearer() {

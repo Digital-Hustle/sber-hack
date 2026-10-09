@@ -1,12 +1,11 @@
 import { api } from "@/shared/api";
-import type { Enrollment, StaffMember, StaffRole } from "../model/types";
+import type { StaffMember, StaffRole } from "../model/types";
 
-/** FE-UI-03: сотрудники (только старший) → review /staff. */
+/** FE-UI-04: сотрудники (только старший) → review /staff. Приглашение — по почте, код входа придёт письмом. */
 export const staffApi = {
   list: () => api<{ items?: StaffMember[] }>("review", "/staff").then((r) => r.items ?? []),
-  create: (b: { login: string; firstName: string; lastName: string; role: StaffRole }) =>
-    api<Enrollment>("review", "/staff", { method: "POST", body: b }),
-  reissue: (login: string) => api<Enrollment>("review", `/staff/${encodeURIComponent(login)}/code`, { method: "POST" }),
+  invite: (b: { email: string; firstName: string; lastName: string; role: StaffRole }) =>
+    api<StaffMember>("review", "/staff", { method: "POST", body: b }),
   setEnabled: (login: string, enabled: boolean) =>
     api<void>("review", `/staff/${encodeURIComponent(login)}/enabled`, { method: "PUT", body: { enabled } }),
 };

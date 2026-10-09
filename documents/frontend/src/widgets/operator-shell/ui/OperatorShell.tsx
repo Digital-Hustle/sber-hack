@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { motion } from "motion/react";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { FlaskConical, LogOut, ShieldCheck } from "lucide-react";
 import { SignIn } from "./SignIn";
 import { useSession, useOperatorAuth, can, roleLabel, type Perm } from "@/entities/session";
 import { Avatar, Button, Dialog, EmptyState, HeaderBar, Logo, NavTrack, OfflineBanner, PreferencesButton, Spinner, Status } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
 import { pageIn } from "@/shared/config/motion";
+import { env } from "@/shared/config/env";
 import { ModelStatusBadge } from "./ModelStatusBadge";
 
 const NAV: { to: string; label: string; perm: Perm; end?: boolean }[] = [
@@ -31,6 +32,7 @@ export const OperatorShell = () => {
         <Link to={routes.operator} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="оператор" /></Link>
         <NavTrack items={items.map(({ to, label, end }) => ({ to, label, end }))} className="ml-auto hidden md:block xl:ml-6" />
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {env.testMode && <Status tone="warning" className="hidden sm:inline-flex"><FlaskConical className="size-3.5" />тестовый режим</Status>}
           <ModelStatusBadge className="hidden lg:inline-flex" />
           <PreferencesButton className="hidden sm:flex" />
           <Button variant="quiet" className="h-12 rounded-md" onClick={() => setAccount(true)} aria-label={`Пользователь: ${s.name}`}><Avatar name={s.name} className="size-7" /><span className="hidden xl:inline">{roleLabel(s.role)}</span></Button>

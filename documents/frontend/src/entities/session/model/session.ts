@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { env } from "@/shared/config/env";
-import { setAuth } from "@/shared/api";
+import { api, setAuth } from "@/shared/api";
 
 export type Role = "OPERATOR" | "SENIOR_OPERATOR" | "AUDITOR";
 export type Perm = "queue" | "act" | "decide" | "reprocess" | "export" | "reports" | "metrics" | "history" | "staff";
@@ -21,7 +21,6 @@ type State = { user: SessionUser | null; ready: boolean };
 const TOKEN_URL = `${env.oidcAuthority}/protocol/openid-connect/token`;
 const LOGOUT_URL = `${env.oidcAuthority}/protocol/openid-connect/logout`;
 const REFRESH = "documents.refresh";
-const LOGINS = "documents.logins";
 const REFRESH_AHEAD_MS = 30_000;
 
 let state: State = { user: null, ready: false };
@@ -84,22 +83,28 @@ const refresh = () => {
   return refreshing;
 };
 
-/** Логины, которыми входили на этом устройстве (не секрет) — чтобы оставалось ввести только код. */
-export const recentLogins = (): string[] => {
-  try { return (JSON.parse(localStorage.getItem(LOGINS) ?? "[]") as string[]).slice(0, 4); } catch { return []; }
-};
-const rememberLogin = (login: string) =>
-  localStorage.setItem(LOGINS, JSON.stringify([login, ...recentLogins().filter((l) => l !== login)].slice(0, 4)));
-export const forgetLogin = (login: string) => localStorage.setItem(LOGINS, JSON.stringify(recentLogins().filter((l) => l !== login)));
+/** Код отправлен: куда (маска) и когда можно просить новый. Ответ одинаковый для любой почты. */
+export type CodeSent = { sentTo: string; expiresInSec: number; resendInSec: number };
+export type TestUser = { email: string; name: string; role: Role };
+export type AuthMode = { mode: "dev" | "prod"; testUsers: TestUser[] };
+
+const norm = (email: string) => email.trim().toLowerCase();
+
+/** FE-UI-04: review выдаёт новый одноразовый код и шлёт его письмом (RV-16, ADR-021). */
+export const requestLoginCode = (email: string) =>
+  api<CodeSent>("review", "/auth/code", { method: "POST", body: { email: norm(email) } });
+/** Режим стенда: в dev — список тестовых сотрудников для быстрого входа. */
+export const authMode = () => api<AuthMode>("review", "/auth/mode");
+/** Только APP_MODE=dev: сервер выдаёт код сразу в ответе; проверяет его всё равно Keycloak. */
+export const testCode = (email: string) =>
+  api<{ code: string }>("review", "/auth/test-code", { method: "POST", body: { email: norm(email) } }).then((r) => r.code);
 
 /**
- * FE-UI-03: вход без пароля — логин + 6 цифр из приложения-аутентификатора. Форма своя (как в песочнице),
- * Keycloak проверяет код потоком documents-code-direct (grant_type=password без пароля, параметр otp).
+ * FE-UI-04: вход без пароля — почта + 6 цифр из письма. Форма своя (как в «Проходной»), Keycloak проверяет код
+ * потоком documents-code-direct (grant_type=password без пароля, username = почта, параметр otp).
  */
-export const signInWithCode = async (login: string, code: string) => {
-  const l = login.trim().toLowerCase();
-  const t = await post(TOKEN_URL, { grant_type: "password", client_id: env.oidcClientId, username: l, otp: code, scope: "openid" });
-  rememberLogin(l);
+export const signInWithCode = async (email: string, code: string) => {
+  const t = await post(TOKEN_URL, { grant_type: "password", client_id: env.oidcClientId, username: norm(email), otp: code, scope: "openid" });
   return accept(t!);
 };
 

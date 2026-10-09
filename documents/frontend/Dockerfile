@@ -7,6 +7,9 @@ COPY frontend/package.json frontend/package-lock.json ./frontend/
 WORKDIR /app/frontend
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
+# режим стенда: dev — тестовый вход в сборке, prod — боевая сборка (ADR-021)
+ARG VITE_APP_MODE=prod
+ENV VITE_APP_MODE=$VITE_APP_MODE
 RUN npm run gen:api && npm run build
 
 # Статика + reverse proxy. Caddyfile подключается томом из infra/caddy/Caddyfile.

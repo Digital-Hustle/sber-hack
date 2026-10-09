@@ -29,7 +29,10 @@ g 'getOriginalFilename\(\)|originalFilename|original_filename' -- 'services/docp
 g '(OcrClient|LlmGateway|DocprocClient|/ocr/v1)' -- 'services/intake/src/main/**' \
   && F "intake вызывает разбор при приёме — человек не должен ждать: только outbox → очередь docproc"
 g '(PARSED|DONE|READY)' -- 'services/intake/src/main/**/command/**' && W "intake сам ставит итоговый статус? Итог ставит только docproc после модели"
-g 'permitAll\(\)' -- 'services/review/src/main/**' 'services/intake/src/main/**/operator/**' && F "permitAll в рабочем месте оператора (Д8)"
+# Исключение (ADR-021): адреса входа работают до входа по определению и данных людей не отдают; любой другой permitAll — FAIL.
+{ g 'permitAll\(\)' -- 'services/review/src/main/**' 'services/intake/src/main/**/operator/**' \
+    | grep -vE '^services/review/src/main/java/ru/documents/review/config/SecurityConfig\.java:[0-9]+: +\.requestMatchers\(HttpMethod\.(POST|GET), "/api/v1/auth/(code|mode)"(, "/api/v1/auth/test-code")?\)\.permitAll\(\)$'; } \
+  && F "permitAll в рабочем месте оператора (Д8)"
 
 # 4. Хранилище только PostgreSQL
 g 'h2database|sqlite|hsqldb' -- 'services/**/build.gradle.kts' 'services/gradle/libs.versions.toml' 'services/*/pyproject.toml' && F "встраиваемая БД в зависимостях — данные только в PostgreSQL"

@@ -33,6 +33,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(a -> a
                         // EventSource не передаёт заголовки: доступ по одноразовому билету (TicketFilter).
                         .requestMatchers(HttpMethod.GET, "/api/v1/stream").hasRole(TicketFilter.ROLE)
+                        // запрос кода входа — до входа; сам код проверяет Keycloak, частоту — шлюз и StaffMailer
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/code", "/api/v1/auth/test-code").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/mode").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/applications", "/api/v1/applications/*/history",
                                 "/api/v1/metrics").hasAnyRole(OPERATOR, SENIOR, AUDITOR)
                         .requestMatchers(HttpMethod.POST, "/api/v1/documents/*/reprocess").hasRole(SENIOR)
