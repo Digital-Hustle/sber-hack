@@ -59,7 +59,7 @@ Kafka доставляет «файл принят», воркеры берут 
 | Tesseract 5 + tessdata `rus`, `eng` / pytesseract | Apache-2.0 | B2 |
 | networknt json-schema-validator | Apache-2.0 | B2 |
 | Ollama / Qwen3 / Qwen2.5-VL-7B | MIT / Apache-2.0 / Apache-2.0 | B3 |
-| Apache POI / Apache PDFBox | Apache-2.0 | B3 |
+| Apache POI / Apache PDFBox / TwelveMonkeys ImageIO | Apache-2.0 / Apache-2.0 / BSD-3 | B3 |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
 | oidc-client-ts / pdfjs-dist / react-dropzone / recharts | Apache-2.0 / Apache-2.0 / MIT / MIT | F1/F2 |
 | Остальное фронта (компоненты реестров, иконки, шрифты) | как в `../../proxodnaya/docs/DECISIONS.md` | F2 |
