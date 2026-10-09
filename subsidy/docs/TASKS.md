@@ -7,8 +7,8 @@
 ## Вехи (PLAN.md)
 | Веха | Когда | Условие готовности | Статус |
 |---|---|---|---|
-| M0 Каркас | Т+0:45 | `init-backend.sh services` + сервисы собираются, compose поднимает pg/kafka/keycloak/ollama, фронт-каркас с токенами, CI зелёный | todo |
-| M1 Контракты | Т+1:00 | API.md, `/internal/**`, `contracts/events/`, схемы 8 видов, формат протокола согласованы | todo |
+| M0 Каркас | Т+0:45 | `init-backend.sh services` + сервисы собираются, compose поднимает pg/kafka/keycloak/ollama, фронт-каркас с токенами, CI зелёный | done (CI — на сервере, GitHub Actions заблокированы биллингом) |
+| M1 Контракты | Т+1:00 | API.md, `/internal/**`, `contracts/events/`, схемы 8 видов, формат протокола согласованы | done #PR |
 | M2 Интеграция №1, тег `subs-demo-1` | Т+3:00 | пакет → загрузка → стадии → тип и поля моделью → комплектность и 3+ правила → протокол на экране; рестарт docproc посреди разбора — без потерь | todo |
 | M3 Интеграция №2, тег `subs-demo-2` | Т+5:00 | 8 видов на открытом наборе (отчёт eval), сегментация склеек, все P0-правила, смена типа и дозагрузка → перепроверка, закрытость по чек-листу I; код-фриз P0/P1 | todo |
 | M4 Финал, тег `subs-demo-final` | Т+6:30 | docs, DECISIONS, EVAL-отчёт, слайды, 2 репетиции | todo |
@@ -20,9 +20,9 @@
 | PLT-01 | NFR-15 | `init-backend.sh services` (кейс subsidy), `libs/common` — перенести из «Проходной» (sed `proxodnaya` → `subsidy`), каркас `libs/llm` | B1 | done |
 | PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис, volume), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy, ollama + ollama-pull (профиль `llm-local`) | B1 | done |
 | PLT-03 | NFR-13 | CI `subsidy-ci.yml` уже есть — проверить на первом коде; включить деплой (`SUBS_DEPLOY_ENABLED`) | B1 | done |
-| PLT-04 | — | Синк контрактов: API.md, `/internal/**`, `contracts/events/*.schema.json`, стадии, коды правил | B1 + все | todo |
-| PLT-05 | FR-60 | Keycloak realm `subsidy`: клиент, роли, TOTP, brute-force, демо-пользователи из `.env` | B1 | todo |
-| PLT-06 | — | Service accounts `svc-package/docproc/rules/assistant`, `aud` на каждый сервис | B1 | todo |
+| PLT-04 | — | Синк контрактов: API.md, `/internal/**`, `contracts/events/*.schema.json`, стадии, коды правил | B1 + все | done #PR |
+| PLT-05 | FR-60 | Keycloak realm `subsidy`: клиент, роли, TOTP, brute-force, демо-пользователи из `.env` | B1 | done (`infra/keycloak/gen_realm.py`) |
+| PLT-06 | — | Service accounts `svc-package/docproc/rules/assistant`, `aud` на каждый сервис | B1 | done (`infra/keycloak/gen_realm.py`) |
 | PLT-07 | NFR-17 | Outbox relay + IdempotentConsumer + конверт события в `libs/common` | B1 | done |
 | PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | todo |
 | PLT-09 | FR-28 | `eval/`: `run.py` через публичный API, разметка, отчёт; синтетика `eval/synthetic/` (генератор пакетов с корректными реквизитами) + запуск в CI | B2 | done #70 |
