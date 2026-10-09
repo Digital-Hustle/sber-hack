@@ -8,6 +8,14 @@ import { errorText } from "@/shared/api";
 import { fadeUp, popIn, stagger } from "@/shared/config/motion";
 
 const REFRESH_MS = 30_000;
+const FORMULA_TITLE: Record<string, string> = {
+  applications: "Заявки по статусам", documents: "Документы по стадиям", waiting: "Ожидание проверки", decision: "До решения", fields: "Поля без правок",
+};
+/** В формулах бэка — коды статусов/стадий; оператору показываем их русские названия. */
+const humanize = (t: string) => t.replace(/\b[A-Z][A-Z_]{2,}\b/g, (c) => {
+  const s = statusView(c).label; if (s !== c) return `«${s}»`;
+  const d = stageView(c).label; return d !== c ? `«${d}»` : c;
+});
 
 /** FE-OP-10 / B-06: метрики очереди с формулами «как посчитано». Пустая БД — честные нули. */
 export const MetricsPage = () => {
@@ -63,7 +71,7 @@ export const MetricsPage = () => {
         <Card className="mt-3 sm:mt-4">
           <CardHeader><CardTitle className="flex items-center gap-2"><Info className="size-4" />Как посчитано</CardTitle></CardHeader>
           <dl className="grid gap-3 px-4 pb-5 pt-4 text-sm sm:px-6">
-            {Object.entries(m.formulas).map(([k, v]) => <div key={k}><dt className="font-mono text-xs text-muted-foreground">{k}</dt><dd>{v}</dd></div>)}
+            {Object.entries(m.formulas).map(([k, v]) => <div key={k}><dt className="text-xs font-medium text-muted-foreground">{FORMULA_TITLE[k] ?? k}</dt><dd>{humanize(v)}</dd></div>)}
           </dl>
         </Card>
       )}

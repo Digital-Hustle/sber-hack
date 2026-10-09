@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "motion/react";
+import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ChevronRight, Inbox, Loader2, Search, UserRound } from "lucide-react";
 import { AppStatusBadge, reviewApi, reviewKeys, statusView, waitingRu, type QueueFilter } from "@/entities/application";
 import { useSession } from "@/entities/session";
@@ -10,7 +10,7 @@ import { AnimatedNumber, Avatar, Button, Card, CardHeader, CardTitle, EmptyState
 import { errorText, useEventStream } from "@/shared/api";
 import { routes } from "@/shared/const/router";
 import { cn } from "@/shared/lib";
-import { fadeUp, stagger } from "@/shared/config/motion";
+import { fadeUp, spring, stagger } from "@/shared/config/motion";
 
 const STATUSES = [
   { value: "", label: "Все активные" },
@@ -36,9 +36,10 @@ const QueueAside = ({ status, onStatus }: { status: string; onStatus: (v: string
           {ASIDE.map((k) => (
             <li key={k}>
               <button type="button" onClick={() => onStatus(status === k ? "" : k)} aria-pressed={status === k}
-                className={cn("flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left text-sm outline-none transition-colors duration-fast hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring", status === k && "bg-muted font-medium")}>
-                <span className="truncate">{statusView(k).label}</span>
-                <span className="font-semibold tabular-nums">{m.isPending ? "…" : <AnimatedNumber value={apps[k] ?? 0} />}</span>
+                className={cn("relative flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left text-sm outline-none transition-colors duration-fast hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring", status === k && "font-medium")}>
+                {status === k && <motion.span layoutId="queue-aside-active" transition={spring.snappy} className="absolute inset-0 rounded-md bg-muted" />}
+                <span className="relative truncate">{statusView(k).label}</span>
+                <span className="relative font-semibold tabular-nums">{m.isPending ? "…" : <AnimatedNumber value={apps[k] ?? 0} />}</span>
               </button>
             </li>
           ))}
@@ -71,6 +72,7 @@ export const QueuePage = () => {
     queryFn: ({ pageParam }) => reviewApi.queue(f, pageParam),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.page?.next ?? null,
+    placeholderData: keepPreviousData, // смена фильтра — без мигания скелетоном, строки перестраиваются
   });
   useEventStream("review", "/stream/ticket", "/stream", ["queue.changed", "document.stage"], () => { void qc.invalidateQueries({ queryKey: reviewKeys.queueAll }); });
   useEffect(() => {
@@ -102,9 +104,10 @@ export const QueuePage = () => {
       ) : (
         <>
           <Card className="overflow-hidden">
-            <motion.ul variants={stagger(0.02)} initial="hidden" animate="show" className={q.isFetching && !q.isFetchingNextPage ? "opacity-70 transition-opacity duration-fast" : "transition-opacity duration-fast"}>
+            <motion.ul variants={stagger(0.02)} initial="hidden" animate="show" className={q.isPlaceholderData ? "opacity-70 transition-opacity duration-fast" : "transition-opacity duration-fast"}>
+              <AnimatePresence mode="popLayout" initial={false}>
               {items.map((it) => (
-                <motion.li key={it.id} variants={fadeUp} className="border-t border-border first:border-t-0">
+                <motion.li key={it.id} layout="position" variants={fadeUp} exit="exit" className="border-t border-border first:border-t-0">
                   <Link to={routes.operatorApplication(it.id!)} className="group flex min-w-0 items-center gap-3 px-4 py-3.5 outline-none transition-colors duration-fast hover:bg-muted focus-visible:bg-muted sm:gap-4 sm:px-6">
                     <Avatar name={it.applicantName || "?"} className="hidden size-10 sm:flex" />
                     <div className="min-w-0 flex-1">
@@ -122,6 +125,7 @@ export const QueuePage = () => {
                   </Link>
                 </motion.li>
               ))}
+              </AnimatePresence>
             </motion.ul>
           </Card>
           <LoadMore className="mt-4" shown={items.length} total={total} hasMore={!!q.hasNextPage} loading={q.isFetchingNextPage} error={q.isFetchNextPageError} onMore={() => q.fetchNextPage()} />

@@ -12,6 +12,9 @@
   "maxFailureWaitSeconds": 900,
   "accessTokenLifespan": 300,
   "ssoSessionIdleTimeout": 3600,
+  "rememberMe": true,
+  "ssoSessionIdleTimeoutRememberMe": 604800,
+  "ssoSessionMaxLifespanRememberMe": 604800,
   "internationalizationEnabled": true,
   "supportedLocales": ["ru"],
   "defaultLocale": "ru",
@@ -19,6 +22,46 @@
   "otpPolicyAlgorithm": "HmacSHA1",
   "otpPolicyDigits": 6,
   "otpPolicyPeriod": 30,
+  "browserFlow": "documents-code",
+  "authenticationFlows": [
+    {
+      "alias": "documents-code", "providerId": "basic-flow", "topLevel": true, "builtIn": false,
+      "description": "FE-UI-02: логин, затем код из приложения-аутентификатора; пароль — только пока код не настроен",
+      "authenticationExecutions": [
+        { "authenticator": "auth-cookie", "requirement": "ALTERNATIVE", "priority": 10, "autheticatorFlow": false, "userSetupAllowed": false },
+        { "flowAlias": "documents-code-forms", "requirement": "ALTERNATIVE", "priority": 20, "autheticatorFlow": true, "userSetupAllowed": false }
+      ]
+    },
+    {
+      "alias": "documents-code-forms", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "description": "Логин → код, а пока код не настроен — пароль",
+      "authenticationExecutions": [
+        { "authenticator": "auth-username-form", "requirement": "REQUIRED", "priority": 10, "autheticatorFlow": false, "userSetupAllowed": false },
+        { "flowAlias": "documents-code-otp", "requirement": "CONDITIONAL", "priority": 20, "autheticatorFlow": true, "userSetupAllowed": false },
+        { "flowAlias": "documents-code-password", "requirement": "CONDITIONAL", "priority": 30, "autheticatorFlow": true, "userSetupAllowed": false }
+      ]
+    },
+    {
+      "alias": "documents-code-otp", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "description": "Код настроен — вход по коду",
+      "authenticationExecutions": [
+        { "authenticator": "conditional-user-configured", "requirement": "REQUIRED", "priority": 10, "autheticatorFlow": false, "userSetupAllowed": false },
+        { "authenticator": "auth-otp-form", "requirement": "REQUIRED", "priority": 20, "autheticatorFlow": false, "userSetupAllowed": false }
+      ]
+    },
+    {
+      "alias": "documents-code-password", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "description": "Кода ещё нет — пароль, затем обязательная настройка кода (CONFIGURE_TOTP)",
+      "authenticationExecutions": [
+        { "authenticator": "conditional-sub-flow-executed", "authenticatorConfig": "documents-code-otp-not-executed",
+          "requirement": "REQUIRED", "priority": 10, "autheticatorFlow": false, "userSetupAllowed": false },
+        { "authenticator": "auth-password-form", "requirement": "REQUIRED", "priority": 20, "autheticatorFlow": false, "userSetupAllowed": false }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    { "alias": "documents-code-otp-not-executed", "config": { "flow_to_check": "documents-code-otp", "check_result": "not-executed" } }
+  ],
   "roles": {
     "realm": [
       { "name": "OPERATOR", "description": "Оператор приёма" },
@@ -85,6 +128,7 @@
       "emailVerified": true,
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${KC_DEMO_OPERATOR_PASSWORD}", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
       "realmRoles": ["OPERATOR"]
     },
     {
@@ -106,6 +150,7 @@
       "emailVerified": true,
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${KC_DEMO_AUDITOR_PASSWORD}", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
       "realmRoles": ["AUDITOR"]
     },
     { "username": "service-account-svc-docproc", "enabled": true, "serviceAccountClientId": "svc-docproc", "realmRoles": ["SERVICE_DOCPROC"] },

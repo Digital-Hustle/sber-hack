@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { UserManager, WebStorageStateStore, InMemoryWebStorage, type User } from "oidc-client-ts";
+import { OidcClient, UserManager, WebStorageStateStore, InMemoryWebStorage, type User } from "oidc-client-ts";
 import { env } from "@/shared/config/env";
 import { setAuth } from "@/shared/api";
 import { routes } from "@/shared/const/router";
@@ -107,6 +107,35 @@ export const useOperatorAuth = () => {
   }, []);
 };
 
+/** Последний логин (не секрет) — подставляем в форму входа, чтобы оставалось ввести только код. */
+const LAST_LOGIN = "documents.login";
+const remember = (u: User) => {
+  const login = u.profile.preferred_username;
+  if (login) localStorage.setItem(LAST_LOGIN, login);
+};
+const signedIn = (u: User) => {
+  sessionStorage.removeItem(SSO_TRIED); // вошли — при следующей перезагрузке снова можно тихо
+  remember(u);
+  set({ user: u, ready: true });
+};
+
+/**
+ * FE-UI-02: вход внутри страницы — форма Keycloak во фрейме того же origin (/auth), без ухода с сайта.
+ * Запрос и PKCE-проверка — те же, что у редиректа (state в sessionStorage); callback во фрейме
+ * отдаёт адрес родителю (app/main.tsx), родитель меняет код на токены.
+ */
+export const embeddedSignInUrl = async (next: string) => {
+  const req = await new OidcClient(userManager.settings).createSigninRequest({
+    request_type: "si:r",
+    state: { next },
+    login_hint: localStorage.getItem(LAST_LOGIN) ?? undefined,
+  });
+  return req.url;
+};
+export const SIGNIN_MESSAGE = "documents.signin";
+export const completeEmbeddedSignIn = async (url: string) => signedIn(await userManager.signinRedirectCallback(url));
+export const forgetLogin = () => localStorage.removeItem(LAST_LOGIN);
+
 export const useSession = () => {
   const s = useSyncExternalStore((f) => { subs.add(f); return () => subs.delete(f); }, () => state);
   const roles = rolesOf(s.user);
@@ -141,8 +170,7 @@ export const completeSignIn = async (): Promise<string> => {
     }
     throw e;
   }
-  sessionStorage.removeItem(SSO_TRIED); // вошли — при следующей перезагрузке снова можно тихо
-  set({ user: u, ready: true });
+  signedIn(u);
   const next = (u.state as { next?: string } | undefined)?.next;
   return next && next.startsWith(routes.operator) && next !== routes.operatorCallback ? next : routes.operator;
 };
