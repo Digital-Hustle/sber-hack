@@ -23,6 +23,19 @@ spring:
       group-id: people
       auto-offset-reset: earliest
       enable-auto-commit: false
+  mail:
+    # без SMTP_HOST письма не уходят (код — в лог только при STAFF_LOG_CODES=true, для локальной разработки)
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
+      mail.smtp.ssl.enable: ${SMTP_SSL:false}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   mvc:
     problemdetails:
       enabled: true
@@ -61,6 +74,18 @@ people:
     audiences: [people, access, shift, assistant]
     device-ttl: ${DEVICE_TOKEN_TTL:10m}
     challenge-ttl: 60s
+  staff:
+    # вход персонала по коду из письма (PPL-13, ADR-041)
+    pepper: ${INVITE_PEPPER}
+    code-ttl: 10m
+    resend-after: 45s
+    max-attempts: 5
+    access-ttl: ${STAFF_ACCESS_TTL:10m}
+    session-ttl: 12h
+    login-url: ${PUBLIC_URL}/admin/login
+    mail-from: ${SMTP_FROM:Проходная <no-reply@proxodnaya.local>}
+    bootstrap-email: ${STAFF_BOOTSTRAP_ADMIN_EMAIL:}
+    log-codes: ${STAFF_LOG_CODES:false}
 
 server:
   port: 8081

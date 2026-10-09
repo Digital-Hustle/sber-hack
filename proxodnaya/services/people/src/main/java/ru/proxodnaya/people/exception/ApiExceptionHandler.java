@@ -75,8 +75,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     private static HttpStatus statusOf(ErrorCode code) {
         return switch (code) {
             case WORKER_NOT_FOUND, NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case DEVICE_ALREADY_BOUND, CONFLICT -> HttpStatus.CONFLICT;
-            case INVITE_EXPIRED -> HttpStatus.GONE;
+            case DEVICE_ALREADY_BOUND, CONFLICT, LAST_ADMIN -> HttpStatus.CONFLICT;
+            case INVITE_EXPIRED, LOGIN_CODE_EXPIRED -> HttpStatus.GONE;
+            case LOGIN_RESEND_TOO_SOON, LOGIN_CODE_LOCKED -> HttpStatus.TOO_MANY_REQUESTS;
+            case SESSION_EXPIRED -> HttpStatus.UNAUTHORIZED;
             case FACE_LOW_QUALITY, FACE_MULTIPLE -> HttpStatus.UNPROCESSABLE_ENTITY;
             case SERVICE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
             case FORBIDDEN, WORKER_BLOCKED, DEVICE_UNKNOWN, DEVICE_REVOKED, DEVICE_MISMATCH -> HttpStatus.FORBIDDEN;

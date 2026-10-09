@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.kafka.KafkaContainer;
 
+import ru.proxodnaya.people.features.staff.gateway.StaffMailer;
 import ru.proxodnaya.people.features.worker.gateway.FaceGateway;
 
 /**
@@ -47,6 +48,10 @@ public abstract class AbstractIntegrationTest {
 
     @MockitoBean
     protected FaceGateway face;
+
+    /** Почта — внешняя: коды из писем тесты берут из аргументов мока. */
+    @MockitoBean
+    protected StaffMailer mailer;
 
     @Autowired
     protected MockMvc mockMvc;

@@ -46,6 +46,14 @@ public enum ErrorCode {
     CHALLENGE_INVALID,
     PAIRING_CODE_INVALID,
 
+    // Staff (вход по коду из письма, ADR-041)
+    LOGIN_RESEND_TOO_SOON,
+    LOGIN_CODE_INVALID,
+    LOGIN_CODE_EXPIRED,
+    LOGIN_CODE_LOCKED,
+    SESSION_EXPIRED,
+    LAST_ADMIN,
+
     // System
     SYSTEM_ERROR,
     SERVICE_UNAVAILABLE,
