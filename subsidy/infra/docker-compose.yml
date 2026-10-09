@@ -118,6 +118,26 @@ services:
     entrypoint: ["/bin/sh", "-c", "ollama pull ${LLM_MODEL:-qwen3:8b} && ollama pull ${LLM_VISION_MODEL:-qwen2.5vl:7b}"]
     restart: "no"
 
+  gateway:
+    <<: *restart
+    build:
+      context: ../services
+      dockerfile: Dockerfile.src
+      args:
+        SERVICE: gateway
+    environment:
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
+      OIDC_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
+      PACKAGE_URL: ${PACKAGE_URL:?}
+      DOCPROC_URL: ${DOCPROC_URL:?}
+      RULES_URL: ${RULES_URL:?}
+      ASSISTANT_URL: ${ASSISTANT_URL:?}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:?}
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
   caddy:
     <<: *restart
     build:
@@ -132,6 +152,7 @@ services:
       - caddydata:/data
     depends_on:
       keycloak: { condition: service_started }
+      gateway: { condition: service_started }
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
       interval: 10s
