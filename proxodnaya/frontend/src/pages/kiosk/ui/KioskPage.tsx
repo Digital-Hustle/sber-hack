@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Maximize } from "lucide-react";
-import { api, useDb, terminalModeOf, offlinePolicyOf, kioskIdentity, kioskStatus, KIOSK_SLOT, type DecisionResult } from "@/shared/api";
+import { api, useDb, terminalModeOf, offlinePolicyOf, kioskIdentity, kioskStatus, errorText, KIOSK_SLOT, type DecisionResult } from "@/shared/api";
 import { Button, Logo, toast } from "@/shared/ui";
 import { useOfflinePass, localLeftMs, verifyLocal, syncQueue } from "@/features/offline-pass";
 import { useNow, useOnline } from "@/shared/hooks";
@@ -17,17 +17,37 @@ const useForceDark = () => useEffect(() => {
   return () => { if (!had) html.classList.remove("dark"); };
 }, []);
 
-/** id терминала = id его ключа в IndexedDB. Первый запуск — регистрация на сервере; без связи — последний известный. */
-const useKioskId = () => {
+/** Регистрация и статус: ошибки видны, повтор не создаёт параллельные ключи. */
+const useKioskBoot = (online: boolean) => {
   const [id, setId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retryAt, setRetryAt] = useState(0);
   useEffect(() => {
     let alive = true;
-    const tryId = () => kioskIdentity().then((x) => alive && setId(x)).catch(() => loadKey(KIOSK_SLOT).then((k) => { if (alive && k && k.deviceId !== "pending") setId(k.deviceId); }));
-    void tryId();
-    const t = setInterval(() => { if (alive) setId((cur) => { if (!cur) void tryId(); return cur; }); }, 15000);
-    return () => { alive = false; clearInterval(t); };
-  }, []);
-  return id;
+    let busy = false;
+    const tick = async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        if (!online) {
+          const key = await loadKey(KIOSK_SLOT);
+          if (alive && key && key.deviceId !== "pending") setId(key.deviceId);
+          return;
+        }
+        await kioskIdentity();
+        const kiosk = await kioskStatus();
+        if (alive) { setId(kiosk.id); setError(null); }
+      } catch (e) {
+        if (alive) setError(errorText(e));
+        const key = await loadKey(KIOSK_SLOT).catch(() => undefined);
+        if (alive && key && key.deviceId !== "pending") setId(key.deviceId);
+      } finally { busy = false; }
+    };
+    void tick();
+    const timer = setInterval(() => void tick(), 15000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [online, retryAt]);
+  return { id, error, retry: () => { setError(null); setRetryAt((x) => x + 1); } };
 };
 
 export const KioskPage = () => {
@@ -35,7 +55,9 @@ export const KioskPage = () => {
   const db = useDb();
   const now = useNow(10000);
   const netOnline = useOnline();
-  const kioskId = useKioskId();
+  const [simOffline, setSimOffline] = useState(false);
+  const online = netOnline && !simOffline;
+  const { id: kioskId, error: startupError, retry: retryStartup } = useKioskBoot(online);
   const snapshot = useOfflinePass((x) => x.snapshot);
   const snap = snapshot && snapshot.kioskId === kioskId ? snapshot : null;
   const kiosk = db.kiosks?.find((k) => k.id === kioskId);
@@ -43,21 +65,11 @@ export const KioskPage = () => {
   const checkpoint = db.checkpoints.find((c) => c.id === kiosk?.checkpointId) ?? (!kiosk ? snap?.checkpoint : undefined);
   const paired = kiosk ? !!kiosk.pairedAt && !!checkpoint : !!snap;
   const mode = terminalModeOf(db, kiosk);
-  const [simOffline, setSimOffline] = useState(false);
-  const online = netOnline && !simOffline;
   const [service, setService] = useState(false);
   const [offlineResult, setOfflineResult] = useState<DecisionResult | null>(null);
   const hold = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Пульс: терминал спрашивает своё состояние (сопряжение, проходная, логика) — заодно админка видит, что он на связи.
   const pairedNow = !!kiosk?.pairedAt;
-  useEffect(() => {
-    if (!online || !kioskId) return;
-    const tick = () => { kioskStatus().catch(() => undefined); };
-    tick();
-    const t = setInterval(tick, pairedNow ? 30000 : 5000);
-    return () => clearInterval(t);
-  }, [kioskId, online, pairedNow]);
 
   const startHold = () => { hold.current = setTimeout(() => setService(true), 1000); };
   const endHold = () => clearTimeout(hold.current);
@@ -90,7 +102,7 @@ export const KioskPage = () => {
   const leftMs = snap ? localLeftMs(snap, now) : 0;
   const local = policy === "LOCAL" && leftMs > 0;
   const fallback = policy === "LOCAL" ? (snap?.rules.afterExpiry ?? db.settings.offlineAfterExpiry ?? "GUARD") : policy;
-  const view = !kioskId ? "boot" : !paired ? "pair" : online ? "live" : local ? "local" : "offline";
+  const view = startupError && !paired ? "startup-error" : !kioskId || (!kiosk && !snap) ? "boot" : !paired ? "pair" : online ? "live" : local ? "local" : "offline";
 
   return (
     <div className="flex h-dvh flex-col gap-3 bg-background/30 px-3 pb-3 pt-safe text-foreground sm:gap-4 sm:px-5 sm:pb-5">
@@ -115,6 +127,11 @@ export const KioskPage = () => {
       </header>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={view + (kiosk?.pairCode ?? "")} className="relative flex min-h-0 flex-1 flex-col" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={tween.base}>
+          {view === "startup-error" && <div role="alert" className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+            <p className="text-xl font-semibold">Не удалось подключить терминал</p>
+            <p className="text-lg text-muted-foreground">{startupError}</p>
+            <Button size="lg" onClick={retryStartup}>Повторить</Button>
+          </div>}
           {view === "boot" && <div className="flex flex-1 items-center justify-center text-lg text-muted-foreground">{online ? "Регистрируем терминал…" : "Нет связи: терминал ещё не зарегистрирован"}</div>}
           {view === "pair" && <PairingScreen code={kiosk?.pairCode ?? "••••••"} />}
           {view === "live" && checkpoint && <KioskTerminal checkpointId={checkpoint.id} mode={mode} />}
