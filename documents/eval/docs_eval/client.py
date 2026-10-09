@@ -1,7 +1,8 @@
 """Клиент публичного API: грузим файл как соискатель, ждём итоговую стадию, читаем результат как оператор.
 
 Только стандартная библиотека. Оператору нужен access-токен Keycloak (realm documents): прямой выдачи по паролю
-у клиента documents-operator нет, поэтому токен передаётся снаружи (EVAL_OPERATOR_TOKEN).
+у клиента documents-operator нет, поэтому токен передаётся снаружи (EVAL_OPERATOR_TOKEN) или берётся по паролю
+у отдельного клиента стенда замера (`scripts/eval-client.sh`, EVAL_TOKEN_URL) и обновляется перед каждым чтением.
 """
 
 from __future__ import annotations
@@ -10,8 +11,10 @@ import json
 import ssl
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from .metrics import DONE_STAGES
@@ -29,8 +32,35 @@ class DocResult:
     seconds: float
 
 
+class PasswordToken:
+    """Токен оператора по паролю (grant_type=password) с обновлением до истечения — для долгих прогонов на CPU."""
+
+    def __init__(self, url: str, client_id: str, username: str, password: str, insecure: bool = False) -> None:
+        self.url, self.client_id, self.username, self.password = url, client_id, username, password
+        self.ssl = ssl._create_unverified_context() if insecure else None
+        self.token: str | None = None
+        self.until = 0.0
+
+    def __call__(self) -> str:
+        if self.token and time.monotonic() < self.until:
+            return self.token
+        body = urllib.parse.urlencode({"grant_type": "password", "client_id": self.client_id,
+                                       "username": self.username, "password": self.password}).encode()
+        req = urllib.request.Request(self.url, data=body, method="POST")
+        req.add_header("Content-Type", "application/x-www-form-urlencoded")
+        try:
+            with urllib.request.urlopen(req, timeout=30, context=self.ssl) as rs:
+                data = json.loads(rs.read())
+        except urllib.error.HTTPError as e:
+            raise ApiError(f"токен оператора: {e.code} {e.read().decode('utf-8', 'replace')[:200]}") from e
+        self.token = data["access_token"]
+        self.until = time.monotonic() + max(int(data.get("expires_in", 60)) - 30, 10)
+        return self.token
+
+
 class Api:
-    def __init__(self, base: str, operator_token: str | None, timeout: float = 30.0, insecure: bool = False) -> None:
+    def __init__(self, base: str, operator_token: str | Callable[[], str] | None, timeout: float = 30.0,
+                 insecure: bool = False) -> None:
         self.base = base.rstrip("/")
         self.operator_token = operator_token
         self.timeout = timeout
@@ -97,7 +127,8 @@ class Api:
     def result(self, doc_id: str) -> dict:
         if not self.operator_token:
             raise ApiError("нет EVAL_OPERATOR_TOKEN — поля прочитать нельзя")
-        return self._call("GET", f"/docproc/api/v1/documents/{doc_id}/result", auth=f"Bearer {self.operator_token}")
+        token = self.operator_token() if callable(self.operator_token) else self.operator_token
+        return self._call("GET", f"/docproc/api/v1/documents/{doc_id}/result", auth=f"Bearer {token}")
 
     def process(self, name: str, data: bytes, mime: str, deadline_s: float) -> DocResult:
         """Один документ — одна заявка (документы не влияют друг на друга)."""

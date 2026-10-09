@@ -20,7 +20,7 @@ from datetime import date
 from pathlib import Path
 
 from docs_eval.checksums import inn_valid, snils_valid
-from docs_eval.client import Api, ApiError
+from docs_eval.client import Api, ApiError, PasswordToken
 from docs_eval.metrics import Outcome, evaluate, to_markdown
 from docs_eval.synth import DOC_TYPES
 
@@ -86,6 +86,16 @@ def measure(rows: list[dict], files_dir: Path, api: Api, deadline_s: float) -> l
     return outcomes
 
 
+def summary(r, label: str) -> dict:
+    """Короткая сводка для таблицы сравнения моделей (LLM.md, FR-42)."""
+    def num(x: float) -> float | None:
+        return None if x != x else round(x, 4)  # NaN → null
+    return {"label": label, "total": r.total, "readable": r.readable, "typeAccuracy": num(r.type_accuracy),
+            "unknownRate": num(r.unknown_rate), "reviewRate": num(r.review_rate), "exactMatch": num(r.exact_match),
+            "unreadableCaught": num(r.unreadable_caught), "falseReject": num(r.false_reject),
+            "p50": num(r.p50), "p95": num(r.p95), "errors": len(r.errors)}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--set", default="synthetic", choices=["synthetic", "open", "own"])
@@ -96,6 +106,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-errors", type=float, default=1.0,
                     help="доля сбоев прогона, выше которой код выхода 1 (smoke: 0)")
     ap.add_argument("--out", type=Path, help="куда писать отчёт (по умолчанию reports/<дата>-<набор>.md)")
+    ap.add_argument("--json", type=Path, help="дополнительно сводка в JSON (сравнение моделей, bench)")
+    ap.add_argument("--label", default="", help="подпись прогона в отчёте (например, модель)")
     args = ap.parse_args(argv)
 
     files_dir, labels = dataset(args.set)
@@ -114,16 +126,23 @@ def main(argv: list[str] | None = None) -> int:
     if problems:
         return 1
 
-    token = os.environ.get("EVAL_OPERATOR_TOKEN")
+    token: str | PasswordToken | None = os.environ.get("EVAL_OPERATOR_TOKEN")
+    if not token and os.environ.get("EVAL_TOKEN_URL"):
+        token = PasswordToken(os.environ["EVAL_TOKEN_URL"], os.environ.get("EVAL_CLIENT_ID", "documents-eval"),
+                              os.environ.get("EVAL_USERNAME", "operator"), os.environ["EVAL_PASSWORD"],
+                              insecure=args.insecure)
     api = Api(args.api, token, insecure=args.insecure)
     report = evaluate(measure(rows, files_dir, api, args.deadline))
-    md = to_markdown(report, f"Eval · {args.set} · {date.today().isoformat()}",
+    title = " · ".join(x for x in ("Eval", args.set, args.label, date.today().isoformat()) if x)
+    md = to_markdown(report, title,
                      {"Стенд": args.api, "Документов": str(len(rows)),
                       "Поля": "меряются (токен оператора)" if token else "не меряются — нет EVAL_OPERATOR_TOKEN"})
     out = args.out or HERE / "reports" / f"{date.today().isoformat()}-{args.set}.md"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(md, encoding="utf-8")
     print(md)
+    if args.json:
+        args.json.write_text(json.dumps(summary(report, args.label), ensure_ascii=False, indent=1), encoding="utf-8")
     error_share = len(report.errors) / len(rows) if rows else 0.0
     return 1 if error_share > args.max_errors else 0
 
