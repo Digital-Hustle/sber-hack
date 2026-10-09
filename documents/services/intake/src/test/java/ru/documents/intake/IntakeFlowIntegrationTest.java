@@ -2,6 +2,7 @@ package ru.documents.intake;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,6 +26,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import ru.documents.intake.features.applications.command.service.DocumentEventsService;
+
 /** Сквозной сценарий соискателя + IDOR/ролевая матрица (FR-01, FR-10, FR-14, NFR-04). */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,6 +44,8 @@ class IntakeFlowIntegrationTest extends AbstractIntegrationTest {
     private ObjectMapper om;
     @Autowired
     private JdbcClient jdbc;
+    @Autowired
+    private DocumentEventsService events;
 
     private JsonNode create() throws Exception {
         String body = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
@@ -176,5 +181,49 @@ class IntakeFlowIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"phoneOrEmail\":\"+79990000000\",\"resumeCode\":\"WRONG-0000\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("RESUME_INVALID"));
+    }
+
+    @Test
+    void multiDocumentFileIsSplitIntoSeparateDocuments() throws Exception {
+        JsonNode app = create();
+        String id = app.get("applicationId").asText();
+        JsonNode up = upload(app, TestFiles.image("png", 900, 700, "СНИЛС ИНН"), "two.png");
+        String source = up.get("documentId").asText();
+        JsonNode p = om.readTree("{\"documentId\":\"" + source + "\",\"applicationId\":\"" + id
+                + "\",\"split\":[{\"type\":\"INN\",\"pages\":[2]},{\"type\":\"UNKNOWN\",\"pages\":[3]}]}");
+        String eventId = UUID.randomUUID().toString();
+        assertThat(events.split(eventId, p)).isPresent();
+        assertThat(events.split(eventId, p)).isEmpty();                        // тот же eventId
+        assertThat(events.split(UUID.randomUUID().toString(), p)).isEmpty();  // INN из этого файла уже выделен
+
+        JsonNode view = om.readTree(mvc.perform(get(BASE + "/" + id).header(AUTH, auth(app)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(view.get("documents")).hasSize(2);
+        JsonNode child = view.get("documents").get(1);
+        assertThat(child.get("slotType").asText()).isEqualTo("INN");
+        assertThat(child.get("sourceDocumentId").asText()).isEqualTo(source);
+        assertThat(child.get("pages").toString()).isEqualTo("[2]");
+        assertThat(child.get("files").get(0).get("id").asText()).isEqualTo(up.get("fileId").asText());
+        Integer received = jdbc.sql("""
+                select count(*) from outbox where payload->>'type' = 'DocumentReceived'
+                   and payload->'payload'->>'sourceDocumentId' = :s""").param("s", source).query(Integer.class).single();
+        assertThat(received).isEqualTo(1);
+
+        String childId = child.get("id").asText();
+        mvc.perform(get("/internal/intake/documents/" + childId + "/files")
+                        .with(jwt().authorities(role("SERVICE_DOCPROC"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].fileId").value(up.get("fileId").asText()))
+                .andExpect(jsonPath("$.onlyPages[0]").value(2));
+        // выделенный документ не делится повторно
+        JsonNode again = om.readTree("{\"documentId\":\"" + childId + "\",\"applicationId\":\"" + id
+                + "\",\"split\":[{\"type\":\"SNILS\",\"pages\":[2]}]}");
+        assertThat(events.split(UUID.randomUUID().toString(), again)).isEmpty();
+
+        mvc.perform(delete(BASE + "/" + id + "/documents/" + source).header(AUTH, auth(app)))
+                .andExpect(status().is2xxSuccessful());
+        JsonNode after = om.readTree(mvc.perform(get(BASE + "/" + id).header(AUTH, auth(app)))
+                .andReturn().getResponse().getContentAsString());
+        assertThat(after.get("documents")).isEmpty();
     }
 }

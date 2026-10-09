@@ -77,7 +77,7 @@ public class ApplicationQueryService {
      * @return файлы
      */
     @Transactional(readOnly = true)
-    public List<ActiveFile> activeFiles(UUID docId) {
+    public ApplicationReadRepository.DocumentFiles activeFiles(UUID docId) {
         return repo.activeFiles(docId);
     }
 

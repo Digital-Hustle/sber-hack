@@ -143,6 +143,7 @@ public class UploadService {
         repo.insertFile(fileId, docId, appId, version, ins.sha256(), ins.phash(), ins.mime(), bytes.length,
                 ins.pages(), ins.width(), ins.height(), crypto.encrypt(bytes), now);
         repo.resetStage(docId, now);
+        removeChildren(appId, docId);
         repo.resolveRequests(appId, docId, repo.slot(docId).orElse(null), now);
         repo.touch(appId, now);
         outbox.add(Topics.INTAKE_DOCUMENT_V1, "FilesChanged", appId.toString(), Map.of(DOC_ID, docId.toString(),
@@ -166,9 +167,19 @@ public class UploadService {
             throw DomainException.notFound();
         }
         ApplicationCommandService.ensureEditable(repo.status(appId).orElseThrow(DomainException::notFound));
+        removeChildren(appId, docId);
         repo.deleteDocument(docId, clock.instant());
         outbox.add(Topics.INTAKE_DOCUMENT_V1, "DocumentRemoved", appId.toString(),
                 Map.of(DOC_ID, docId.toString(), APP_ID, appId.toString()));
+    }
+
+    /** Файлы исходного документа поменялись или он удалён — выделенные из него документы больше не верны (FR-07). */
+    private void removeChildren(UUID appId, UUID docId) {
+        for (UUID child : repo.children(docId)) {
+            repo.deleteDocument(child, clock.instant());
+            outbox.add(Topics.INTAKE_DOCUMENT_V1, "DocumentRemoved", appId.toString(),
+                    Map.of(DOC_ID, child.toString(), APP_ID, appId.toString()));
+        }
     }
 
     private void prepare(UUID appId) {

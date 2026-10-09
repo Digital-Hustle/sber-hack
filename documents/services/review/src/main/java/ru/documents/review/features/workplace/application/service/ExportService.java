@@ -30,7 +30,7 @@ import ru.documents.review.features.workplace.model.FieldCard;
 import ru.documents.review.features.workplace.model.Finding;
 
 /**
- * Выгрузки: карточка соискателя для кадров (B-05, DOCX/XLSX, без сканов) и истекающие документы (B-04, XLSX).
+ * Выгрузки: карточка соискателя для кадров (B-05, DOCX/XLSX/PDF, без сканов) и истекающие документы (B-04, XLSX).
  */
 @Service
 public class ExportService {
@@ -63,7 +63,7 @@ public class ExportService {
      * Карточка соискателя.
      *
      * @param id     заявка
-     * @param format docx | xlsx
+     * @param format docx | xlsx | pdf
      * @param me     кто выгружает
      * @return файл
      */
@@ -74,8 +74,9 @@ public class ExportService {
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document", docx(card));
             case "xlsx" -> new FileOut("applicant-" + id + ".xlsx",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx(card));
-            default -> throw DomainException.badRequest("FORMAT_UNSUPPORTED", "Формат — docx или xlsx",
-                    "PDF не поддерживается: лицензия библиотеки не проверена");
+            case "pdf" -> new FileOut("applicant-" + id + ".pdf", "application/pdf", pdf(card));
+            default -> throw DomainException.badRequest("FORMAT_UNSUPPORTED", "Формат — docx, xlsx или pdf",
+                    "Укажите format=docx, xlsx или pdf");
         };
         actions.exported(id, format == null ? "docx" : format, me);
         return out;
@@ -155,6 +156,39 @@ public class ExportService {
             return bos.toByteArray();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private byte[] pdf(CardView c) {
+        try (PdfWriter pdf = new PdfWriter()) {
+            pdf.title("Карточка соискателя", 16);
+            pdf.line("ФИО: " + nvl(c.application().applicantName()));
+            pdf.line("Заявка: " + c.application().id() + " · статус: " + c.application().status());
+            if (c.decision() != null) {
+                pdf.line("Решение: " + c.decision().decision() + " (" + c.decision().actor() + ", "
+                        + c.decision().createdAt().atZone(ZoneId.of(props.zone())).format(DATE) + ")");
+            }
+            for (DocumentCard d : c.documents()) {
+                pdf.title(nvl(d.typeName()) + (d.confirmed() ? " — подтверждён " + nvl(d.confirmedBy())
+                        : " — не подтверждён"), 12.5f);
+                if (d.fields().isEmpty()) {
+                    pdf.line("Поля не извлечены (стадия " + d.stage() + ")");
+                    continue;
+                }
+                List<String[]> rows = new java.util.ArrayList<>();
+                rows.add(new String[] {"Поле", "Значение", "Исправлено оператором"});
+                for (FieldCard f : d.fields()) {
+                    rows.add(new String[] {nvl(f.title()), nvl(f.value()), f.corrected() ? YES : NO});
+                }
+                pdf.table(new float[] {0.32f, 0.48f, 0.2f}, rows);
+            }
+            if (!c.findings().isEmpty()) {
+                pdf.title("Замечания", 12.5f);
+                for (Finding f : c.findings()) {
+                    pdf.line("• " + describe(f));
+                }
+            }
+            return pdf.bytes();
         }
     }
 

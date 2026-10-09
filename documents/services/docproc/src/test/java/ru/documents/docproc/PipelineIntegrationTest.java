@@ -82,7 +82,8 @@ class PipelineIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         jdbc.sql("update jobs set status = 'DONE' where status in ('READY', 'RUNNING')").update();
-        when(intake.activeFiles(any())).thenReturn(List.of(new FileRef(UUID.randomUUID(), "image/png", 1)));
+        when(intake.documentFiles(any())).thenReturn(new IntakeGateway.DocumentFiles(
+                List.of(new FileRef(UUID.randomUUID(), "image/png", 1)), List.of()));
         when(intake.content(any())).thenReturn(new byte[] {1, 2, 3});
         when(ocr.extract(any())).thenReturn(ocrPage(SNILS_TEXT, 0.92, 300.0));
         when(llm.status()).thenReturn(new LlmStatus("ollama", "qwen3:8b", null, true, Instant.now(), null));
@@ -189,7 +190,7 @@ class PipelineIntegrationTest {
         }).when(llm).structured(any());
         UUID doc = received();
         drain();
-        assertThat(stage(doc)).isEqualTo("NEEDS_REVIEW");
+        assertThat(stage(doc)).isEqualTo("PARSED"); // MULTI_DOCUMENT — справка, остальное выделит intake
         assertThat(extractPrompts).hasSize(1);
         assertThat(extractPrompts.get(0)).contains("Страница 1").doesNotContain("Страница 2").doesNotContain("500100732259");
         String body = mvc.perform(get("/api/v1/documents/" + doc + "/result")
@@ -198,6 +199,46 @@ class PipelineIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         assertThat(body).contains("MULTI_DOCUMENT").contains("стр. 2");
         assertThat(om.readTree(body).path("promptVersion").asText()).startsWith("classify.v2");
+    }
+
+    @Test
+    void parsedEventCarriesSplitAndChildParsesOnlyItsPages() throws Exception {
+        JsonNode two = ocrPage(SNILS_TEXT, 0.92, 300.0);
+        ObjectNode second = ((ObjectNode) two.path("pages").get(0)).deepCopy().put("n", 2)
+                .put("text", "СВИДЕТЕЛЬСТВО о постановке на учёт физического лица в налоговом органе ИНН 500100732259");
+        ((com.fasterxml.jackson.databind.node.ArrayNode) two.path("pages")).add(second);
+        when(ocr.extract(any())).thenReturn(two);
+        List<String> prompts = new java.util.ArrayList<>();
+        doAnswer(inv -> {
+            LlmRequest rq = inv.getArgument(0);
+            prompts.add(rq.stage() + ":" + rq.user());
+            if ("CLASSIFYING".equals(rq.stage()) && rq.user().contains("Страница 1")) {
+                return result("{\"type\":\"SNILS\",\"confidence\":0.95,\"evidence\":[\"СТРАХОВОЕ СВИДЕТЕЛЬСТВО\"],"
+                        + "\"segments\":[{\"type\":\"SNILS\",\"pages\":[1]},{\"type\":\"INN\",\"pages\":[2]}]}");
+            }
+            if ("CLASSIFYING".equals(rq.stage())) {
+                return result("{\"type\":\"INN\",\"confidence\":0.95,\"evidence\":[\"ИНН 500100732259\"]}");
+            }
+            return answer(rq);
+        }).when(llm).structured(any());
+        UUID source = received();
+        drain();
+        String split = jdbc.sql("select payload->'payload'->>'split' from outbox where payload->>'type' = 'DocumentParsed' "
+                + "and payload->'payload'->>'documentId' = :d").param("d", source.toString()).query(String.class).single();
+        assertThat(om.readTree(split).get(0).path("type").asText()).isEqualTo("INN");
+        assertThat(om.readTree(split).get(0).path("pages").toString()).isEqualTo("[2]");
+
+        // intake выделил документ: те же файлы, только страница 2
+        when(intake.documentFiles(any())).thenReturn(new IntakeGateway.DocumentFiles(
+                List.of(new FileRef(UUID.randomUUID(), "image/png", 2)), List.of(2)));
+        prompts.clear();
+        UUID child = received();
+        drain();
+        assertThat(prompts).isNotEmpty().allSatisfy(p -> assertThat(p).doesNotContain("СТРАХОВОЕ"));
+        assertThat(prompts.get(0)).startsWith("CLASSIFYING:").doesNotContain("Страница 1");
+        mvc.perform(get("/api/v1/documents/" + child + "/result")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_OPERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.type").value("INN"));
     }
 
     @Test

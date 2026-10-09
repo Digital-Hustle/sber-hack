@@ -23,7 +23,7 @@ export const reviewApi = {
     api<void>("review", `/applications/${id}/decision`, { method: "POST", body: { decision, comment } }),
   reveal: (id: string, documentId: string, field: string) =>
     api<{ value?: string }>("review", `/applications/${id}/reveal`, { method: "POST", body: { documentId, field } }),
-  exportCard: (id: string, format: "docx" | "xlsx") => download("review", `/applications/${id}/export?format=${format}`, `application-${id}.${format}`),
+  exportCard: (id: string, format: "docx" | "xlsx" | "pdf") => download("review", `/applications/${id}/export?format=${format}`, `application-${id}.${format}`),
   correct: (docId: string, fields: { name: string; value: string }[]) =>
     api<void>("review", `/documents/${docId}/fields`, { method: "PATCH", body: { fields } }),
   retype: (docId: string, type: string) => api<void>("review", `/documents/${docId}/type`, { method: "PATCH", body: { type } }),

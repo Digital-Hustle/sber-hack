@@ -129,8 +129,10 @@ erDiagram
 | Топик | Типы | Producer | Payload |
 |---|---|---|---|
 | `intake.application.v1` | `ApplicationCreated / ProfileChanged / Submitted` | intake | applicationId, profile, requiredTypes |
-| `intake.document.v1` | `DocumentReceived / FileReplaced / DocumentRemoved` | intake | documentId, applicationId, fileId, version, slotType? (не в классификатор) |
-| `docproc.document.v1` | `StageChanged`, `DocumentParsed`, `DocumentUnreadable`, `DocumentFailed` | docproc | documentId, stage, type, typeConfidence, fields[], reasonCode |
+| `intake.document.v1` | `DocumentReceived / FilesChanged / FileReplaced / DocumentRemoved` | intake | documentId, applicationId, fileId, version, slotType? (не в классификатор); у выделенного документа — sourceDocumentId, pages |
+| `docproc.document.v1` | `StageChanged`, `DocumentParsed`, `DocumentUnreadable`, `DocumentFailed` | docproc | documentId, stage, type, typeConfidence, fields[], reasonCode; `split[{type, pages}]` — другие документы файла |
+
+**Разделение многостраничного файла (FR-07).** docproc размечает страницы (`classify.v2`, проверка кодом в `PageSegments`), основной документ разбирает по своим страницам и кладёт в `DocumentParsed` остальные сегменты `split`. intake (идемпотентно: inbox + уникальный индекс `(source_document_id, split_type)`) создаёт по документу на каждый вид — пункт = вид, файлы — исходного документа, `only_pages` — его страницы — и шлёт `DocumentReceived`. docproc разбирает такой документ только по этим страницам (`/internal/intake/documents/{id}/files` → `onlyPages`), MRZ с чужих страниц отбрасывается. Выделенный документ повторно не делится; замена файлов или удаление исходного удаляет выделенные.
 | `review.application.v1` | `FieldCorrected`, `TypeCorrected`, `DocumentConfirmed`, `ResubmitRequested`, `ApplicationDecided` | review | applicationId, documentId?, by, details |
 
 ## Безопасность (кратко, подробно — SECURITY.md)

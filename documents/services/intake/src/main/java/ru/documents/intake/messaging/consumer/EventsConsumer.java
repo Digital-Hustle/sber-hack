@@ -32,6 +32,11 @@ public class EventsConsumer {
     @KafkaListener(topics = Topics.DOCPROC_DOCUMENT_V1, groupId = "intake")
     public void docproc(String message) throws IOException {
         JsonNode env = json.readTree(message);
+        if ("DocumentParsed".equals(env.path("type").asText())) {
+            service.split(env.path("eventId").asText(), env.path("payload"))
+                    .ifPresent(app -> hub.publish(app, "application.changed", Map.of("type", "DocumentsSplit")));
+            return;
+        }
         if (!"StageChanged".equals(env.path("type").asText())) {
             return;
         }

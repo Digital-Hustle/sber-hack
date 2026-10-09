@@ -36,17 +36,38 @@ public class IntakeGateway {
      * @return файлы
      */
     public List<FileRef> activeFiles(UUID documentId) {
+        return documentFiles(documentId).files();
+    }
+
+    /**
+     * Файлы для разбора и ограничение по страницам.
+     *
+     * @param files     активные файлы по порядку
+     * @param onlyPages только эти страницы (документ выделен из многостраничного файла, FR-07); пусто — все
+     */
+    public record DocumentFiles(List<FileRef> files, List<Integer> onlyPages) {
+    }
+
+    /**
+     * Активные файлы документа и страницы, которые к нему относятся.
+     *
+     * @param documentId документ
+     * @return файлы
+     */
+    public DocumentFiles documentFiles(UUID documentId) {
         try {
             JsonNode rs = http.get().uri("/internal/intake/documents/{id}/files", documentId)
                     .header("Authorization", "Bearer " + tokens.token()).retrieve().body(JsonNode.class);
             List<FileRef> out = new ArrayList<>();
+            List<Integer> only = new ArrayList<>();
             if (rs != null) {
                 for (JsonNode it : rs.path("items")) {
                     out.add(new FileRef(UUID.fromString(it.path("fileId").asText()), it.path("mime").asText(),
                             it.path("pages").asInt(1)));
                 }
+                rs.path("onlyPages").forEach(n -> only.add(n.asInt()));
             }
-            return out;
+            return new DocumentFiles(out, only);
         } catch (RestClientException e) {
             throw new DependencyException(CODE, e);
         }

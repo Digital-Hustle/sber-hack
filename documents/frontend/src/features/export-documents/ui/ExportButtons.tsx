@@ -9,13 +9,14 @@ const run = async (f: () => Promise<void>, set: (b: boolean) => void) => {
   try { await f(); } catch (e) { toast.error(errorText(e)); } finally { set(false); }
 };
 
-/** FE-OP-09 / B-05: карточка соискателя для кадров (DOCX/XLSX) — выгрузку пишет в историю сервер. */
+/** FE-OP-09 / B-05: карточка соискателя для кадров (DOCX/XLSX/PDF) — выгрузку пишет в историю сервер. */
 export const ExportCardButtons = ({ appId }: { appId: string }) => {
   const [busy, setBusy] = useState(false);
   return (
     <div className="flex gap-1.5">
       <Button size="sm" variant="secondary" disabled={busy} onClick={() => run(() => reviewApi.exportCard(appId, "docx"), setBusy)}><FileDown />DOCX</Button>
       <Button size="sm" variant="secondary" disabled={busy} onClick={() => run(() => reviewApi.exportCard(appId, "xlsx"), setBusy)}><FileDown />XLSX</Button>
+      <Button size="sm" variant="secondary" disabled={busy} onClick={() => run(() => reviewApi.exportCard(appId, "pdf"), setBusy)}><FileDown />PDF</Button>
     </div>
   );
 };
