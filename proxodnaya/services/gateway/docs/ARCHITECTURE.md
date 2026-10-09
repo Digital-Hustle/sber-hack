@@ -21,7 +21,7 @@ flowchart LR
 5. Ошибки самого gateway — problem+json с кодом (`UNAUTHORIZED`, `RATE_LIMITED`, `PAYLOAD_TOO_LARGE`).
 
 ## Стек
-Spring Boot 3.5 WebFlux, Spring Cloud Gateway 2025.0, spring-security oauth2-resource-server, Micrometer Tracing + OTel, Resilience4j/Bucket4j (rate-limit, решить ADR).
+Spring Boot 3.5 WebFlux, Spring Cloud Gateway 2025.0, spring-security oauth2-resource-server, Micrometer Tracing + OTel, rate-limit — свой фильтр (окно в памяти, ADR-038).
 
 ## Структура папок
 ```
@@ -29,11 +29,11 @@ gateway/
   AGENTS.md CLAUDE.md docs/
   build.gradle.kts                  # plugin proxodnaya.gateway
   src/main/java/.../gateway/
-    config/   RoutesConfig, SecurityConfig (multi-issuer), CorsConfig
+    config/   SecurityConfig (multi-issuer, CORS, публичные пути), ClockConfig, properties/GatewayProperties
     filter/   InternalPathBlockFilter, RateLimitFilter, RequestIdFilter
-    exception/ GatewayErrorHandler (problem+json)
+    exception/ Problems (problem+json), UpstreamErrorHandler (503)
   src/main/resources/application.yml   # маршруты через env: PEOPLE_URL, ACCESS_URL, …
-  src/test/java/.../                    # RoutesIntegrationTest, InternalBlockedTest, JwtIssuersTest
+  src/test/java/.../                    # GatewayIntegrationTest, InternalPathBlockFilterTest, ArchitectureTest
 ```
 
 ## Данные
@@ -46,4 +46,4 @@ gateway/
 Keycloak (JWKS), people (JWKS device-токенов). Все сервисы — как upstream.
 
 ## Конфигурация (env, значения — `infra/.env.example`)
-`KEYCLOAK_ISSUER`, `DEVICE_ISSUER`, `PEOPLE_URL`, `ACCESS_URL`, `SHIFT_URL`, `ASSISTANT_URL`, `CORS_ORIGINS`.
+`OIDC_ISSUER_URI`, `OIDC_JWKS_URI` (по умолчанию `<issuer>/protocol/openid-connect/certs`), `PEOPLE_URL`, `ACCESS_URL`, `SHIFT_URL`, `ASSISTANT_URL`, `CORS_ORIGINS` (через запятую), `MAX_BODY` (5MB), `RATE_LIMIT_CAPACITY` (20), `RATE_LIMIT_WINDOW` (1m), `UPSTREAM_TIMEOUT` (30s). Device-издатель people добавится после PPL-05.

@@ -4,11 +4,11 @@
 
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| GW-01 | NFR-15 | `new-service.sh gateway 8080 B1 --gateway`, health, Dockerfile | B1 | todo |
-| GW-02 | NFR-15 | Маршруты `RewritePath` для people/access/shift/assistant, env-адреса | B1 | todo |
-| GW-03 | FR-60/63 | JWT multi-issuer: Keycloak + device-токены people, тест на оба | B1 | todo |
-| GW-04 | NFR-15 | Блок `/internal/**` (404), CORS только свои origin, список публичных путей | B1 | todo |
-| GW-05 | FR-11 | Rate-limit `/auth/**` и `/kiosk/attempts`, 429 + Retry-After (ADR на реализацию) | B1 | todo |
-| GW-06 | B-02 | SSE без буферизации и таймаута, лимит тела 5 МБ на киоск | B1 | todo |
-| GW-07 | NFR-18 | `traceparent`, `X-Request-Id`, JSON-логи, метрики маршрутов | B1 | todo |
-| GW-08 | FR-65 | Матричный тест «путь × без токена/чужой issuer/просроченный» | B1 | todo |
+| GW-01 | NFR-15 | `new-service.sh gateway 8080 B1 --gateway`, health, Dockerfile | B1 | review #PR |
+| GW-02 | NFR-15 | Маршруты `RewritePath` для people/access/shift/assistant, env-адреса | B1 | review #PR |
+| GW-03 | FR-60/63 | JWT multi-issuer: Keycloak + device-токены people, тест на оба | B1 | review #PR |
+| GW-04 | NFR-15 | Блок `/internal/**` (404), CORS только свои origin, список публичных путей | B1 | review #PR |
+| GW-05 | FR-11 | Rate-limit `/auth/**` и `/kiosk/attempts`, 429 + Retry-After (ADR на реализацию) | B1 | review #PR |
+| GW-06 | B-02 | SSE без буферизации и таймаута, лимит тела 5 МБ на киоск | B1 | review #PR |
+| GW-07 | NFR-18 | `traceparent`, `X-Request-Id`, JSON-логи, метрики маршрутов | B1 | review #PR |
+| GW-08 | FR-65 | Матричный тест «путь × без токена/чужой issuer/просроченный» | B1 | review #PR |

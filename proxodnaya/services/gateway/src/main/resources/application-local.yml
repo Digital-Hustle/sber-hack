@@ -1,0 +1,8 @@
+# Запуск из IDE против infra/docker-compose (порты проброшены только в override для разработки).
+OIDC_ISSUER_URI: http://localhost:8180/realms/proxodnaya
+OTLP_ENDPOINT: http://localhost:4318/v1/traces
+PEOPLE_URL: http://localhost:8081
+ACCESS_URL: http://localhost:8082
+SHIFT_URL: http://localhost:8083
+ASSISTANT_URL: http://localhost:8084
+CORS_ORIGINS: http://localhost:5173
