@@ -19,7 +19,7 @@ DEMO = {"operator": "KC_DEMO_OPERATOR_EMAIL", "senior": "KC_DEMO_SENIOR_EMAIL", 
 def main() -> None:
     e = cl.env()
     kc = cl.Kc(cl.base_url(), e["KC_BOOTSTRAP_ADMIN_USERNAME"], e["KC_BOOTSTRAP_ADMIN_PASSWORD"])
-    kc.call("PUT", REALM, {"loginWithEmailAllowed": True, "duplicateEmails": False})
+    kc.call("PUT", REALM, {"loginWithEmailAllowed": True, "duplicateEmailsAllowed": False})
     for login, key in DEMO.items():
         email = (e.get(key) or f"{login}@documents.local").strip().lower()
         users = kc.call("GET", f"{REALM}/users?username={login}&exact=true") or []
