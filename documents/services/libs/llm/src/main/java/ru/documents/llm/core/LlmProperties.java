@@ -20,12 +20,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param gigachatScope   scope GigaChat
  * @param gigachatAuthUrl адрес OAuth GigaChat
  * @param caCertPath      дополнительный корневой сертификат (НУЦ Минцифры для GigaChat)
+ * @param numThread       для ollama: потоков на вызов (0 — решает Ollama); на общем сервере меньше ядер — стабильнее
  */
 @ConfigurationProperties("app.llm")
 public record LlmProperties(String provider, String baseUrl, String model, String visionModel, String apiKey,
                             Duration timeout, Integer maxConcurrency, Integer retries, String jsonMode,
                             String gigachatAuthKey, String gigachatScope, String gigachatAuthUrl,
-                            String caCertPath) {
+                            String caCertPath, Integer numThread) {
 
     private static final int DEFAULT_TIMEOUT_S = 60;
     private static final int DEFAULT_RETRIES = 2;
@@ -37,5 +38,6 @@ public record LlmProperties(String provider, String baseUrl, String model, Strin
         retries = retries == null ? DEFAULT_RETRIES : retries;
         jsonMode = jsonMode == null || jsonMode.isBlank() ? "json_schema" : jsonMode;
         visionModel = visionModel == null || visionModel.isBlank() ? model : visionModel;
+        numThread = numThread == null || numThread < 0 ? 0 : numThread;
     }
 }

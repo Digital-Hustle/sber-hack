@@ -28,7 +28,7 @@ class DefaultLlmGatewayTest {
 
     private DefaultLlmGateway gw(LlmProvider p) {
         LlmProperties props = new LlmProperties("ollama", "http://x", "m", null, null, null, 1, 0, null,
-                null, null, null, null);
+                null, null, null, null, null);
         return new DefaultLlmGateway(p, props, List.of(calls::add), new SimpleMeterRegistry(), json,
                 Clock.systemUTC());
     }

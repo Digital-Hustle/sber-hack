@@ -76,6 +76,11 @@ echo "— Асинхронный разбор: загрузка отвечает
 stage_of() { curl -sk -H "Authorization: Applicant $AK" "$API/applications/$AID" | jq -r --arg d "$1" '.documents[] | select(.id==$d) | .stage'; }
 seen=""; for _ in $(seq 1 45); do s=$(stage_of "$DOC"); [[ "$seen" == *"$s"* ]] || seen="$seen $s"; [[ "$s" != RECEIVED && "$s" != QUEUED ]] && break; sleep 2; done
 [[ "$s" != RECEIVED && -n "$s" ]] && ok "стадии документа:$seen" || bad "документ застрял в $s"
+# X-07: OCR должен отработать — документ уходит дальше EXTRACTING_TEXT и не падает в FAILED (раньше h2c ломал OCR).
+for _ in $(seq 1 90); do s=$(stage_of "$DOC"); [[ "$seen" == *"$s"* ]] || seen="$seen $s"
+  [[ "$s" != RECEIVED && "$s" != QUEUED && "$s" != EXTRACTING_TEXT && -n "$s" ]] && break; sleep 2; done
+[[ "$s" != RECEIVED && "$s" != QUEUED && "$s" != EXTRACTING_TEXT && "$s" != FAILED && -n "$s" ]] \
+  && ok "текст извлечён, документ дальше EXTRACTING_TEXT:$seen" || bad "документ не прошёл OCR: $s ($seen)"
 [[ "$s" == WAITING_MODEL ]] && info "модель недоступна → WAITING_MODEL (не «готово») — так и должно быть без модели"
 
 if [[ "$DOCKER" == --docker ]]; then

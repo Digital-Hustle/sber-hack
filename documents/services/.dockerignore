@@ -2,3 +2,5 @@
 **/.gradle/
 ocr/
 **/*.md
+# промпты модели — ресурсы docproc, без них разбор падает «prompt classify.v1» (X-07)
+!**/src/main/resources/**/*.md
