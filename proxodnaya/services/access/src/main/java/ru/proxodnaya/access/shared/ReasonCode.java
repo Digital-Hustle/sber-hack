@@ -29,6 +29,7 @@ public enum ReasonCode {
     ALREADY_INSIDE("Вы уже на объекте", "Сначала отметьте выход"),
     NOT_INSIDE("Вход не отмечен", "Отметьте вход"),
     TEMP_LOCKED("Слишком много неудачных попыток", Hints.GUARD),
+    MANUAL_GUARD("Пропущен охранником", "Решение записано в журнал с причиной"),
     SYSTEM_ERROR("Система недоступна, проход закрыт", Hints.GUARD);
 
     private final String message;

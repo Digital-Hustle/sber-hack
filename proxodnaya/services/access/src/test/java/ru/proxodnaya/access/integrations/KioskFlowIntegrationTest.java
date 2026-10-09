@@ -140,6 +140,26 @@ class KioskFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void pass_twoChallengesOutside_secondIsAlreadyInside() throws Exception {
+        // given: оба челленджа выданы, пока рабочий снаружи, — оба ждут IN
+        long window = TestKeys.window(Instant.now());
+        String first = token(keys.qr(workerId, deviceId, window));
+        String second = token(keys.qr(workerId, deviceId, window + 1));
+        mockMvc.perform(guard(post(SCAN + "/" + first + FRAMES)).content(framesBody()))
+                .andExpect(jsonPath("$.decision").value("ALLOW"))
+                .andExpect(jsonPath("$.direction").value("IN"));
+
+        // when / then
+        mockMvc.perform(guard(post(SCAN + "/" + second + FRAMES)).content(framesBody()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.decision").value("DENY"))
+                .andExpect(jsonPath("$.code").value("ALREADY_INSIDE"));
+        assertThat(jdbc.queryForObject("select inside from worker_state where worker_id = ?", Boolean.class, workerId)).isTrue();
+        assertThat(jdbc.queryForObject("select count(*) from pass_attempts where claimed_worker_id = ? and decision = 'ALLOW'",
+                Integer.class, workerId)).isEqualTo(1);
+    }
+
+    @Test
     void scan_rightAfterAllow_repeatScan() throws Exception {
         // given
         String token = token(qrNow());

@@ -31,7 +31,7 @@ class DecisionEngineTest {
     @Test
     void decide_allChecksPass_allow() {
         // when
-        DecisionResult result = engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, null, false));
+        DecisionResult result = engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, null));
 
         // then
         assertThat(result.decision()).isEqualTo(Decision.ALLOW);
@@ -42,17 +42,17 @@ class DecisionEngineTest {
     @Test
     void decide_failedDependencyOrNoFace_systemErrorFailClosed() {
         // when / then
-        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, "face", false)).code())
+        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, "face")).code())
                 .isEqualTo(ReasonCode.SYSTEM_ERROR);
-        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), null, SHIFT_OK, null, false)).code())
+        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), null, SHIFT_OK, null)).code())
                 .isEqualTo(ReasonCode.SYSTEM_ERROR);
     }
 
     @Test
     void decide_noProfileOrBlocked_workerBlocked() {
         // when / then
-        assertThat(engine.decide(ctx(Direction.IN, null, FACE_OK, SHIFT_OK, null, false)).code()).isEqualTo(ReasonCode.WORKER_BLOCKED);
-        assertThat(engine.decide(ctx(Direction.IN, profile("BLOCKED", TODAY), FACE_OK, SHIFT_OK, null, false)).code())
+        assertThat(engine.decide(ctx(Direction.IN, null, FACE_OK, SHIFT_OK, null)).code()).isEqualTo(ReasonCode.WORKER_BLOCKED);
+        assertThat(engine.decide(ctx(Direction.IN, profile("BLOCKED", TODAY), FACE_OK, SHIFT_OK, null)).code())
                 .isEqualTo(ReasonCode.WORKER_BLOCKED);
     }
 
@@ -62,7 +62,7 @@ class DecisionEngineTest {
         WorkerProfile profile = new WorkerProfile("w1", "ACTIVE", "Иван", null, null, Set.of("other"), TODAY, Set.of());
 
         // when / then
-        assertThat(engine.decide(ctx(Direction.IN, profile, FACE_OK, SHIFT_OK, null, false)).code()).isEqualTo(ReasonCode.DEVICE_MISMATCH);
+        assertThat(engine.decide(ctx(Direction.IN, profile, FACE_OK, SHIFT_OK, null)).code()).isEqualTo(ReasonCode.DEVICE_MISMATCH);
     }
 
     @ParameterizedTest
@@ -79,7 +79,7 @@ class DecisionEngineTest {
         FaceResult face = new FaceResult(match, 0.4, liveness, quality, reason);
 
         // when
-        DecisionResult result = engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), face, SHIFT_OK, null, false));
+        DecisionResult result = engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), face, SHIFT_OK, null));
 
         // then
         assertThat(result.decision()).isEqualTo(Decision.DENY);
@@ -93,46 +93,19 @@ class DecisionEngineTest {
         ActiveShift outside = new ActiveShift("s1", Instant.EPOCH, Instant.EPOCH, false);
 
         // when / then
-        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, null, null, false)).code()).isEqualTo(ReasonCode.NO_SHIFT);
-        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, outside, null, false)).code())
+        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, null, null)).code()).isEqualTo(ReasonCode.NO_SHIFT);
+        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, outside, null)).code())
                 .isEqualTo(ReasonCode.OUTSIDE_SHIFT_WINDOW);
-        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY.minusDays(1)), FACE_OK, SHIFT_OK, null, false)).code())
+        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY.minusDays(1)), FACE_OK, SHIFT_OK, null)).code())
                 .isEqualTo(ReasonCode.PERMIT_EXPIRED);
-        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", null), FACE_OK, SHIFT_OK, null, false)).code())
+        assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", null), FACE_OK, SHIFT_OK, null)).code())
                 .isEqualTo(ReasonCode.PERMIT_EXPIRED);
     }
 
     @Test
     void decide_exitWithoutShiftOrPermit_allowed() {
-        // given — выход не требует смены и допуска, но требует, чтобы рабочий был внутри
-        DecisionResult result = engine.decide(ctx(Direction.OUT, profile("ACTIVE", TODAY.minusDays(30)), FACE_OK, null, null, true));
-
-        // then
-        assertThat(result.decision()).isEqualTo(Decision.ALLOW);
-    }
-
-    @Test
-    void decide_entryAlreadyInside_alreadyInside() {
         // when
-        DecisionResult result = engine.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, null, true));
-
-        // then
-        assertThat(result.code()).isEqualTo(ReasonCode.ALREADY_INSIDE);
-    }
-
-    @Test
-    void decide_exitNotInside_notInside() {
-        // given — рабочий снаружи, выход
-        DecisionResult result = engine.decide(ctx(Direction.OUT, profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, null, false));
-
-        // then
-        assertThat(result.code()).isEqualTo(ReasonCode.NOT_INSIDE);
-    }
-
-    @Test
-    void decide_exitInside_allowed() {
-        // given — рабочий внутри, выход
-        DecisionResult result = engine.decide(ctx(Direction.OUT, profile("ACTIVE", TODAY), FACE_OK, null, null, true));
+        DecisionResult result = engine.decide(ctx(Direction.OUT, profile("ACTIVE", TODAY.minusDays(30)), FACE_OK, null, null));
 
         // then
         assertThat(result.decision()).isEqualTo(Decision.ALLOW);
@@ -141,7 +114,7 @@ class DecisionEngineTest {
     @Test
     void decide_zoneWithoutPermit_noZonePermit() {
         // given
-        PassContext ctx = new PassContext(Direction.IN, "d1", "roof", profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, null, TODAY, false);
+        PassContext ctx = new PassContext(Direction.IN, "d1", "roof", profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, null, TODAY);
 
         // when / then
         assertThat(engine.decide(ctx).code()).isEqualTo(ReasonCode.NO_ZONE_PERMIT);
@@ -151,7 +124,7 @@ class DecisionEngineTest {
         return new WorkerProfile("w1", status, "Иван Петров", "Монтажник", "СтройМонтаж", Set.of("d1"), permitUntil, Set.of("site"));
     }
 
-    private static PassContext ctx(Direction direction, WorkerProfile profile, FaceResult face, ActiveShift shift, String failed, boolean inside) {
-        return new PassContext(direction, "d1", null, profile, face, shift, failed, TODAY, inside);
+    private static PassContext ctx(Direction direction, WorkerProfile profile, FaceResult face, ActiveShift shift, String failed) {
+        return new PassContext(direction, "d1", null, profile, face, shift, failed, TODAY);
     }
 }

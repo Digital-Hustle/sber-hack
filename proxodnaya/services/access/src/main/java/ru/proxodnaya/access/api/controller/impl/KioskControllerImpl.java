@@ -7,13 +7,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ru.proxodnaya.access.api.controller.KioskController;
 import ru.proxodnaya.access.api.dto.request.FramesRq;
-import ru.proxodnaya.access.api.dto.request.ManualPassRq;
 import ru.proxodnaya.access.api.dto.request.ScanRq;
 import ru.proxodnaya.access.api.dto.response.DecisionRs;
 import ru.proxodnaya.access.api.dto.response.ScanRs;
 import ru.proxodnaya.access.api.mapper.PassApiMapper;
 import ru.proxodnaya.access.features.pass.application.PassService;
-import ru.proxodnaya.access.features.pass.model.PassOutcome;
 
 /**
  * Реализация API киоска.
@@ -39,17 +37,5 @@ public class KioskControllerImpl implements KioskController {
     @Override
     public DecisionRs submitFrames(UUID token, FramesRq request) {
         return mapper.convert(passService.submitFrames(token, request.frames()));
-    }
-
-    @Override
-    public DecisionRs manualPass(ManualPassRq request) {
-        PassOutcome outcome = passService.manualPass(
-                request.getWorkerId(),
-                ru.proxodnaya.access.shared.Direction.valueOf(request.getDirection()),
-                request.getCheckpointId(),
-                request.getReason(),
-                clock.instant()
-        );
-        return mapper.convert(outcome);
     }
 }

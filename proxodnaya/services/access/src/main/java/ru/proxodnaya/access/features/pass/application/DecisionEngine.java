@@ -51,9 +51,6 @@ public class DecisionEngine {
             if (code == ReasonCode.OK && ctx.direction() == Direction.IN) {
                 code = entryCode(ctx);
             }
-            if (code == ReasonCode.OK) {
-                code = passbackCode(ctx);
-            }
         }
         Double score = face == null ? null : face.score();
         return code == ReasonCode.OK ? DecisionResult.allow(score) : DecisionResult.deny(code, score);
@@ -86,21 +83,5 @@ public class DecisionEngine {
             code = ReasonCode.NO_ZONE_PERMIT;
         }
         return code;
-    }
-
-    /**
-     * Anti-passback (FR-08): вход разрешён только снаружи, выход — только изнутри.
-     *
-     * @param ctx контекст
-     * @return OK или ALREADY_INSIDE / NOT_INSIDE
-     */
-    private static ReasonCode passbackCode(PassContext ctx) {
-        if (ctx.direction() == Direction.IN && ctx.inside()) {
-            return ReasonCode.ALREADY_INSIDE;
-        }
-        if (ctx.direction() == Direction.OUT && !ctx.inside()) {
-            return ReasonCode.NOT_INSIDE;
-        }
-        return ReasonCode.OK;
     }
 }
