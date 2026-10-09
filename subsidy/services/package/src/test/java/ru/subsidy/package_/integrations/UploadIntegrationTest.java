@@ -49,7 +49,12 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static byte[] pdf() throws IOException {
+        return pdf("doc");
+    }
+
+    private static byte[] pdf(String title) throws IOException {
         try (PDDocument doc = new PDDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            doc.getDocumentInformation().setTitle(title);
             doc.addPage(new PDPage());
             doc.save(out);
             return out.toByteArray();
@@ -108,7 +113,7 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
         try (ZipOutputStream zip = new ZipOutputStream(out)) {
             for (String name : List.of("a.pdf", "b.pdf")) {
                 zip.putNextEntry(new ZipEntry(name));
-                zip.write(pdf());
+                zip.write(pdf(name));
                 zip.closeEntry();
             }
         }

@@ -12,7 +12,7 @@
 | PK-06 | FR-04 | Дубликаты sha256 | B1 | done |
 | PK-07 | FR-66 | `/internal/package/files/{id}` (svc-docproc), `/files/{id}/content` (роль + аудит) | B1 | done |
 | PK-08 | FR-62 | Консьюмеры docproc/rules → стадии и статус пакета, SSE | B1 | done |
-| PK-09 | FR-05/65 | Версии файла: замена → `FileReplaced` → переразбор | B1 | todo |
+| PK-09 | FR-05/65 | Версии файла: замена → `FileReplaced` → переразбор | B1 | done |
 | PK-10 | FR-63 | Превью страниц (ocr `/v1/render`), кэш | B1 | todo |
 | PK-11 | FR-61 | Очередь пакетов: фильтры, курсоры, счётчики из протокола | B1 | todo |
 | PK-12 | — | Решение по пакету (SENIOR), `PackageDecided` | B1 | todo |
