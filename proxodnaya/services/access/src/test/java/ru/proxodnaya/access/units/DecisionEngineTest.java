@@ -19,6 +19,7 @@ import ru.proxodnaya.access.features.pass.model.WorkerProfile;
 import ru.proxodnaya.access.shared.Decision;
 import ru.proxodnaya.access.shared.Direction;
 import ru.proxodnaya.access.shared.ReasonCode;
+import ru.proxodnaya.access.support.TestProps;
 
 class DecisionEngineTest {
 
@@ -26,7 +27,7 @@ class DecisionEngineTest {
     private static final FaceResult FACE_OK = new FaceResult(true, 0.91, true, 0.8, null);
     private static final ActiveShift SHIFT_OK = new ActiveShift("s1", Instant.EPOCH, Instant.EPOCH, true);
 
-    private final DecisionEngine engine = new DecisionEngine();
+    private final DecisionEngine engine = new DecisionEngine(TestProps.tuning());
 
     @Test
     void decide_allChecksPass_allow() {
@@ -100,6 +101,30 @@ class DecisionEngineTest {
                 .isEqualTo(ReasonCode.PERMIT_EXPIRED);
         assertThat(engine.decide(ctx(Direction.IN, profile("ACTIVE", null), FACE_OK, SHIFT_OK, null)).code())
                 .isEqualTo(ReasonCode.PERMIT_EXPIRED);
+    }
+
+    @Test
+    void decide_scoreBelowConfiguredThreshold_faceMismatch() {
+        // given
+        DecisionEngine strict = new DecisionEngine(TestProps.tuning(0.95, true));
+
+        // when
+        DecisionResult result = strict.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, SHIFT_OK, null));
+
+        // then
+        assertThat(result.code()).isEqualTo(ReasonCode.FACE_MISMATCH);
+    }
+
+    @Test
+    void decide_shiftNotRequired_entryWithoutShiftAllowed() {
+        // given
+        DecisionEngine lenient = new DecisionEngine(TestProps.tuning(0.0, false));
+
+        // when
+        DecisionResult result = lenient.decide(ctx(Direction.IN, profile("ACTIVE", TODAY), FACE_OK, null, null));
+
+        // then
+        assertThat(result.decision()).isEqualTo(Decision.ALLOW);
     }
 
     @Test

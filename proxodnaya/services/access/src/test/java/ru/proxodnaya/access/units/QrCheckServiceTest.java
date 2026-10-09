@@ -26,7 +26,7 @@ class QrCheckServiceTest {
 
     private final TestKeys keys = TestKeys.generate();
     private final DeviceKeyRepository repo = mock(DeviceKeyRepository.class);
-    private final QrCheckService service = new QrCheckService(new QrParser(), new EcdsaVerifier(), repo, TestProps.defaults());
+    private final QrCheckService service = new QrCheckService(new QrParser(), new EcdsaVerifier(), repo, TestProps.tuning());
 
     @Test
     void check_validQr_ok() {

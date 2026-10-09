@@ -47,3 +47,4 @@
 - 2026-10-09 · KIRI4444, miroslavrov · feat(access): ACC-09/11/13 — anti-passback под блокировкой присутствия, журнал `GET /attempts` и `/worker/attempts` (keyset-курсор, `{items, page}`), ручной проход `POST /kiosk/manual` (MANUAL_GUARD, присутствие, охранник и причина в журнале)
 - 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)
 - 2026-10-09 · miroslavrov (агент) · feat: ACC-17 вместимость зоны → `ZONE_FULL` (`worker_state.zone_id`, блокировка зоны, `zoneCapacity` от people) (#90)
+- 2026-10-10 · KIRI4444, miroslavrov (агент) · feat(access): ACC-18 настройки прохода `GET|PUT /api/v1/settings` (jsonb-строка `access_settings`, кэш 5 с, дефолты из env); порог лица, допуск QR, пауза, блокировка, присутствие и `requireShift` применяются сразу (`PassTuning`); `shiftGraceMin`, режим терминала и офлайн — пока только хранятся (#92)

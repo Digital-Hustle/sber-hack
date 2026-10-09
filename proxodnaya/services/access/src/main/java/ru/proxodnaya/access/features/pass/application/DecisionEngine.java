@@ -8,6 +8,7 @@ import ru.proxodnaya.access.features.pass.model.DecisionResult;
 import ru.proxodnaya.access.features.pass.model.FaceResult;
 import ru.proxodnaya.access.features.pass.model.PassContext;
 import ru.proxodnaya.access.features.pass.model.WorkerProfile;
+import ru.proxodnaya.access.features.settings.api.PassTuning;
 import ru.proxodnaya.access.shared.Direction;
 import ru.proxodnaya.access.shared.ReasonCode;
 
@@ -29,6 +30,12 @@ public class DecisionEngine {
             "FACE_NOT_ENROLLED", ReasonCode.FACE_NOT_ENROLLED,
             "NOT_ENROLLED", ReasonCode.FACE_NOT_ENROLLED,
             "LIVENESS_FAILED", ReasonCode.LIVENESS_FAILED);
+
+    private final PassTuning tuning;
+
+    public DecisionEngine(PassTuning tuning) {
+        this.tuning = tuning;
+    }
 
     /**
      * Принимает решение.
@@ -56,13 +63,13 @@ public class DecisionEngine {
         return code == ReasonCode.OK ? DecisionResult.allow(score) : DecisionResult.deny(code, score);
     }
 
-    private static ReasonCode faceCode(FaceResult face) {
+    private ReasonCode faceCode(FaceResult face) {
         ReasonCode code = ReasonCode.OK;
         if (face.reason() != null && FACE_REASONS.containsKey(face.reason())) {
             code = FACE_REASONS.get(face.reason());
         } else if (face.quality() < MIN_QUALITY) {
             code = ReasonCode.FACE_LOW_QUALITY;
-        } else if (!face.match()) {
+        } else if (!face.match() || face.score() < tuning.faceThreshold()) {
             code = ReasonCode.FACE_MISMATCH;
         } else if (!face.liveness()) {
             code = ReasonCode.LIVENESS_FAILED;
@@ -70,12 +77,13 @@ public class DecisionEngine {
         return code;
     }
 
-    private static ReasonCode entryCode(PassContext ctx) {
+    private ReasonCode entryCode(PassContext ctx) {
         WorkerProfile profile = ctx.profile();
         ReasonCode code = ReasonCode.OK;
-        if (ctx.shift() == null) {
+        boolean shiftRequired = tuning.requireShift();
+        if (shiftRequired && ctx.shift() == null) {
             code = ReasonCode.NO_SHIFT;
-        } else if (!ctx.shift().windowOk()) {
+        } else if (shiftRequired && !ctx.shift().windowOk()) {
             code = ReasonCode.OUTSIDE_SHIFT_WINDOW;
         } else if (profile.permitUntil() == null || profile.permitUntil().isBefore(ctx.today())) {
             code = ReasonCode.PERMIT_EXPIRED;

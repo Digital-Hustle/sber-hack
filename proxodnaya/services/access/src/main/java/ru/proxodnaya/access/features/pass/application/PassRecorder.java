@@ -7,7 +7,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import ru.proxodnaya.access.config.properties.AccessProperties;
+import ru.proxodnaya.access.features.settings.api.PassTuning;
 import ru.proxodnaya.access.features.pass.command.service.JournalService;
 import ru.proxodnaya.access.features.pass.command.service.PresenceService;
 import ru.proxodnaya.access.features.pass.model.PassRecord;
@@ -30,14 +30,14 @@ public class PassRecorder {
     private final JournalService journal;
     private final PresenceService presence;
     private final Outbox outbox;
-    private final AccessProperties props;
+    private final PassTuning tuning;
 
-    public PassRecorder(QrUses qrUses, JournalService journal, PresenceService presence, Outbox outbox, AccessProperties props) {
+    public PassRecorder(QrUses qrUses, JournalService journal, PresenceService presence, Outbox outbox, PassTuning tuning) {
         this.qrUses = qrUses;
         this.journal = journal;
         this.presence = presence;
         this.outbox = outbox;
-        this.props = props;
+        this.tuning = tuning;
     }
 
     /**
@@ -72,7 +72,7 @@ public class PassRecorder {
      */
     @Transactional
     public PassRecord manual(PassRecord record) {
-        Direction direction = presence.lockDirection(record.workerId(), record.ts(), props.presenceTtl());
+        Direction direction = presence.lockDirection(record.workerId(), record.ts(), tuning.presenceTtl());
         PassRecord result = new PassRecord(record.id(), record.ts(), record.checkpointId(), record.zoneId(), direction,
                 record.workerId(), record.deviceId(), record.window(), record.faceScore(), record.livenessOk(), record.action(),
                 record.decision(), record.code(), record.latencyMs(), record.source(), record.details());
@@ -136,12 +136,12 @@ public class PassRecorder {
         if (rec.decision() != Decision.ALLOW) {
             return rec;
         }
-        Direction actual = presence.lockDirection(rec.workerId(), rec.ts(), props.presenceTtl());
+        Direction actual = presence.lockDirection(rec.workerId(), rec.ts(), tuning.presenceTtl());
         if (actual != rec.direction()) {
             return replaced(rec, rec.direction() == Direction.IN ? ReasonCode.ALREADY_INSIDE : ReasonCode.NOT_INSIDE);
         }
         boolean full = rec.direction() == Direction.IN && capacity != null && rec.zoneId() != null
-                && presence.zoneFull(rec.zoneId(), capacity, rec.workerId(), rec.ts(), props.presenceTtl());
+                && presence.zoneFull(rec.zoneId(), capacity, rec.workerId(), rec.ts(), tuning.presenceTtl());
         return full ? replaced(rec, ReasonCode.ZONE_FULL) : rec;
     }
 

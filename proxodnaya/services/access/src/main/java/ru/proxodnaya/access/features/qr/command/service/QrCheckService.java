@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import ru.proxodnaya.access.config.properties.AccessProperties;
+import ru.proxodnaya.access.features.settings.api.PassTuning;
 import ru.proxodnaya.access.features.qr.api.QrCheck;
 import ru.proxodnaya.access.features.qr.api.QrCheckResult;
 import ru.proxodnaya.access.features.qr.command.model.DeviceKey;
@@ -23,13 +23,13 @@ public class QrCheckService implements QrCheck {
     private final QrParser parser;
     private final EcdsaVerifier verifier;
     private final DeviceKeyRepository deviceKeys;
-    private final AccessProperties props;
+    private final PassTuning tuning;
 
-    public QrCheckService(QrParser parser, EcdsaVerifier verifier, DeviceKeyRepository deviceKeys, AccessProperties props) {
+    public QrCheckService(QrParser parser, EcdsaVerifier verifier, DeviceKeyRepository deviceKeys, PassTuning tuning) {
         this.parser = parser;
         this.verifier = verifier;
         this.deviceKeys = deviceKeys;
-        this.props = props;
+        this.tuning = tuning;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class QrCheckService implements QrCheck {
 
     private boolean isWindowValid(long window, Instant now) {
         long current = Math.floorDiv(now.getEpochSecond(), QrPayload.WINDOW_SECONDS);
-        long tolerance = props.qrTolerance().toSeconds() / QrPayload.WINDOW_SECONDS;
+        long tolerance = tuning.qrTolerance().toSeconds() / QrPayload.WINDOW_SECONDS;
         return Math.abs(current - window) <= tolerance;
     }
 }
