@@ -65,7 +65,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             case WORKER_NOT_FOUND, NOT_FOUND -> HttpStatus.NOT_FOUND;
             case DEVICE_ALREADY_BOUND, CONFLICT -> HttpStatus.CONFLICT;
             case INVITE_EXPIRED -> HttpStatus.GONE;
-            case FORBIDDEN, DEVICE_UNKNOWN, DEVICE_REVOKED -> HttpStatus.FORBIDDEN;
+            case FORBIDDEN, WORKER_BLOCKED, DEVICE_UNKNOWN, DEVICE_REVOKED -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };
     }

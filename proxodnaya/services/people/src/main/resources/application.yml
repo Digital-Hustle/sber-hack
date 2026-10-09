@@ -33,6 +33,12 @@ spring:
           issuer-uri: ${OIDC_ISSUER_URI}
           audiences: people
 
+people:
+  invite:
+    ttl: ${INVITE_TTL:72h}
+    pepper: ${INVITE_PEPPER}
+    link-base: ${PUBLIC_URL}
+
 server:
   port: 8081
   shutdown: graceful
