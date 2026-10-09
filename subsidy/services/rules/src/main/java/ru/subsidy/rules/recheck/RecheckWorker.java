@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import ru.subsidy.rules.projection.ProjectionRebuild;
 import ru.subsidy.rules.protocol.ProtocolService;
 
 /**
@@ -27,6 +28,7 @@ public class RecheckWorker {
     private final RecheckRequests requests;
     private final ProtocolService protocols;
     private final TransactionTemplate transactions;
+    private final ProjectionRebuild rebuild;
 
     /**
      * Конструктор.
@@ -34,11 +36,14 @@ public class RecheckWorker {
      * @param requests запросы
      * @param protocols протоколы
      * @param transactions транзакции
+     * @param rebuild пересборка проекции, если событие разбора потеряно
      */
-    public RecheckWorker(RecheckRequests requests, ProtocolService protocols, TransactionTemplate transactions) {
+    public RecheckWorker(RecheckRequests requests, ProtocolService protocols, TransactionTemplate transactions,
+                         ProjectionRebuild rebuild) {
         this.requests = requests;
         this.protocols = protocols;
         this.transactions = transactions;
+        this.rebuild = rebuild;
     }
 
     /**
@@ -69,6 +74,7 @@ public class RecheckWorker {
 
     private void checkOrRetry(UUID packageId) {
         try {
+            rebuild.rebuildIfIncomplete(packageId);
             protocols.check(packageId);
         } catch (RuntimeException failure) {
             LOG.warn("recheck failed package={}: {}", packageId, failure.getClass().getSimpleName(), failure);

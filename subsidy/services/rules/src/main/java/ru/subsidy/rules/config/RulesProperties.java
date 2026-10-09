@@ -11,7 +11,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param debounce пауза без новых событий перед перепроверкой
  * @param zone часовой пояс для дат пакета
  * @param expiringDays горизонт «истекающих» документов по умолчанию
+ * @param docprocUrl адрес docproc для пересборки проекции (RUL-18)
  */
 @ConfigurationProperties("app.rules")
-public record RulesProperties(Duration debounce, ZoneId zone, int expiringDays) {
+public record RulesProperties(Duration debounce, ZoneId zone, int expiringDays, String docprocUrl) {
 }
