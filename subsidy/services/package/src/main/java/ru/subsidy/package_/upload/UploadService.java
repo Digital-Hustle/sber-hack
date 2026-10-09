@@ -43,6 +43,7 @@ public class UploadService {
     private final FileInspector inspector;
     private final FileCrypto crypto;
     private final OutboxWriter outbox;
+    private final ZipExpander zips;
     private final Clock clock;
     private final int maxFiles;
 
@@ -54,16 +55,18 @@ public class UploadService {
      * @param inspector проверки
      * @param crypto шифрование
      * @param outbox outbox
+     * @param zips распаковка ZIP
      * @param clock часы
      * @param maxFiles UPLOAD_MAX_FILES
      */
     public UploadService(DSLContext dsl, TransactionTemplate transactions, FileInspector inspector, FileCrypto crypto,
-                         OutboxWriter outbox, Clock clock, @Value("${UPLOAD_MAX_FILES:60}") int maxFiles) {
+                         OutboxWriter outbox, ZipExpander zips, Clock clock, @Value("${UPLOAD_MAX_FILES:60}") int maxFiles) {
         this.dsl = dsl;
         this.transactions = transactions;
         this.inspector = inspector;
         this.crypto = crypto;
         this.outbox = outbox;
+        this.zips = zips;
         this.clock = clock;
         this.maxFiles = maxFiles;
     }
@@ -87,24 +90,45 @@ public class UploadService {
         }
         int present = dsl.fetchCount(Tables.FILES, Tables.FILES.PACKAGE_ID.eq(packageId)
                 .and(Tables.FILES.DELETED_AT.isNull()));
-        List<AcceptedFile> accepted = new ArrayList<>();
-        List<RejectedFile> rejected = new ArrayList<>();
+        Batch batch = new Batch(present);
         for (IncomingFile file : files) {
             InspectionResult result = inspector.inspect(file.content());
-            RejectReason reason = result.reason();
-            if (reason == null && FileInspector.ZIP.equals(result.mime())) {
-                reason = RejectReason.ZIP_UNSAFE;
-            }
-            if (reason == null && present + accepted.size() >= maxFiles) {
-                reason = RejectReason.TOO_MANY_FILES;
-            }
-            if (reason == null) {
-                accepted.add(transactions.execute(state -> store(packageId, file, result, userId)));
+            if (result.isAccepted() && FileInspector.ZIP.equals(result.mime())) {
+                expand(packageId, file, userId, batch);
             } else {
-                rejected.add(new RejectedFile(file.name(), reason.name(), reason.detail(), reason.hint()));
+                admit(packageId, file, result, userId, batch);
             }
         }
-        return new UploadResult(accepted, rejected);
+        return new UploadResult(batch.accepted(), batch.rejected());
+    }
+
+    private void expand(UUID packageId, IncomingFile archive, String userId, Batch batch) {
+        List<IncomingFile> entries;
+        try {
+            entries = zips.expand(archive.content());
+        } catch (ZipRejectedException rejection) {
+            batch.reject(archive.name(), RejectReason.ZIP_UNSAFE,
+                    RejectReason.ZIP_UNSAFE.detail() + ": " + rejection.getMessage());
+            return;
+        }
+        for (IncomingFile entry : entries) {
+            admit(packageId, entry, inspector.inspect(entry.content()), userId, batch);
+        }
+    }
+
+    private void admit(UUID packageId, IncomingFile file, InspectionResult result, String userId, Batch batch) {
+        RejectReason reason = result.reason();
+        if (reason == null && FileInspector.ZIP.equals(result.mime())) {
+            reason = RejectReason.ZIP_UNSAFE;
+        }
+        if (reason == null && batch.count() >= maxFiles) {
+            reason = RejectReason.TOO_MANY_FILES;
+        }
+        if (reason == null) {
+            batch.accept(transactions.execute(state -> store(packageId, file, result, userId)));
+        } else {
+            batch.reject(file.name(), reason, reason.detail());
+        }
     }
 
     private AcceptedFile store(UUID packageId, IncomingFile file, InspectionResult result, String userId) {
@@ -203,5 +227,36 @@ public class UploadService {
      * @param rejected отклонённые
      */
     public record UploadResult(List<AcceptedFile> files, List<RejectedFile> rejected) {
+    }
+
+    /** Накопитель итога одного запроса. */
+    private static final class Batch {
+        private final int present;
+        private final List<AcceptedFile> acceptedFiles = new ArrayList<>();
+        private final List<RejectedFile> rejectedFiles = new ArrayList<>();
+
+        Batch(int present) {
+            this.present = present;
+        }
+
+        int count() {
+            return present + acceptedFiles.size();
+        }
+
+        void accept(AcceptedFile file) {
+            acceptedFiles.add(file);
+        }
+
+        void reject(String name, RejectReason reason, String detail) {
+            rejectedFiles.add(new RejectedFile(name, reason.name(), detail, reason.hint()));
+        }
+
+        List<AcceptedFile> accepted() {
+            return acceptedFiles;
+        }
+
+        List<RejectedFile> rejected() {
+            return rejectedFiles;
+        }
     }
 }

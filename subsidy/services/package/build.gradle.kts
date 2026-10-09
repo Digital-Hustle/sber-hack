@@ -8,4 +8,5 @@ dependencies {
     implementation(libs.imageio.jpeg)
     implementation(libs.imageio.tiff)
     implementation(libs.poi.ooxml)
+    implementation(libs.commons.compress)
 }

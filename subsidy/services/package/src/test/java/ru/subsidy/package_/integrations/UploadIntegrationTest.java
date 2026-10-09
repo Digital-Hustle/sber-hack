@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -98,5 +100,24 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(multipart("/api/v1/packages/" + UUID.randomUUID() + "/files").file(file)
                         .with(authentication(user("SPECIALIST"))))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void upload_zip_isExpandedIntoFiles() throws Exception {
+        String packageId = createPackage();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(out)) {
+            for (String name : List.of("a.pdf", "b.pdf")) {
+                zip.putNextEntry(new ZipEntry(name));
+                zip.write(pdf());
+                zip.closeEntry();
+            }
+        }
+        mockMvc.perform(multipart("/api/v1/packages/" + packageId + "/files")
+                        .file(new MockMultipartFile("files", "pack.zip", "application/zip", out.toByteArray()))
+                        .with(authentication(user("SPECIALIST"))))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.files.length()").value(2))
+                .andExpect(jsonPath("$.rejected.length()").value(0));
     }
 }
