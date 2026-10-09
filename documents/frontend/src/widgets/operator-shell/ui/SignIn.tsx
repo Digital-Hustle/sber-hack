@@ -31,6 +31,7 @@ export const SignIn = () => {
   const [height, setHeight] = useState(0);
   const [phase, setPhase] = useState<"loading" | "form" | "finishing">("loading");
   const [error, setError] = useState(false);
+  const [loads, setLoads] = useState(0); // каждая страница Keycloak во фрейме — новый документ, мерить заново
 
   useEffect(() => {
     let live = true;
@@ -61,11 +62,12 @@ export const SignIn = () => {
     ro.observe(box);
     measure();
     return () => ro.disconnect();
-  }, [phase, src]);
+  }, [phase, loads]);
 
   const onLoad = () => {
     const path = frame.current?.contentWindow?.location.pathname;
     setPhase(path === routes.operatorCallback ? "finishing" : "form");
+    setLoads((n) => n + 1);
   };
 
   return (

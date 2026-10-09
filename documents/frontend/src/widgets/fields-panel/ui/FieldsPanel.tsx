@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, CheckCircle2, Eye, Pencil, XCircle, Bot, UserPen } from "lucide-react";
 import { reviewApi, type Check, type DocumentCard, type FieldCard } from "@/entities/application";
 import { checkLabel, confidenceTone, percent } from "@/entities/document";
 import { FieldEditor } from "@/features/review-document";
-import { Button, EmptyState, Status, toast } from "@/shared/ui";
+import { Button, EmptyState, Status, Switch, toast } from "@/shared/ui";
 import { errorText } from "@/shared/api";
 import { cn } from "@/shared/lib";
 import { fadeUp, stagger } from "@/shared/config/motion";
@@ -51,18 +51,17 @@ export const FieldsPanel = ({ appId, doc, canAct, active, onActive }: {
     {attentionCount > 0 && attentionCount < all.length && (
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>{onlyAttention ? `Показаны ${attentionCount} из ${all.length}` : `Требуют проверки: ${attentionCount} из ${all.length}`}</span>
-        <Button size="sm" variant="quiet" aria-pressed={onlyAttention} onClick={() => setOnlyAttention((v) => !v)}>
-          {onlyAttention ? "Показать все поля" : "Только требующие проверки"}
-        </Button>
+        <label className="flex cursor-pointer items-center gap-2 font-medium text-foreground">Только требующие проверки<Switch checked={onlyAttention} onChange={setOnlyAttention} label="Только требующие проверки" /></label>
       </div>
     )}
     <motion.ul variants={stagger(0.02)} initial="hidden" animate="show" className="flex flex-col gap-1.5">
+      <AnimatePresence mode="popLayout" initial={false}>
       {fields.map((f) => {
         const checks = (f.checks as Check[] | undefined) ?? [];
         const failed = checks.filter((c) => !c.ok);
         const on = active === f.name;
         return (
-          <motion.li key={f.name} variants={fadeUp} onClick={() => onActive(f)}
+          <motion.li key={f.name} layout="position" variants={fadeUp} exit="exit" onClick={() => onActive(f)}
             className={cn("cursor-pointer rounded-lg border p-3 transition-colors duration-fast",
               on ? "border-primary bg-accent/60" : f.attention ? "border-warning-border bg-warning-soft/40 hover:bg-warning-soft/60" : "border-border bg-card hover:bg-muted")}>
             <div className="flex items-start gap-2">
@@ -98,6 +97,7 @@ export const FieldsPanel = ({ appId, doc, canAct, active, onActive }: {
           </motion.li>
         );
       })}
+      </AnimatePresence>
     </motion.ul>
     </div>
   );
