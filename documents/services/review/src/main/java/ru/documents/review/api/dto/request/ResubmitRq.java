@@ -12,7 +12,7 @@ import java.util.UUID;
  *
  * @param items пункты
  */
-public record ResubmitRq(@NotEmpty @Size(max = 20) List<@Valid Item> items) {
+public record ResubmitRq(@NotEmpty @Size(max = 20) List<@Valid RequestItem> items) {
 
     /**
      * Пункт.
@@ -21,6 +21,6 @@ public record ResubmitRq(@NotEmpty @Size(max = 20) List<@Valid Item> items) {
      * @param type       вид (дослать)
      * @param reason     причина для соискателя
      */
-    public record Item(UUID documentId, String type, @NotBlank @Size(max = 500) String reason) {
+    public record RequestItem(UUID documentId, String type, @NotBlank @Size(max = 500) String reason) {
     }
 }

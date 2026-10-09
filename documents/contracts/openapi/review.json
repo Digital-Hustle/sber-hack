@@ -326,11 +326,26 @@
         },
         "type" : "object"
       },
+      "FieldEdit" : {
+        "properties" : {
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "value" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "name" ],
+        "type" : "object"
+      },
       "FieldsRq" : {
         "properties" : {
           "fields" : {
             "items" : {
-              "$ref" : "#/components/schemas/Item"
+              "$ref" : "#/components/schemas/FieldEdit"
             },
             "maxItems" : 50,
             "minItems" : 0,
@@ -402,24 +417,6 @@
             "type" : "array"
           }
         },
-        "type" : "object"
-      },
-      "Item" : {
-        "properties" : {
-          "documentId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "reason" : {
-            "maxLength" : 500,
-            "minLength" : 0,
-            "type" : "string"
-          },
-          "type" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "reason" ],
         "type" : "object"
       },
       "JsonNode" : { },
@@ -573,11 +570,29 @@
         },
         "type" : "object"
       },
+      "RequestItem" : {
+        "properties" : {
+          "documentId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "ResubmitRq" : {
         "properties" : {
           "items" : {
             "items" : {
-              "$ref" : "#/components/schemas/Item"
+              "$ref" : "#/components/schemas/RequestItem"
             },
             "maxItems" : 20,
             "minItems" : 0,

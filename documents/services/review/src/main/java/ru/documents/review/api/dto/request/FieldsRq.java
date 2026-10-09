@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @param fields поля
  */
-public record FieldsRq(@NotEmpty @Size(max = 50) List<@Valid Item> fields) {
+public record FieldsRq(@NotEmpty @Size(max = 50) List<@Valid FieldEdit> fields) {
 
     /**
      * Правка.
@@ -19,6 +19,6 @@ public record FieldsRq(@NotEmpty @Size(max = 50) List<@Valid Item> fields) {
      * @param name  поле
      * @param value значение (пусто — очистить)
      */
-    public record Item(@NotBlank String name, @Size(max = 500) String value) {
+    public record FieldEdit(@NotBlank String name, @Size(max = 500) String value) {
     }
 }
