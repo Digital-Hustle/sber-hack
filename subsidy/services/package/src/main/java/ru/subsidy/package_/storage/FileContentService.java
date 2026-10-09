@@ -24,6 +24,8 @@ public class FileContentService {
     public static final String ACTION_DOWNLOAD = "DOWNLOAD";
     /** Чтение сервисом разбора. */
     public static final String ACTION_INTERNAL_READ = "INTERNAL_READ";
+    /** Рендер превью страницы. */
+    public static final String ACTION_PREVIEW = "PREVIEW";
     private static final String NOT_FOUND = "Файл не найден";
 
     private final DSLContext dsl;
