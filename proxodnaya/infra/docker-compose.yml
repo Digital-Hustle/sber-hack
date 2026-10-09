@@ -29,9 +29,11 @@ services:
   caddy:
     image: caddy:2.10-alpine
     restart: unless-stopped
-    ports: [ "80:80", "443:443" ]
+    # сам на 80/443; за общим edge — HTTP_BIND=127.0.0.1:8380, HTTPS_BIND=127.0.0.1:8743, CADDY_SCHEME=http:// (edge/README.md)
+    ports: [ "${HTTP_BIND:-80}:80", "${HTTPS_BIND:-443}:443" ]
     environment:
       PUBLIC_HOST: ${PUBLIC_HOST}
+      CADDY_SCHEME: ${CADDY_SCHEME:-}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

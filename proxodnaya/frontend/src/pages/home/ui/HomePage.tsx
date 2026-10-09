@@ -172,7 +172,7 @@ export const HomePage = () => {
       <footer className="mt-10 rounded-t-3xl bg-card px-4 pb-safe shadow-card sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 py-8 text-sm text-muted-foreground sm:flex-row">
           <Logo sub="Хакатон «СберБизнесВайб» · 2026" />
-          <span>Демо-данные хранятся локально в браузере</span>
+          <span>Данные — на сервере объекта, эталоны лиц — в зашифрованном виде</span>
         </div>
       </footer>
     </div>
