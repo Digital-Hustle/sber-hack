@@ -8,6 +8,7 @@ import { can, useSession } from "@/entities/session";
 import { AssistantChat } from "@/features/ask-assistant";
 import { DecideButton } from "@/features/decide-package";
 import { ExportButtons } from "@/features/export-protocol";
+import { RebuildButton } from "@/features/rebuild-projection";
 import { FileActions } from "@/features/manage-file";
 import { UploadDropzone } from "@/features/upload-files";
 import { DocumentViewer } from "@/widgets/document-viewer";
@@ -136,7 +137,7 @@ export const PackagePage = () => {
       <PageHeader title={c.org.name || `ИНН ${c.org.inn}`}
         sub={<span className="flex flex-wrap items-center gap-2">ИНН {c.org.inn} · {c.program} <PackageStatusBadge status={c.status} />
           <Link to={routes.org(c.org.inn)} className="inline-flex items-center gap-1 text-sm underline-offset-2 hover:underline"><History className="size-4" />история</Link></span>}
-        actions={<div className="flex flex-wrap gap-2">{checked && <ExportButtons packageId={id} />}{c.status === "CHECKED" && can(roles, "decide") && <DecideButton packageId={id} />}</div>} />
+        actions={<div className="flex flex-wrap gap-2">{checked && <ExportButtons packageId={id} />}{c.status === "CHECKED" && can(roles, "decide") && <DecideButton packageId={id} />}{c.status !== "DECIDED" && c.files.length > 0 && can(roles, "reprocess") && <RebuildButton packageId={id} />}</div>} />
       {c.decision && (
         <Card className="mb-4"><CardContent className="flex flex-wrap items-center gap-2 text-sm">
           <Status tone={c.decision.decision === "APPROVE" ? "success" : c.decision.decision === "REJECT" ? "danger" : "warning"} dot>{DECISION[c.decision.decision]}</Status>

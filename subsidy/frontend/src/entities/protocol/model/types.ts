@@ -21,3 +21,6 @@ export type Stats = { items: RuleStat[]; packages: number; method: string };
 export type Expiring = { packageId: string; inn: string; documentId: string; type: string; title: string; date: string; expiresAt: string; daysLeft: number };
 export type ProgramChecklistItem = { item: string; title: string; kind: string; types: string[]; condition: string | null };
 export type Program = { code: string; version: number; name: string; demo: boolean; params: Record<string, unknown>; checklist: ProgramChecklistItem[]; updatedBy: string | null; updatedAt: string };
+
+/** RUL-18: итог пересборки проекции документов из docproc. */
+export type RebuildResult = { packageId: string; documents: number; updated: number; removed: number; status: string };

@@ -36,3 +36,4 @@
 | FE-SP-08 | B-04 | `StatsPage`: `ErrorStatsChart` с «как посчитано» | F2 | done |
 | FE-SP-09 | B-05 | `ExpiringPage`: истекающие справки и выписки | F2 | done |
 | FE-SP-10 | B-06 | `AssistantChat`: ответ + источники + статус валидатора | F2 | done |
+| FE-SP-11 | NFR-15 | Кнопка «Сверить с разбором» (SENIOR) → `POST /rules/.../projection/rebuild` (RUL-18) | F2 | done #PR |
