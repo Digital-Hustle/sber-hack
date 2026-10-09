@@ -54,4 +54,4 @@
 - 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)
 - 2026-10-09 · miroslavrov (агент) · feat: ACC-17 `zoneCapacity` в `/internal/people/checkpoints/{id}` для access (#90)
 - 2026-10-09 · miroslavrov (агент) · feat: PPL-05 device-токен ES256, JWKS, два издателя в сервисах и gateway (ADR-040, #91)
-- 2026-10-09 · miroslavrov (агент) · feat: PPL-13 вход персонала по коду из письма, `/staff`, журнал доступа (ADR-041, #PR)
+- 2026-10-09 · miroslavrov (агент) · feat: PPL-13 вход персонала по коду из письма, `/staff`, журнал доступа (ADR-041, #96)
