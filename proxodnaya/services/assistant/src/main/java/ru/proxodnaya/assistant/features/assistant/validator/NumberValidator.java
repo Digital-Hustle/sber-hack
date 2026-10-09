@@ -22,7 +22,7 @@ public final class NumberValidator {
     private final Set<BigDecimal> allowed = new HashSet<>();
 
     /**
-     * Добавляет числа из JSON (числа, строки, размеры массивов).
+     * Добавляет числа из JSON: числовые поля и размеры массивов. Строки не дают чисел — в них может быть инструкция (FR-47).
      *
      * @param data данные инструмента
      * @return этот же валидатор
@@ -33,8 +33,6 @@ public final class NumberValidator {
         }
         if (data.isNumber()) {
             add(data.decimalValue());
-        } else if (data.isTextual()) {
-            allowText(data.asText());
         } else if (data.isArray()) {
             add(BigDecimal.valueOf(data.size()));
             data.forEach(this::allow);

@@ -168,7 +168,7 @@ public class PipelineRunner {
 
     private String docText(List<PageText> pages, Segment seg) {
         String text = pages.stream().filter(page -> page.page() >= seg.fromPage() && page.page() <= seg.toPage())
-                .filter(PageText::hasText).map(PageText::text).collect(Collectors.joining("\n\n"));
+                .filter(PageText::hasText).map(PageText::textWithTables).collect(Collectors.joining("\n\n"));
         return text.length() > props.maxCharsPerDocument() ? text.substring(0, props.maxCharsPerDocument()) : text;
     }
 

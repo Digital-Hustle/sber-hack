@@ -15,7 +15,7 @@
 | DP-09 | FR-23 | `Segmenter`: склейки → документы, `SegmenterCoverageTest` | B2 | done |
 | DP-10 | FR-27 | WAITING_MODEL, backoff, FAILED | B2 | done |
 | DP-11 | FR-29 | `PUT /documents/{id}/type` → переизвлечение, история результатов | B2 | done |
-| DP-12 | FR-32 | Таблицы позиций (pdfplumber tables / строки по bbox) | B2 | todo |
+| DP-12 | FR-32 | Таблицы позиций (pdfplumber tables / строки по bbox) | B2 | done #67 |
 | DP-13 | FR-34/53 | `parse_results` с версиями, `llm_calls`, `/model/status` | B2 | done |
 | DP-14 | FR-26 | Vision-путь при слабом OCR + замер | B2 | todo |
 | DP-15 | B-08 | Калибровка уверенности типа на открытом наборе, отчёт | B2 | todo |

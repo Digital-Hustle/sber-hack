@@ -114,7 +114,8 @@ public class TextExtractor {
                         : PageText.NONE));
             }
         }
-        if (pages.stream().anyMatch(page -> !page.hasText()) && ocr.enabled()) {
+        if (ocr.enabled()) {
+            // ocr нужен и для страниц с текстовым слоем: таблицы позиций (OCR-06, pdfplumber)
             return mergeOcr(pages, content);
         }
         return pages;
@@ -126,8 +127,9 @@ public class TextExtractor {
             List<PageText> merged = new ArrayList<>();
             for (PageText page : pages) {
                 PageText replacement = page;
-                if (!page.hasText() && page.page() <= recognized.size()) {
-                    replacement = recognized.get(page.page() - 1);
+                if (page.page() <= recognized.size()) {
+                    PageText ocrPage = recognized.get(page.page() - 1);
+                    replacement = page.hasText() ? page.withTables(ocrPage.tables()) : ocrPage;
                 }
                 merged.add(replacement);
             }

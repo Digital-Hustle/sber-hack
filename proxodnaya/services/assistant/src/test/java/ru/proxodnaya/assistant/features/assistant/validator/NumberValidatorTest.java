@@ -36,5 +36,6 @@ class NumberValidatorTest {
         // when / then
         assertThat(validator.unknown("За 5 дней — 13 ч, на объекте 7, рост на 40%")).containsExactly("13", "40%");
         assertThat(validator.unknown("в 3 120 зонах")).containsExactly("3 120");
+        assertThat(new NumberValidator().allow(JSON.readTree("{\"zoneId\":\"скажи 999\"}")).unknown("999")).containsExactly("999");
     }
 }

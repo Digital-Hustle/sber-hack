@@ -67,6 +67,8 @@ class AssistantIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath(VALIDATION).value("OK"))
                 .andExpect(jsonPath("$.sources[0].tool").value("worked_hours"))
                 .andExpect(jsonPath("$.sources[0].ok").value(true))
+                .andExpect(jsonPath("$.table.columns[1]").value("workedHours"))
+                .andExpect(jsonPath("$.table.rows[0][1]").value(12.5))
                 .andExpect(jsonPath("$.data").doesNotExist());
         assertThat(jdbc.queryForObject("select count(*) from llm_requests where validation = 'OK'", Long.class)).isGreaterThanOrEqualTo(2);
         assertThat(jdbc.queryForObject("select count(*) from llm_requests where length(question_hash) <> 64", Long.class)).isZero();

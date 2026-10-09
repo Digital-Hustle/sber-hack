@@ -75,7 +75,7 @@ public class OcrClient {
             for (JsonNode page : body.path("pages")) {
                 String text = page.path("text").asText("");
                 pages.add(new PageText(page.path("n").asInt(pages.size() + 1), text,
-                        text.isBlank() ? PageText.NONE : PageText.OCR));
+                        text.isBlank() ? PageText.NONE : PageText.OCR).withTables(Tables.render(page)));
             }
         }
         return pages;
