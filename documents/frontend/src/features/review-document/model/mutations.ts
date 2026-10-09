@@ -25,4 +25,11 @@ export const useConfirmDocument = (appId: string) => useAct(appId, (docId: strin
 export const useRetypeDocument = (appId: string) =>
   useAct(appId, (v: { docId: string; type: string }) => reviewApi.retype(v.docId, v.type), "Вид изменён — поля извлекаются заново");
 export const useReprocessDocument = (appId: string) => useAct(appId, (docId: string) => reviewApi.reprocess(docId), "Документ отправлен на повторный разбор");
-export const useAssign = (appId: string) => useAct(appId, (force: boolean) => reviewApi.assign(appId, force), "Заявка назначена вам");
+/** После назначения скан открывается (B-07) — страницы запрашиваются заново. */
+export const useAssign = (appId: string) => {
+  const qc = useQueryClient();
+  return useAct(appId, async (force: boolean) => {
+    await reviewApi.assign(appId, force);
+    void qc.invalidateQueries({ queryKey: ["file"] });
+  }, "Заявка назначена вам");
+};

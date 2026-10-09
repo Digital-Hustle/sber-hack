@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { ChevronLeft, ChevronRight, RotateCw, ZoomIn, ZoomOut, ImageOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCw, ZoomIn, ZoomOut, ImageOff, Lock } from "lucide-react";
 import type { DocFile, DocumentCard, PageSize } from "@/entities/application";
-import { apiBlob } from "@/shared/api";
+import { ApiError, apiBlob } from "@/shared/api";
 import { Button, EmptyState, Skeleton } from "@/shared/ui";
 import { spring } from "@/shared/config/motion";
 
@@ -43,7 +43,11 @@ export const DocumentViewer = ({ doc, highlight }: { doc: DocumentCard; highligh
     enabled: !!loc,
     staleTime: Infinity,
     gcTime: 60_000,
+    // B-07: назначение доходит до intake событием — пару секунд после «Взять в работу» скан ещё закрыт
+    retry: (n, e) => (e instanceof ApiError && e.code === "FILE_NOT_ASSIGNED" ? n < 3 : false),
+    retryDelay: 1500,
   });
+  const notAssigned = q.error instanceof ApiError && q.error.code === "FILE_NOT_ASSIGNED";
   const src = useMemo(() => (q.data ? URL.createObjectURL(q.data) : null), [q.data]);
   useEffect(() => () => { if (src) URL.revokeObjectURL(src); }, [src]);
   const size = sizes.find((s) => s.n === page);
@@ -64,6 +68,7 @@ export const DocumentViewer = ({ doc, highlight }: { doc: DocumentCard; highligh
       </div>
       <div className="min-h-0 flex-1 overflow-auto bg-muted p-4">
         {q.isPending ? <Skeleton className="mx-auto h-96 w-full max-w-xl" />
+          : notAssigned ? <EmptyState icon={<Lock />} title="Скан закрыт" text="Скан видит только оператор, которому назначена заявка. Возьмите её в работу" action={<Button size="sm" variant="secondary" onClick={() => q.refetch()}>Повторить</Button>} />
           : q.isError || !src ? <EmptyState icon={<ImageOff />} title="Страница не открылась" action={<Button size="sm" variant="secondary" onClick={() => q.refetch()}>Повторить</Button>} />
           : (
             <motion.div animate={{ rotate: rot }} transition={spring.soft} className="relative mx-auto origin-center" style={{ width: `${ZOOMS[zoom] * 100}%` }}>

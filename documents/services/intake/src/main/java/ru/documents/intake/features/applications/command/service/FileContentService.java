@@ -56,6 +56,25 @@ public class FileContentService {
     }
 
     /**
+     * Может ли сотрудник открыть скан (B-07): старший — любой, оператор — только назначенной ему заявки.
+     *
+     * @param fileId   файл
+     * @param username логин
+     * @param senior   роль SENIOR_OPERATOR
+     */
+    @Transactional(readOnly = true)
+    public void ensureStaffAccess(UUID fileId, String username, boolean senior) {
+        UUID app = owner(fileId);
+        if (senior) {
+            return;
+        }
+        if (read.assignee(app).filter(username::equals).isEmpty()) {
+            throw new DomainException("FILE_NOT_ASSIGNED", 403, "Скан открывает только оператор, которому назначена заявка",
+                    "Возьмите заявку в работу");
+        }
+    }
+
+    /**
      * Исходный файл (для docproc).
      *
      * @param fileId файл

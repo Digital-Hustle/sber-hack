@@ -46,6 +46,8 @@ public class FilesControllerImpl implements FilesController {
         } else if (auth instanceof JwtAuthenticationToken jwt) {
             actor = KeycloakJwt.username(jwt.getToken());
             kind = "OPERATOR";
+            files.ensureStaffAccess(fileId, actor, jwt.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_SENIOR_OPERATOR".equals(a.getAuthority())));
         } else {
             throw DomainException.notFound();
         }
