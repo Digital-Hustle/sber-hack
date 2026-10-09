@@ -15,7 +15,7 @@ spring:
             - name: RequestSize
               args:
                 maxSize: ${MAX_BODY:5MB}
-            - RemoveRequestHeader=Cookie
+            # Cookie allowlist — StaffRefreshCookieFilter, только POST staff/refresh
           # /<svc>/api/v1/** → http://<svc>:<port>/api/v1/** ; /internal/** закрыт фильтром до маршрутов
           routes:
             - id: people
