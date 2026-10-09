@@ -26,6 +26,7 @@ public enum ErrorCode {
     DOCUMENT_TYPE_INVALID,
     FIELD_INVALID,
     PROTOCOL_NOT_FOUND,
+    NOT_CHECKED_YET,
     MODEL_UNAVAILABLE,
 
     // System
