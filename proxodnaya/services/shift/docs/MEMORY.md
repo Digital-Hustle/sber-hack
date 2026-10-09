@@ -41,6 +41,8 @@
 | 2026-10-09 | системные отказы — только `FACE_LOW_QUALITY` и `SYSTEM_ERROR` (B-07), остальные правомерные; нагрузка — день × час в `SITE_ZONE` | как в REQUIREMENTS B-07/B-08 | #62 |
 | 2026-10-09 | NO_SIGNAL — только если телефон уже присылал heartbeat; LEFT_SITE — по heartbeat после входа; точность в пользу человека | без приложения на телефоне не спамить оповещениями | #PR |
 | 2026-10-09 | геозона и лимит скопления — из env, а не из people | в people нет координат площадки и событий зон; вынести в `people.zone.v1` позже | #PR |
+| 2026-10-09 | NO_SIGNAL — только если телефон уже присылал heartbeat; LEFT_SITE — по heartbeat после входа; точность в пользу человека | без приложения на телефоне не спамить оповещениями | #65 |
+| 2026-10-09 | геозона и лимит скопления — из env, а не из people | в people нет координат площадки и событий зон; вынести в `people.zone.v1` позже | #65 |
 | 2026-10-09 | повторный вход без выхода закрывает прежний интервал `REENTRY` + `UNCONFIRMED_EXIT`, а не «как будто вышел» | честность цифр (rules.md) | #37 |
 
 ## 4. Известные баги и ограничения
@@ -57,3 +59,4 @@
 - 2026-10-09 · miroslavrov (агент) · feat: SH-10 опоздания и переработки (`/analytics/late-overtime`, `LATE_GRACE`, `OVERTIME_THRESHOLD`) (#60)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-12 отказы по причинам и нагрузка по часам (`/analytics/refusals`, `/analytics/load-by-hour`) (#62)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-11 heartbeat и оповещения LEFT_SITE/NO_SIGNAL/ZONE_CROWDED (`/worker/heartbeat`, `/alerts`, SSE `alert.created`, `shift.alert.v1`) (#PR)
+- 2026-10-09 · miroslavrov (агент) · feat: SH-11 heartbeat и оповещения LEFT_SITE/NO_SIGNAL/ZONE_CROWDED (`/worker/heartbeat`, `/alerts`, SSE `alert.created`, `shift.alert.v1`) (#65)
