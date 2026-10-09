@@ -38,7 +38,8 @@ public interface AnalyticsController {
      * @param from   начало, включительно
      * @param until  конец, не включая (параметр {@code to}); период до 93 дней
      * @param worker рабочий
-     * @param zone   зона
+     * @param zone      зона
+     * @param simulated включать демо-историю симулятора
      * @return отчёт
      */
     @Operation(summary = "Отработанные часы за период")
@@ -47,14 +48,16 @@ public interface AnalyticsController {
     HoursRs hours(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
                   @RequestParam(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant until,
                   @RequestParam(required = false) String worker,
-                  @RequestParam(required = false) String zone);
+                  @RequestParam(required = false) String zone,
+                  @RequestParam(defaultValue = "false") boolean simulated);
 
     /**
      * Опоздания и переработки относительно графика.
      *
      * @param from   начало, включительно (по началу смены)
      * @param until  конец, не включая (параметр {@code to}); период до 93 дней
-     * @param worker рабочий; с ним в ответе — разбор по сменам
+     * @param worker    рабочий; с ним в ответе — разбор по сменам
+     * @param simulated включать демо-историю симулятора
      * @return отчёт
      */
     @Operation(summary = "Опоздания и переработки за период")
@@ -62,5 +65,6 @@ public interface AnalyticsController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     LateOvertimeRs lateOvertime(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
                                 @RequestParam(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant until,
-                                @RequestParam(required = false) String worker);
+                                @RequestParam(required = false) String worker,
+                                @RequestParam(defaultValue = "false") boolean simulated);
 }

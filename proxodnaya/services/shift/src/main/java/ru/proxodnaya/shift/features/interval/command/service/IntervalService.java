@@ -78,7 +78,7 @@ public class IntervalService {
     }
 
     private void applyPass(PassEvent event) {
-        Optional<Interval> open = intervals.lockOpen(event.workerId());
+        Optional<Interval> open = intervals.lockOpen(event.workerId(), event.simulated());
         IntervalPlan plan = IntervalPlan.of(open, event);
         if (plan.closes()) {
             close(open.orElseThrow(), event.ts(), plan.closeReason(), plan.closeFlags(), event.attemptId());

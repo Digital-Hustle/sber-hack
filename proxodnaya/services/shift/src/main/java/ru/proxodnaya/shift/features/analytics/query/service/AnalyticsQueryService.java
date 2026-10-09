@@ -38,6 +38,7 @@ public class AnalyticsQueryService {
 
     static final Duration MAX_PERIOD = Duration.ofDays(93);
     private static final Duration MAX_SHIFT = Duration.ofHours(24);
+    private static final String INCLUDING_SIMULATOR = "Включая демо-историю симулятора (source = SIMULATOR): это не реальные проходы.";
 
     private final AnalyticsRepository repository;
     private final ShiftProperties props;
@@ -79,17 +80,20 @@ public class AnalyticsQueryService {
      * @param from     начало
      * @param until    конец, не включая
      * @param workerId рабочий или {@code null}
-     * @param zoneId   зона или {@code null}
+     * @param zoneId    зона или {@code null}
+     * @param simulated включать демо-историю симулятора
      * @return отчёт
      * @throws DomainException VALIDATION_ERROR — период пуст или длиннее 93 дней
      */
-    public HoursReport hours(Instant from, Instant until, String workerId, String zoneId) {
+    public HoursReport hours(Instant from, Instant until, String workerId, String zoneId, boolean simulated) {
         checkPeriod(from, until);
         Instant now = clock.instant();
-        List<WorkerHours> items = repository.hours(from, until, now, now.minus(props.presenceTtl()), workerId, zoneId);
+        List<WorkerHours> items = repository.hours(from, until, now, now.minus(props.presenceTtl()), workerId, zoneId,
+                simulated);
         String method = "Сумма интервалов присутствия, обрезанных границами периода. Незакрытый интервал моложе "
                 + wholeHours(props.presenceTtl()) + " ч считается до текущего момента; старше — 0 минут и в incomplete. "
-                + "Автозакрытые по концу смены (выход не отмечен) считаются до конца смены и тоже в incomplete. Симулятор исключён.";
+                + "Автозакрытые по концу смены (выход не отмечен) считаются до конца смены и тоже в incomplete. "
+                + sourceNote(simulated);
         return new HoursReport(from, until, items, method);
     }
 
@@ -98,11 +102,12 @@ public class AnalyticsQueryService {
      *
      * @param from     начало
      * @param until    конец, не включая
-     * @param workerId рабочий или {@code null}; с рабочим в ответе — разбор по сменам
+     * @param workerId  рабочий или {@code null}; с рабочим в ответе — разбор по сменам
+     * @param simulated включать демо-историю симулятора
      * @return отчёт
      * @throws DomainException VALIDATION_ERROR — период пуст или длиннее 93 дней
      */
-    public LateOvertimeReport lateOvertime(Instant from, Instant until, String workerId) {
+    public LateOvertimeReport lateOvertime(Instant from, Instant until, String workerId, boolean simulated) {
         checkPeriod(from, until);
         Instant now = clock.instant();
         List<ShiftSlot> shifts = repository.startedShifts(from, until, now, workerId);
@@ -110,7 +115,7 @@ public class AnalyticsQueryService {
         if (!shifts.isEmpty()) {
             Map<String, List<PresenceFact>> facts = repository.presence(
                             shifts.stream().map(ShiftSlot::workerId).distinct().toList(), from.minus(props.earlyEntry()),
-                            until.plus(MAX_SHIFT), now, now.minus(props.presenceTtl()))
+                            until.plus(MAX_SHIFT), now, now.minus(props.presenceTtl()), simulated)
                     .stream().collect(Collectors.groupingBy(PresenceFact::workerId));
             for (ShiftSlot shift : shifts) {
                 outcomes.add(calculator.evaluate(shift, facts.getOrDefault(shift.workerId(), List.of()), now));
@@ -122,7 +127,7 @@ public class AnalyticsQueryService {
                 + "позже конца смены не меньше чем на " + thresholds.overtimeThreshold().toMinutes() + " мин; если выход не отмечен "
                 + "(автозакрытие, повторный вход, вход без выхода дольше " + wholeHours(props.presenceTtl())
                 + " ч) — переработка не считается, смена в incomplete. Если человек ещё на объекте — до текущего момента. "
-                + "Симулятор исключён.";
+                + sourceNote(simulated);
         return new LateOvertimeReport(from, until, summarize(outcomes), workerId == null ? List.of() : List.copyOf(outcomes), method);
     }
 
@@ -147,6 +152,16 @@ public class AnalyticsQueryService {
         if (!from.isBefore(until) || Duration.between(from, until).compareTo(MAX_PERIOD) > 0) {
             throw new DomainException(ErrorCode.VALIDATION_ERROR, "Период — от 1 секунды до " + MAX_PERIOD.toDays() + " дней");
         }
+    }
+
+    /**
+     * Пояснение для {@code method}: учтена ли демо-история симулятора (FR-34, ADR-007).
+     *
+     * @param simulated учтена ли
+     * @return фраза
+     */
+    static String sourceNote(boolean simulated) {
+        return simulated ? INCLUDING_SIMULATOR : "Симулятор исключён.";
     }
 
     private static long wholeHours(Duration duration) {

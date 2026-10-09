@@ -64,6 +64,28 @@ class LateOvertimeIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void simulatorInterval_countedOnlyWithFlag() throws Exception {
+        // given: смена закончилась час назад, вход был только от симулятора
+        String workerId = "w" + UUID.randomUUID().toString().substring(0, 8);
+        Instant now = clock.instant().truncatedTo(ChronoUnit.SECONDS);
+        Instant start = now.minusSeconds(10 * HOUR);
+        UUID shiftId = shift(workerId, start, now.minusSeconds(HOUR));
+        jdbc.update("insert into presence_intervals (id, worker_id, zone_id, shift_id, entered_at, exited_at, close_reason, "
+                        + "simulated, enter_attempt_id) values (?, ?, 'zone-main', ?, ?, ?, 'EXIT', true, ?)", UUID.randomUUID(), workerId,
+                shiftId, Timestamp.from(start), Timestamp.from(now.minusSeconds(HOUR)), UUID.randomUUID());
+        String from = now.minusSeconds(24 * HOUR).toString();
+
+        // when / then
+        mockMvc.perform(get(PATH).with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MANAGER")))
+                        .param("from", from).param("to", now.toString()).param("worker", workerId))
+                .andExpect(jsonPath("$.items[0].absent").value(1));
+        mockMvc.perform(get(PATH).with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MANAGER")))
+                        .param("from", from).param("to", now.toString()).param("worker", workerId).param("simulated", "true"))
+                .andExpect(jsonPath("$.items[0].absent").value(0))
+                .andExpect(jsonPath("$.details[0].arrival").value("ON_TIME"));
+    }
+
     private UUID shift(String workerId, Instant start, Instant end) {
         UUID id = UUID.randomUUID();
         jdbc.update("insert into shifts (id, worker_id, starts_at, ends_at, created_by, created_at) values (?, ?, ?, ?, 'admin', now())",
