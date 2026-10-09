@@ -481,7 +481,7 @@
   "code": "CONTRACT",
   "name": "Договор с поставщиком или подрядчиком",
   "hints": "«Договор №», стороны «Поставщик/Исполнитель» и «Покупатель/Заказчик», предмет договора, цена договора, реквизиты сторон, подписи.",
-  "version": "1",
+  "version": "2",
   "kinds": {
    "number": "text",
    "date": "date",
@@ -491,6 +491,7 @@
    "sellerInn": "inn",
    "subject": "text",
    "amount": "money",
+   "amountWords": "text",
    "vatAmount": "money"
   },
   "schema": {
@@ -544,6 +545,12 @@
       "null"
      ]
     },
+    "amountWords": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
     "vatAmount": {
      "type": [
       "string",
@@ -560,6 +567,7 @@
     "sellerInn",
     "subject",
     "amount",
+    "amountWords",
     "vatAmount"
    ],
    "additionalProperties": false
@@ -569,7 +577,7 @@
   "code": "INVOICE",
   "name": "Счёт, счёт-фактура, УПД или акт",
   "hints": "«Счёт на оплату», «Счёт-фактура», «Универсальный передаточный документ», «Акт», таблица позиций, «Итого», «В т.ч. НДС».",
-  "version": "1",
+  "version": "2",
   "kinds": {
    "kind": "text",
    "number": "text",
@@ -580,6 +588,7 @@
    "buyerInn": "inn",
    "items": "items",
    "total": "money",
+   "totalWords": "text",
    "vatAmount": "money",
    "contractRef": "text"
   },
@@ -683,6 +692,12 @@
       "null"
      ]
     },
+    "totalWords": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
     "vatAmount": {
      "type": [
       "string",
@@ -706,6 +721,7 @@
     "buyerInn",
     "items",
     "total",
+    "totalWords",
     "vatAmount",
     "contractRef"
    ],
@@ -716,11 +732,12 @@
   "code": "PAYMENT_ORDER",
   "name": "Платёжное поручение",
   "hints": "«Платёжное поручение №», «Плательщик», «Получатель», БИК, «Назначение платежа», «Списано со сч. плат.», отметка банка.",
-  "version": "1",
+  "version": "2",
   "kinds": {
    "number": "text",
    "date": "date",
    "amount": "money",
+   "amountWords": "text",
    "payerName": "text",
    "payerInn": "inn",
    "payerAccount": "account",
@@ -746,6 +763,12 @@
      ]
     },
     "amount": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "amountWords": {
      "type": [
       "string",
       "null"
@@ -804,6 +827,7 @@
     "number",
     "date",
     "amount",
+    "amountWords",
     "payerName",
     "payerInn",
     "payerAccount",
