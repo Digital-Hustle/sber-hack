@@ -9,7 +9,8 @@
 - Опоздания/переработки (SH-10): `/analytics/late-overtime`, пороги `LATE_GRACE` (5 мин) и `OVERTIME_THRESHOLD` (15 мин); выход не отмечен — переработка не считается.
 - Отказы и нагрузка (SH-12): `/analytics/refusals`, `/analytics/load-by-hour` по `pass_events`.
 - Оповещения (SH-11): `POST /worker/heartbeat`, правила раз в минуту (`AlertJob`): LEFT_SITE/NO_SIGNAL для людей в смене на объекте, ZONE_CROWDED; геозона — `SITE_LAT/SITE_LON/SITE_RADIUS_M`, лимит — `CROWD_LIMIT` (один на все зоны).
-- Дальше: напоминание о выходе (SH-13).
+- Напоминание о выходе (SH-13): `ExitReminderService` в том же `AlertJob`, SSE worker `reminder.exit`, одно на смену (`exit_reminders`), `EXIT_REMINDER_AFTER` (30 мин).
+- Дальше: задачи shift в TASKS закрыты; доработки — зоны из `people.zone.v1` вместо env.
 - Пояс площадки — `SITE_ZONE` (Europe/Moscow), допуск раннего входа — `SHIFT_EARLY_ENTRY` (60 мин).
 
 ## 2. Карта сервиса
@@ -21,7 +22,7 @@
 | `features/worker` | статус рабочего (`/worker/me`), проекция карточек `workers` (`WorkerDirectoryService`) |
 | `features/report` | табель: `TimesheetService` (интервалы → дни площадки, коды Т/Н), `TimesheetXlsxWriter` (POI) |
 | `features/analytics` | SQL сводки и часов, `LateOvertimeCalculator` (смена против интервалов), `PassStatsQueryService` (отказы по причинам, нагрузка день × час по `pass_events`), `method` в ответе |
-| `features/alert` | `HeartbeatService` (последний heartbeat + геозона), `AlertRules` (B-01), `AlertService` (B-05, одно активное на условие, outbox `shift.alert.v1`, SSE `alert.created`), `AlertJob` |
+| `features/alert` | `HeartbeatService` (последний heartbeat + геозона), `AlertRules` (B-01), `AlertService` (B-05, одно активное на условие, outbox `shift.alert.v1`, SSE `alert.created`), `ExitReminderService` (B-04, `exit_reminders`, SSE `reminder.exit`), `AlertJob` |
 | `features/stream` | `TicketService` (одноразовые тикеты), `SseHub` (подписчики, буфер, Last-Event-ID, пульс), `StreamEventsListener` (события после коммита → SSE) |
 | `messaging/consumer/PassEventsConsumer` | `access.pass.v1` → `pass_events` + интервалы, идемпотентно |
 | `messaging/consumer/PeopleEventsConsumer` | `people.worker.v1` → `workers` (ФИО, должность, подрядчик, статус), старое событие не перетирает новое |
@@ -54,3 +55,4 @@
 - 2026-10-09 · miroslavrov (агент) · feat: SH-10 опоздания и переработки (`/analytics/late-overtime`, `LATE_GRACE`, `OVERTIME_THRESHOLD`) (#60)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-12 отказы по причинам и нагрузка по часам (`/analytics/refusals`, `/analytics/load-by-hour`) (#62)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-11 heartbeat и оповещения LEFT_SITE/NO_SIGNAL/ZONE_CROWDED (`/worker/heartbeat`, `/alerts`, SSE `alert.created`, `shift.alert.v1`) (#65)
+- 2026-10-09 · miroslavrov (агент) · feat: SH-13 напоминание о невыходе (SSE worker `reminder.exit`, `EXIT_REMINDER_AFTER`) (#PR)

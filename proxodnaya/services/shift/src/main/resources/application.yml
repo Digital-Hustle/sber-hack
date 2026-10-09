@@ -53,6 +53,9 @@ shift:
     # скопление: больше crowd-limit человек в зоне дольше crowd-for; 0 — выключено
     crowd-limit: ${CROWD_LIMIT:0}
     crowd-for: ${CROWD_FOR:5m}
+  reminders:
+    # B-04: напомнить отметить выход через столько после конца смены (до автозакрытия AUTO_CLOSE_AFTER)
+    exit-after: ${EXIT_REMINDER_AFTER:30m}
   stream:
     ticket-ttl: ${STREAM_TICKET_TTL:30s}
     heartbeat: ${STREAM_HEARTBEAT:15s}

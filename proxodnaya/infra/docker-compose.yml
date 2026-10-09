@@ -198,6 +198,7 @@ services:
       NO_SIGNAL_AFTER: ${NO_SIGNAL_AFTER:-5m}
       CROWD_LIMIT: ${CROWD_LIMIT:-0}
       CROWD_FOR: ${CROWD_FOR:-5m}
+      EXIT_REMINDER_AFTER: ${EXIT_REMINDER_AFTER:-30m}
 
   face:
     image: ghcr.io/digital-hustle/gate-face:${IMAGE_TAG:-latest}

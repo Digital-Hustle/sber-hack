@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import ru.proxodnaya.shift.features.alert.api.AlertRaised;
+import ru.proxodnaya.shift.features.alert.api.ExitReminderDue;
 import ru.proxodnaya.shift.features.interval.api.PassRecorded;
 import ru.proxodnaya.shift.features.interval.api.PresenceChanged;
 import ru.proxodnaya.shift.features.stream.model.StreamKind;
@@ -21,10 +22,12 @@ public class StreamEventsListener {
     static final String ATTEMPT_RESULT = "attempt.result";
     static final String PRESENCE_CHANGED = "presence.changed";
     static final String ALERT_CREATED = "alert.created";
+    static final String REMINDER_EXIT = "reminder.exit";
     private static final String WORKER_ID = "workerId";
     private static final String ZONE_ID = "zoneId";
     private static final String SIMULATED = "simulated";
     private static final String SOURCE = "source";
+    private static final String TS = "ts";
 
     private final SseHub hub;
 
@@ -48,7 +51,7 @@ public class StreamEventsListener {
         data.put("decision", event.decision());
         data.put("reasonCode", event.reasonCode());
         data.put(SOURCE, event.source());
-        data.put("ts", event.ts().toString());
+        data.put(TS, event.ts().toString());
         data.put(SIMULATED, event.simulated());
         hub.publish(ATTEMPT_CREATED, StreamKind.SITUATION, null, data);
         if (event.workerId() != null) {
@@ -92,5 +95,19 @@ public class StreamEventsListener {
         data.put("details", event.details());
         data.put("createdAt", event.createdAt().toString());
         hub.publish(ALERT_CREATED, StreamKind.SITUATION, null, data);
+    }
+
+    /**
+     * Напоминание отметить выход: только этому рабочему.
+     *
+     * @param event напоминание
+     */
+    @TransactionalEventListener(fallbackExecution = true)
+    public void on(ExitReminderDue event) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("shiftId", event.shiftId().toString());
+        data.put("shiftEndsAt", event.endsAt().toString());
+        data.put(TS, event.sentAt().toString());
+        hub.publish(REMINDER_EXIT, StreamKind.WORKER, event.workerId(), data);
     }
 }
