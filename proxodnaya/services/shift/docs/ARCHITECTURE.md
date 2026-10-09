@@ -42,7 +42,7 @@ shift/
 ```
 
 ## Данные
-`shifts(worker_id, start, end, template_id)`, `shift_templates`, `presence_intervals(worker_id, zone_id, shift_id, entered_at, exited_at, close_reason, flags[])`, `pass_events` (проекция для аналитики отказов/нагрузки), `heartbeats`, `alerts(type, severity, ack_by)`, `stream_tickets`, `outbox`, `processed_events`.
+`shifts(worker_id, start, end, template_id)`, `shift_templates`, `presence_intervals(worker_id, zone_id, shift_id, entered_at, exited_at, close_reason, flags[])`, `pass_events` (проекция для аналитики отказов/нагрузки), `heartbeats`, `alerts(type, severity, ack_by)`, `outbox`, `processed_events`. Тикеты SSE и буфер событий — в памяти (один экземпляр shift).
 
 ## События
 Публикует `shift.interval.v1`, `shift.alert.v1`. Слушает `access.pass.v1`, `people.worker.v1`.

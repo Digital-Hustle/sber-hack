@@ -40,6 +40,11 @@ shift:
   early-entry: ${SHIFT_EARLY_ENTRY:60m}
   auto-close-after: ${AUTO_CLOSE_AFTER:2h}
   presence-ttl: ${PRESENCE_TTL:16h}
+  stream:
+    ticket-ttl: ${STREAM_TICKET_TTL:30s}
+    heartbeat: ${STREAM_HEARTBEAT:15s}
+    max-age: ${STREAM_MAX_AGE:30m}
+    buffer: ${STREAM_BUFFER:500}
 
 server:
   port: 8083

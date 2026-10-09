@@ -4,7 +4,8 @@
 
 ## 1. Текущее состояние
 - Есть ядро (#37): смены и шаблоны, массовое назначение, `active-shift` для access, консьюмер `access.pass.v1` → интервалы, автозакрытие, `/intervals`, `/analytics/summary|hours`, `/worker/me|shifts`.
-- Дальше: SSE (SH-08), XLSX (SH-09), опоздания/переработки (SH-10), heartbeat/оповещения (SH-11), отказы и нагрузка (SH-12) — `pass_events` для них уже копится.
+- SSE (SH-08): тикеты и буфер событий — в памяти (один экземпляр), события — после коммита из `IntervalService` (`interval/api/PassRecorded|PresenceChanged`).
+- Дальше: XLSX (SH-09), опоздания/переработки (SH-10), heartbeat/оповещения (SH-11), отказы и нагрузка (SH-12) — `pass_events` для них уже копится.
 - Пояс площадки — `SITE_ZONE` (Europe/Moscow), допуск раннего входа — `SHIFT_EARLY_ENTRY` (60 мин).
 
 ## 2. Карта сервиса
@@ -15,6 +16,7 @@
 | `features/interval` | `IntervalPlan` (правила интервалов), `IntervalService` (проход → интервалы + outbox, автозакрытие), `AutoCloseJob`, `api/PresenceLookup` |
 | `features/analytics` | SQL сводки и часов, `method` в ответе |
 | `features/worker` | статус рабочего (`/worker/me`) |
+| `features/stream` | `TicketService` (одноразовые тикеты), `SseHub` (подписчики, буфер, Last-Event-ID, пульс), `StreamEventsListener` (события после коммита → SSE) |
 | `messaging/consumer/PassEventsConsumer` | `access.pass.v1` → `pass_events` + интервалы, идемпотентно |
 
 ## 3. Решения
@@ -35,3 +37,4 @@
 - 2026-10-08 · miroslavrov · docs: документы сервиса (ADR-034)
 - 2026-10-09 · miroslavrov · feat(shift): SH-01..07 — каркас, смены/шаблоны/массовое назначение, active-shift для access, интервалы из access.pass.v1, автозакрытие, summary/hours, worker/me
 - 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)
+- 2026-10-09 · miroslavrov (агент) · feat: SH-08 SSE — тикет, `/stream/situation`, `/stream/worker`, Last-Event-ID, пульс (#57)

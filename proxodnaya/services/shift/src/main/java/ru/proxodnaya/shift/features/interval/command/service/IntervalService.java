@@ -14,8 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 import ru.proxodnaya.common.event.Topics;
 import ru.proxodnaya.shift.config.properties.ShiftProperties;
+import ru.proxodnaya.shift.features.interval.api.PassRecorded;
+import ru.proxodnaya.shift.features.interval.api.PresenceChanged;
 import ru.proxodnaya.shift.features.interval.command.model.IntervalPlan;
 import ru.proxodnaya.shift.features.interval.command.repository.IntervalRepository;
 import ru.proxodnaya.shift.features.interval.command.repository.PassEventRepository;
@@ -42,9 +46,11 @@ public class IntervalService {
     private final Outbox outbox;
     private final ShiftProperties props;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     public IntervalService(PassEventRepository passEvents, IntervalRepository intervals, ShiftLookup shifts, Outbox outbox,
-                           ShiftProperties props, Clock clock) {
+                           ShiftProperties props, Clock clock, ApplicationEventPublisher events) {
+        this.events = events;
         this.passEvents = passEvents;
         this.intervals = intervals;
         this.shifts = shifts;
@@ -60,9 +66,18 @@ public class IntervalService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void onPass(PassEvent event) {
-        if (!passEvents.insert(event) || !event.passed()) {
+        if (!passEvents.insert(event)) {
             return;
         }
+        // живой поток (SH-08): уйдёт подписчикам после коммита
+        events.publishEvent(new PassRecorded(event.attemptId(), event.workerId(), event.checkpointId(), event.zoneId(),
+                event.direction(), event.decision(), event.reasonCode(), event.source(), event.ts(), event.simulated()));
+        if (event.passed()) {
+            applyPass(event);
+        }
+    }
+
+    private void applyPass(PassEvent event) {
         Optional<Interval> open = intervals.lockOpen(event.workerId());
         IntervalPlan plan = IntervalPlan.of(open, event);
         if (plan.closes()) {
@@ -100,6 +115,8 @@ public class IntervalService {
         intervals.open(interval, event.attemptId());
         Map<String, Object> payload = base(interval);
         outbox.add(Topics.SHIFT_INTERVAL_V1, "IntervalOpened", interval.workerId(), payload);
+        events.publishEvent(new PresenceChanged(interval.workerId(), interval.zoneId(), true, interval.enteredAt(), null,
+                interval.simulated()));
     }
 
     private void close(Interval interval, Instant end, CloseReason reason, List<IntervalFlag> flags, UUID attemptId) {
@@ -109,6 +126,8 @@ public class IntervalService {
         payload.put("closeReason", reason.name());
         payload.put("flags", flags.stream().map(Enum::name).toList());
         outbox.add(Topics.SHIFT_INTERVAL_V1, "IntervalClosed", interval.workerId(), payload);
+        events.publishEvent(new PresenceChanged(interval.workerId(), interval.zoneId(), false, end, reason.name(),
+                interval.simulated()));
     }
 
     private static Map<String, Object> base(Interval interval) {
