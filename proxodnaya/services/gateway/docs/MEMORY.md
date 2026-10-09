@@ -37,4 +37,4 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-08 · miroslavrov · docs: документы сервиса (ADR-034)
 - 2026-10-09 · miroslavrov · feat: GW-01..08 — маршруты, multi-issuer JWT, блок /internal, CORS, rate-limit, лимит тела, SSE, X-Request-Id, problem+json (#49)
-- 2026-10-10 · miroslavrov (агент) · fix: GW-09 cookie allowlist вместо глобального RemoveRequestHeader; три HTTP-интеграционных теста
+- 2026-10-10 · miroslavrov (агент) · fix: GW-09 cookie allowlist вместо глобального RemoveRequestHeader; три HTTP-интеграционных теста (#114)
