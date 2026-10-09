@@ -3,6 +3,7 @@ package ru.subsidy.package_.pkg;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,10 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 
+import ru.subsidy.common.event.Topics;
 import ru.subsidy.common.exception.DomainException;
 import ru.subsidy.common.exception.ErrorCode;
 import ru.subsidy.package_.jooq.Tables;
 import ru.subsidy.common.exception.NotFoundException;
+import ru.subsidy.package_.messaging.outbox.OutboxWriter;
 import ru.subsidy.package_.organization.OrganizationService;
 import ru.subsidy.package_.organization.OrganizationService.Organization;
 
@@ -34,6 +37,7 @@ public class PackageService {
     private final Clock clock;
     private final OrganizationService organizations;
     private final List<String> programs;
+    private final OutboxWriter outbox;
 
     /**
      * Конструктор.
@@ -42,13 +46,15 @@ public class PackageService {
      * @param clock часы
      * @param organizations организации
      * @param programs доступные программы
+     * @param outbox outbox событий
      */
     public PackageService(DSLContext dsl, Clock clock, OrganizationService organizations,
-                          @Value("${subsidy.programs:DEMO-2026}") List<String> programs) {
+                          @Value("${subsidy.programs:DEMO-2026}") List<String> programs, OutboxWriter outbox) {
         this.dsl = dsl;
         this.clock = clock;
         this.organizations = organizations;
         this.programs = List.copyOf(programs);
+        this.outbox = outbox;
     }
 
     /**
@@ -86,6 +92,9 @@ public class PackageService {
                 .set(Tables.PACKAGES.CREATED_AT, now)
                 .set(Tables.PACKAGES.UPDATED_AT, now)
                 .execute();
+        outbox.append(Topics.PACKAGE_PACKAGE_V1, "PackageCreated", newId.toString(), Map.of(
+                "packageId", newId.toString(), "orgId", org.id().toString(), "inn", org.inn(),
+                "programCode", programCode, "createdBy", userId));
         return get(newId);
     }
 
