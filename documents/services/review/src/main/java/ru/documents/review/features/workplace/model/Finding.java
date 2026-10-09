@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Замечание по комплекту: CROSS_MISMATCH, MISSING_DOCUMENT.
+ * Замечание по комплекту: CROSS_MISMATCH, MISSING_DOCUMENT, NUMBER_ELSEWHERE.
  *
  * @param code        код (текст и подсказка — API.md)
  * @param field       поле

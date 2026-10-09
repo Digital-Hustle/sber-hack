@@ -20,11 +20,15 @@ const RevealButton = ({ appId, docId, field }: { appId: string; docId: string; f
 /**
  * FE-OP-04: поля документа — «перепроверить» сверху (порядок задаёт сервер), уверенность, проверки, правки оператора.
  * Клик по полю → подсветка bbox в просмотрщике. Клавиши: J/K — следующее/предыдущее поле, E — править.
+ * FR-54: переключатель «только требующие проверки» скрывает поля, которые не нужно перепроверять.
  */
 export const FieldsPanel = ({ appId, doc, canAct, active, onActive }: {
   appId: string; doc: DocumentCard; canAct: boolean; active: string | null; onActive: (f: FieldCard | null) => void;
 }) => {
-  const fields = useMemo(() => doc.fields ?? [], [doc.fields]);
+  const all = useMemo(() => doc.fields ?? [], [doc.fields]);
+  const [onlyAttention, setOnlyAttention] = useState(false);
+  const attentionCount = all.filter((f) => f.attention).length;
+  const fields = useMemo(() => (onlyAttention ? all.filter((f) => f.attention) : all), [all, onlyAttention]);
   const [editing, setEditing] = useState<string | null>(null);
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
@@ -41,8 +45,17 @@ export const FieldsPanel = ({ appId, doc, canAct, active, onActive }: {
     return () => removeEventListener("keydown", on);
   }, [fields, active, canAct, onActive]);
 
-  if (!fields.length) return <EmptyState title="Полей пока нет" text="Документ ещё разбирается или не прочитан — см. стадию и причину выше" />;
+  if (!all.length) return <EmptyState title="Полей пока нет" text="Документ ещё разбирается или не прочитан — см. стадию и причину выше" />;
   return (
+    <div className="flex flex-col gap-2">
+    {attentionCount > 0 && attentionCount < all.length && (
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>{onlyAttention ? `Показаны ${attentionCount} из ${all.length}` : `Требуют проверки: ${attentionCount} из ${all.length}`}</span>
+        <Button size="sm" variant="quiet" aria-pressed={onlyAttention} onClick={() => setOnlyAttention((v) => !v)}>
+          {onlyAttention ? "Показать все поля" : "Только требующие проверки"}
+        </Button>
+      </div>
+    )}
     <motion.ul variants={stagger(0.02)} initial="hidden" animate="show" className="flex flex-col gap-1.5">
       {fields.map((f) => {
         const checks = (f.checks as Check[] | undefined) ?? [];
@@ -86,5 +99,6 @@ export const FieldsPanel = ({ appId, doc, canAct, active, onActive }: {
         );
       })}
     </motion.ul>
+    </div>
   );
 };

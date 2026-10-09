@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,9 +19,11 @@ import ru.documents.review.features.workplace.model.DocRow;
 import ru.documents.review.features.workplace.model.FieldOverride;
 import ru.documents.review.features.workplace.model.HistoryEntry;
 import ru.documents.review.features.workplace.model.Metrics;
+import ru.documents.review.features.workplace.model.OtherDoc;
 import ru.documents.review.features.workplace.model.QueueFilter;
 import ru.documents.review.features.workplace.model.QueueItem;
 import ru.documents.review.features.workplace.persistence.RowMappers;
+import ru.documents.review.features.workplace.rules.DocFacts;
 
 /**
  * Чтение: очередь, карточка, история, отчёты, метрики — SQL по реальным таблицам.
@@ -139,6 +142,54 @@ public class ReadRepository {
                     m.put("expiresOn", rs.getDate("expires_on").toLocalDate());
                     return m;
                 }).list();
+    }
+
+    /**
+     * Документы других заявок того же вида, где цифры какого-то поля-номера совпадают (FR-03).
+     * Итог по полю — последняя правка оператора, иначе значение модели. Точное сравнение — в коде.
+     *
+     * @param app    своя заявка
+     * @param types  виды документов
+     * @param fields поля-номера
+     * @param digits цифры номеров своей заявки
+     * @return документ → кандидат
+     */
+    public Map<UUID, OtherDoc> numbersElsewhere(UUID app, Collection<String> types, Collection<String> fields,
+                                                Collection<String> digits) {
+        Map<UUID, OtherDoc> out = new LinkedHashMap<>();
+        if (types.isEmpty() || digits.isEmpty()) {
+            return out;
+        }
+        jdbc.sql("""
+                with v as (
+                    select d.id, d.application_id, d.type, f ->> 'name' as name, f ->> 'value' as value,
+                        0 as prio, d.updated_at as at
+                    from documents d cross join lateral jsonb_array_elements(coalesce(d.result -> 'fields', '[]'::jsonb)) f
+                    where not d.removed and d.application_id <> :app and d.type in (:types)
+                    union all
+                    select d.id, d.application_id, d.type, o.name, o.value, 1, o.created_at
+                    from field_overrides o join documents d on d.id = o.document_id
+                    where not d.removed and d.application_id <> :app and d.type in (:types)
+                ), last as (
+                    select distinct on (id, name) id, application_id, type, name, value
+                    from v order by id, name, prio desc, at desc
+                ), hit as (
+                    select distinct id from last
+                    where name in (:fields) and regexp_replace(coalesce(value, ''), '[^0-9]', '', 'g') in (:digits)
+                )
+                select l.id, l.application_id, l.type, l.name, l.value from last l join hit h on h.id = l.id
+                order by l.id""").param("app", app).param("types", types).param("fields", fields)
+                .param("digits", digits).query(rs -> {
+                    UUID id = rs.getObject("id", UUID.class);
+                    OtherDoc d = out.get(id);
+                    if (d == null) {
+                        d = new OtherDoc(rs.getObject("application_id", UUID.class),
+                                new DocFacts(id, rs.getString("type"), null, new HashMap<>()));
+                        out.put(id, d);
+                    }
+                    d.facts().values().put(rs.getString("name"), rs.getString("value"));
+                });
+        return out;
     }
 
     /** Заявки по статусам. */
