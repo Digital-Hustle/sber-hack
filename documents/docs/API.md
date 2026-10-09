@@ -41,7 +41,9 @@
 - `GET /applications/{id}/history` (B-08) · `GET /applications/{id}/export?format=docx|xlsx|pdf` (B-05, SENIOR_OPERATOR; PDF — PDFBox + встроенный Liberation Sans)
 - `GET /reports/expiring?days=30`, XLSX — `GET /reports/expiring/export?days=30` (SENIOR_OPERATOR) (B-04) · `GET /metrics` (B-06, с формулами «как посчитано») · `POST /applications/next` — взять следующую свободную · `GET /stream` (SSE, ticket): `queue.changed`, `document.stage`
 - `POST /applications/{id}/reveal` `{field}` → полный номер документа + запись в аудит (B-07)
-- Сотрудники (SENIOR_OPERATOR, FE-UI-03/RV-15): `GET /staff` → `{items: [{login, firstName, lastName, role, enabled, codeConfigured, createdAt}]}` · `POST /staff` `{login, firstName, lastName, role}` → 201 `{login, secret, otpauthUri}` (ключ показывается один раз) · `POST /staff/{login}/code` → новый ключ (старый перестаёт работать, сессии закрываются) · `PUT /staff/{login}/enabled` `{enabled}`
+- Вход сотрудника по коду из письма (FE-UI-04/RV-16, ADR-021), без JWT: `POST /auth/code` `{email}` → 200 `{sentTo, expiresInSec, resendInSec}` — ответ одинаковый для любой почты (кто сотрудник — не раскрываем); письмо уходит, только если почта принадлежит сотруднику с разрешённым входом и прошлый код выдан раньше `resendInSec`. Код проверяет Keycloak: `POST /auth/realms/documents/protocol/openid-connect/token` `grant_type=password, client_id=documents-operator, username=<почта>, otp=<код>` (поток `documents-code-direct`, 5 неверных попыток — пауза)
+- Режим стенда (`APP_MODE`, ADR-021): `GET /auth/mode` → `{mode: dev|prod, testUsers: [{email, name, role}]}` (список — только в dev) · `POST /auth/test-code` `{email}` → `{code}` — только `APP_MODE=dev` (быстрый вход и «000000» на форме), в prod 404 `TEST_MODE_OFF`
+- Сотрудники (SENIOR_OPERATOR): `GET /staff` → `{items: [{login, email, firstName, lastName, role, enabled, createdAt}]}` · `POST /staff` `{email, firstName, lastName, role}` → 201 сотрудник (логин = почта, на неё уходит приглашение) · `PUT /staff/{login}/enabled` `{enabled}` (запрет — выход со всех устройств)
 
 ## Стадии документа
 | stage | Текст соискателю | Видит оператор |
@@ -70,7 +72,7 @@
 | IMAGE_TOO_SMALL | 422 | Слишком маленькое изображение | Снимите ближе, весь документ в кадре |
 | DUPLICATE_FILE | 409 | Этот файл уже загружен ({title}) | Загрузите другой документ |
 | TOO_MANY_FILES | 422 | В заявке уже {max} файлов | Удалите лишние файлы |
-| RATE_LIMITED | 429 | Слишком много запросов подряд (gateway: создание заявки 20/10 мин, вход по коду 10/15 мин, загрузки 120/мин на IP; заголовок `Retry-After`) | Подождите минуту |
+| RATE_LIMITED | 429 | Слишком много запросов подряд (gateway: создание заявки 20/10 мин, вход соискателя по коду 10/15 мин, запрос кода сотрудника 10/15 мин, загрузки 120/мин на IP; заголовок `Retry-After`) | Подождите минуту |
 | CONSENT_REQUIRED | 400 | Нужно согласие на обработку данных | Отметьте согласие |
 | IDEMPOTENCY_KEY_REQUIRED | 400 | Нет заголовка Idempotency-Key | Обновите страницу и повторите |
 | RESUME_INVALID | 400 | Код или контакт не подходят | Проверьте код из ссылки-приглашения |
@@ -97,7 +99,9 @@
 | INTAKE_UNAVAILABLE | 503 | Сервис приёма недоступен (внутренний вызов) | Повторите позже — разбор продолжится сам |
 | DOCPROC_UNAVAILABLE | 503 | Сервис разбора недоступен (внутренний вызов) | Повторите позже |
 | OCR_UNAVAILABLE | 503 | Сервис распознавания недоступен (внутренний вызов docproc → ocr) | Разбор повторится автоматически |
-| LOGIN_TAKEN | 409 | Логин уже занят | Придумайте другой |
+| EMAIL_TAKEN | 409 | Сотрудник с такой почтой уже есть | Проверьте адрес |
+| TEST_MODE_OFF | 404 | Тестовый вход выключен (боевой режим) | Войдите кодом из письма |
+| MAIL_UNAVAILABLE | 503 | Письмо с кодом не отправлено (почта не настроена или недоступна) | Повторите через минуту |
 | SELF_DISABLE | 409 | Нельзя запретить вход себе | Попросите другого старшего оператора |
 | STAFF_NOT_FOUND | 404 | Сотрудник не найден | Обновите список |
 | STAFF_UNAVAILABLE | 503 | Каталог сотрудников недоступен (Keycloak) | Повторите позже |

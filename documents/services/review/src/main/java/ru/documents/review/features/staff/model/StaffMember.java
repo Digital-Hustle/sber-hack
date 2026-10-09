@@ -5,14 +5,14 @@ import java.time.Instant;
 /**
  * Сотрудник рабочего места.
  *
- * @param login          логин
- * @param firstName      имя
- * @param lastName       фамилия
- * @param role           роль
- * @param enabled        вход разрешён
- * @param codeConfigured код (TOTP) выдан
- * @param createdAt      создан
+ * @param login     логин Keycloak (у новых — почта)
+ * @param email     почта, на неё приходит код входа
+ * @param firstName имя
+ * @param lastName  фамилия
+ * @param role      роль
+ * @param enabled   вход разрешён
+ * @param createdAt создан
  */
-public record StaffMember(String login, String firstName, String lastName, StaffRole role, boolean enabled,
-                          boolean codeConfigured, Instant createdAt) {
+public record StaffMember(String login, String email, String firstName, String lastName, StaffRole role,
+                          boolean enabled, Instant createdAt) {
 }

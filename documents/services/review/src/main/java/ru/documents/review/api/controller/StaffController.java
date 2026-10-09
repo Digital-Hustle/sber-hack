@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import ru.documents.review.api.dto.request.EnabledRq;
 import ru.documents.review.api.dto.request.StaffRq;
 import ru.documents.review.api.dto.response.StaffRs;
-import ru.documents.review.features.staff.model.Enrollment;
+import ru.documents.review.features.staff.model.StaffMember;
 
 /**
- * Сотрудники (только старший оператор): завести, выдать новый код, запретить вход.
+ * Сотрудники (только старший оператор): пригласить по почте, запретить или разрешить вход.
  */
 @Tag(name = "staff")
 @RequestMapping("/api/v1/staff")
@@ -29,16 +29,11 @@ public interface StaffController {
     @GetMapping
     StaffRs list();
 
-    /** Завести сотрудника: ответ содержит код для QR — он показывается один раз. */
-    @Operation(summary = "Завести сотрудника и выдать код")
+    /** Пригласить сотрудника: логин — почта, код входа придёт на неё. */
+    @Operation(summary = "Пригласить сотрудника")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    Enrollment create(@Valid @RequestBody StaffRq rq, Authentication auth);
-
-    /** Новый код: старый перестаёт работать, сессии сотрудника закрываются. */
-    @Operation(summary = "Выдать новый код")
-    @PostMapping("/{login}/code")
-    Enrollment reissue(@PathVariable("login") String login, Authentication auth);
+    StaffMember create(@Valid @RequestBody StaffRq rq, Authentication auth);
 
     /** Разрешить или запретить вход. */
     @Operation(summary = "Разрешить или запретить вход")

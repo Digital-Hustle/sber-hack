@@ -22,6 +22,19 @@ spring:
   mvc:
     async:
       request-timeout: -1
+  mail:
+    # общий почтовый узел сервера (../../mail/): без SMTP_HOST письма не уходят
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}
+      mail.smtp.ssl.enable: ${SMTP_SSL:false}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 app:
   oidc:
     issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/documents}
@@ -34,7 +47,13 @@ app:
     client-secret: ${KC_SVC_REVIEW_SECRET}
   staff:
     admin-url: ${KC_ADMIN_URL:http://localhost:8180/auth/admin/realms/documents}
-    issuer: ${STAFF_TOTP_ISSUER:Документы}
+    mail-from: ${SMTP_FROM:Документы <no-reply@digital-hustle.ru>}
+    login-url: ${STAFF_LOGIN_URL:https://localhost/operator}
+    log-codes: ${STAFF_LOG_CODES:false}
+    # dev — тестовый стенд: быстрый вход тестовыми сотрудниками и код 000000 (ADR-021); prod — боевой
+    mode: ${APP_MODE:prod}
+    code-ttl: ${STAFF_CODE_TTL:10m}
+    resend-after: ${STAFF_CODE_RESEND:45s}
   review:
     intake-url: ${INTAKE_URL:http://localhost:8081}
     docproc-url: ${DOCPROC_URL:http://localhost:8082}
