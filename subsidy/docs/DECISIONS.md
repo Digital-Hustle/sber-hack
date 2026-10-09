@@ -65,6 +65,7 @@ Kafka доставляет «файл принят», воркеры берут 
 | Apache POI / Apache PDFBox / TwelveMonkeys ImageIO | Apache-2.0 / Apache-2.0 / BSD-3 | B3 |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
 | oidc-client-ts / pdfjs-dist / react-dropzone / recharts | Apache-2.0 / Apache-2.0 / MIT / MIT | F1/F2 |
+| @tanstack/react-query | MIT | F2 |
 | Liberation Sans (шрифт в PDF-экспорте протокола rules) | SIL OFL 1.1 | B3 |
 | Остальное фронта (компоненты реестров, иконки, шрифты) | как в `../../proxodnaya/docs/DECISIONS.md` | F2 |
 

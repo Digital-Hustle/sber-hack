@@ -3,6 +3,7 @@ import { Aurora } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
 import { SpecialistShell } from "@/widgets/specialist-shell";
 import { PackagesPage } from "@/pages/packages";
+import { CallbackPage } from "@/pages/callback";
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => (
   <div className="relative isolate min-h-svh text-foreground">
@@ -13,6 +14,7 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => (
 
 // Зона специалиста /specialist (rules.md §4). Разделы добавляются по мере готовности серверной части.
 export const router = createBrowserRouter([
+  { path: routes.callback, element: <RootLayout><CallbackPage /></RootLayout> },
   {
     path: routes.specialist,
     element: <RootLayout><SpecialistShell /></RootLayout>,
