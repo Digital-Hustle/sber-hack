@@ -59,7 +59,8 @@ public class StaffAuthControllerImpl implements StaffAuthController {
     @Override
     public StaffSessionRs verify(StaffVerifyRq request, HttpServletResponse response) {
         StaffSession session = login.verify(request.email(), request.code());
-        setCookie(response, session.refreshToken(), Duration.ofMillis(Math.max(0, session.sessionExpiresAt() - clock.millis())).toSeconds());
+        setCookie(response, session.refreshToken(),
+                Duration.ofMillis(Math.max(0, session.sessionExpiresAt() - clock.millis())).toSeconds());
         return mapper.toRs(session);
     }
 
@@ -74,7 +75,8 @@ public class StaffAuthControllerImpl implements StaffAuthController {
                 throw new DomainException(ErrorCode.SESSION_EXPIRED, EXPIRED);
             }
             StaffSession session = login.refresh(refresh);
-            setCookie(response, session.refreshToken(), Duration.ofMillis(Math.max(0, session.sessionExpiresAt() - clock.millis())).toSeconds());
+            setCookie(response, session.refreshToken(),
+                Duration.ofMillis(Math.max(0, session.sessionExpiresAt() - clock.millis())).toSeconds());
             return mapper.toRs(session);
         } catch (DomainException error) {
             setCookie(response, "", 0);
