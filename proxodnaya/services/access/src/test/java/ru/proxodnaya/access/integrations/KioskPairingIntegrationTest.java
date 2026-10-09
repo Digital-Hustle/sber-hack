@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,6 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,6 +212,41 @@ class KioskPairingIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.kiosk.pairedAt").doesNotExist())
                 .andExpect(jsonPath("$.kiosk.pairCode").isString());
+    }
+
+    @AfterEach
+    void clearTerminalCodes() {
+        jdbc.update("delete from terminal_codes");
+    }
+
+    @Test
+    void hashes_onlyPairedKiosk_cannotUsePinAsGuardAuthentication() throws Exception {
+        // given
+        mockMvc.perform(admin(put("/api/v1/terminal-codes/service")).content("{\"code\":\"482651\"}"))
+                .andExpect(status().isOk());
+        JsonNode reg = register();
+        String kioskId = reg.get("kioskId").asText();
+        mockMvc.perform(signed(HttpMethod.GET, ME, kioskId, "", nonce()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.codes").doesNotExist());
+
+        // when
+        mockMvc.perform(admin(post(PAIR)).content(pairBody(reg.get("pairCode").asText(), CHECKPOINT)))
+                .andExpect(status().isOk());
+
+        // then
+        mockMvc.perform(signed(HttpMethod.GET, ME, kioskId, "", nonce()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.codes.service.salt").isString())
+                .andExpect(jsonPath("$.codes.service.hash").isString())
+                .andExpect(jsonPath("$.codes.service.iter").value(120_000))
+                .andExpect(jsonPath("$.codes.service.digits").value(6))
+                .andExpect(jsonPath("$.codes.service.code").doesNotExist());
+        String manual = "{\"workerId\":\"worker\",\"checkpointId\":\"cp\",\"note\":\"Проверка\",\"guardCode\":\"482651\"}";
+        mockMvc.perform(signed(HttpMethod.POST, "/api/v1/kiosk/manual", kioskId, manual, nonce()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(admin(post("/api/v1/kiosks/" + kioskId + "/unpair"))).andExpect(status().isNoContent());
+        mockMvc.perform(signed(HttpMethod.GET, ME, kioskId, "", nonce()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.codes").doesNotExist());
     }
 
     private JsonNode register() throws Exception {

@@ -1,5 +1,5 @@
 // Синхронизация кэша на терминале и на телефоне сотрудника — у них свои источники, не кабинетные.
-import type { Kiosk, Settings, Zone, Site } from "../types";
+import type { Kiosk, Settings, Zone, Site, TerminalCodeHash, TerminalCodeKind } from "../types";
 import { http, apiPath, ApiError } from "./http";
 import { getDb, patchDb, resetCache, DEFAULT_SETTINGS } from "./store";
 import { toAttempt, toCheckpoint, toKiosk, toShift, toWorker, toZone, toSite, type AttemptRs, type KioskRs, type ShiftRs, type WorkerRs } from "./map";
@@ -8,7 +8,7 @@ import { savedCard } from "./server";
 import { createKey, loadKey, publicJwk, saveKey } from "../../lib/deviceKey";
 
 // ——— Терминал ———
-type KioskMeRs = { kiosk: KioskRs; checkpoint?: Parameters<typeof toCheckpoint>[0] | null; settings?: Partial<Settings> | null };
+type KioskMeRs = { kiosk: KioskRs; checkpoint?: Parameters<typeof toCheckpoint>[0] | null; settings?: Partial<Settings> | null; codes?: Partial<Record<TerminalCodeKind, TerminalCodeHash>> | null };
 
 /** Первый запуск: ключ терминала (неизвлекаемый) → регистрация → код сопряжения на экране. */
 const KIOSK_REQUEST_TIMEOUT_MS = 12000;
@@ -44,7 +44,7 @@ export const kioskStatus = async () => {
   }
   const kiosk: Kiosk = toKiosk(r.kiosk);
   const cp = r.checkpoint ? toCheckpoint(r.checkpoint) : undefined;
-  patchDb({ kiosks: [kiosk], checkpoints: cp ? [cp] : [], settings: { ...DEFAULT_SETTINGS, ...getDb().settings, ...(r.settings ?? {}) } });
+  patchDb({ terminalCodes: r.codes ?? {}, kiosks: [kiosk], checkpoints: cp ? [cp] : [], settings: { ...DEFAULT_SETTINGS, ...getDb().settings, ...(r.settings ?? {}) } });
   return kiosk;
 };
 

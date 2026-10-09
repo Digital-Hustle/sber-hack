@@ -52,13 +52,13 @@ export const OfflineScreen = ({ policy, checkpointId, onResult }: { policy: Offl
         {policy === "GUARD" && <motion.div variants={fadeUp}><Button size="lg" variant="secondary" onClick={() => setOpen(true)}><ShieldCheck />Пропуск охранником</Button></motion.div>}
       </motion.div>
       <Dialog open={open} onClose={() => setOpen(false)} title="Пропуск охранником" description="Запись помечается как ручная, хранится на терминале и уходит в журнал, когда связь вернётся"
-        footer={<Button disabled={!who || !note.trim() || code.factory || pin.length !== code.digits || busy || !!code.lockedSec} onClick={submit}><ShieldCheck />Пропустить</Button>}>
+        footer={<Button disabled={!who || !note.trim() || !code.available || pin.length !== code.digits || busy || !!code.lockedSec} onClick={submit}><ShieldCheck />Пропустить</Button>}>
         <div className="flex flex-col gap-5">
           <Field label="Сотрудник" hint="Сверьте лицо с фото из снимка допусков"><Select value={who} onChange={setWho} options={workers.filter((w) => w.status === "active").map((w) => ({ value: w.id, label: w.fullName, hint: w.position }))} /></Field>
           <Field label="Причина"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Например: нет связи, личность подтверждена по паспорту" /></Field>
-          <Field label="Код охранника" hint={code.factory ? "Код охранника не задан — задайте его в кабинете → Терминалы" : `${code.digits} цифр · проверяется на терминале, работает без связи`}
+          <Field label="Код охранника" hint={!code.available ? "Код охранника не задан — задайте его в кабинете → Терминалы" : `${code.digits} цифр · проверяется на терминале, работает без связи`}
             error={code.lockedSec ? `Слишком много попыток. Повторите через ${code.lockedSec} с` : pinErr}>
-            <Input type="password" inputMode="numeric" autoComplete="off" maxLength={code.digits} disabled={!!code.lockedSec} value={pin} onChange={(e) => { setPin(e.target.value.replace(/\D/g, "")); setPinErr(null); }} placeholder={"•".repeat(code.digits)} />
+            <Input type="password" inputMode="numeric" autoComplete="off" maxLength={code.digits} disabled={!code.available || !!code.lockedSec} value={pin} onChange={(e) => { setPin(e.target.value.replace(/\D/g, "")); setPinErr(null); }} placeholder={"•".repeat(code.digits)} />
           </Field>
         </div>
       </Dialog>

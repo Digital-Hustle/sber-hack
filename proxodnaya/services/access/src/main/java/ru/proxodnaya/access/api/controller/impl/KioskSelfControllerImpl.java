@@ -12,11 +12,13 @@ import ru.proxodnaya.access.api.dto.response.KioskMeRs;
 import ru.proxodnaya.access.api.dto.response.RegisterKioskRs;
 import ru.proxodnaya.access.api.mapper.KioskApiMapper;
 import ru.proxodnaya.access.api.mapper.SettingsApiMapper;
+import ru.proxodnaya.access.api.mapper.TerminalCodeApiMapper;
 import ru.proxodnaya.access.features.kiosk.api.KioskPrincipal;
 import ru.proxodnaya.access.features.kiosk.command.service.KioskService;
 import ru.proxodnaya.access.features.kiosk.gateway.CheckpointGateway;
 import ru.proxodnaya.access.features.kiosk.model.Kiosk;
 import ru.proxodnaya.access.features.settings.command.service.SettingsService;
+import ru.proxodnaya.access.features.terminalcode.command.service.TerminalCodeService;
 import ru.proxodnaya.common.exception.DomainException;
 import ru.proxodnaya.common.exception.ErrorCode;
 
@@ -32,15 +34,20 @@ public class KioskSelfControllerImpl implements KioskSelfController {
     private final KioskApiMapper mapper;
     private final SettingsApiMapper settingsMapper;
     private final ObjectMapper objectMapper;
+    private final TerminalCodeService codes;
+    private final TerminalCodeApiMapper codeMapper;
 
     public KioskSelfControllerImpl(KioskService kiosks, CheckpointGateway checkpoints, SettingsService settings, KioskApiMapper mapper,
-                                   SettingsApiMapper settingsMapper, ObjectMapper objectMapper) {
+                                   SettingsApiMapper settingsMapper, ObjectMapper objectMapper, TerminalCodeService codes,
+                                   TerminalCodeApiMapper codeMapper) {
         this.kiosks = kiosks;
         this.checkpoints = checkpoints;
         this.settings = settings;
         this.mapper = mapper;
         this.settingsMapper = settingsMapper;
         this.objectMapper = objectMapper;
+        this.codes = codes;
+        this.codeMapper = codeMapper;
     }
 
     @Override
@@ -61,6 +68,7 @@ public class KioskSelfControllerImpl implements KioskSelfController {
         KioskCheckpointRs checkpoint = kiosk.paired()
                 ? checkpoints.find(kiosk.checkpointId()).map(mapper::convert).orElse(null)
                 : null;
-        return new KioskMeRs(mapper.convert(kiosk), checkpoint, settingsMapper.convert(settings.current()));
+        return new KioskMeRs(mapper.convert(kiosk), checkpoint, settingsMapper.convert(settings.current()),
+                checkpoint == null ? null : codeMapper.convertHashes(codes.current()));
     }
 }

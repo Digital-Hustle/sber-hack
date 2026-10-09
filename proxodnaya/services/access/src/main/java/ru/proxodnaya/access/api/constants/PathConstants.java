@@ -18,6 +18,8 @@ public final class PathConstants {
     public static final String KIOSK_ID = "/{id}";
     public static final String UNPAIR = "/{id}/unpair";
     public static final String ATTEMPTS = API_V1 + "/attempts";
+    public static final String TERMINAL_CODES = API_V1 + "/terminal-codes";
+    public static final String CODE_KIND = "/{kind}";
     public static final String SETTINGS = API_V1 + "/settings";
     public static final String WORKER_ATTEMPTS = API_V1 + "/worker/attempts";
     public static final String SECURITY = API_V1 + "/security";

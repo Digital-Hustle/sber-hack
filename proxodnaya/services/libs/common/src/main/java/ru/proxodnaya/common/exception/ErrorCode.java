@@ -16,6 +16,7 @@ public enum ErrorCode {
     KIOSK_SIGNATURE_INVALID,
     KIOSK_UNKNOWN,
     KIOSK_NOT_PAIRED,
+    CODE_WEAK,
 
     // Worker
     WORKER_BLOCKED,

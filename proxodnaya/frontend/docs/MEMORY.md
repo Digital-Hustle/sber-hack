@@ -10,8 +10,8 @@
 ## 1. Текущее состояние
 - Код — порт `proxodnaya-sandbox` (FE-01): одно SPA, зоны `/admin`, `/kiosk`, `/worker`, BrowserRouter, сборка `Dockerfile` (caddy, SPA fallback).
 - Данные — `src/shared/api/remote/`: `http.ts` (fetch через gateway `/<svc>/api/v1`, problem+json, renew на 401), `auth.ts` (staff в памяти + refresh, device-токен ES256, подпись киоска), `store.ts` (кэш Db по ролям, SSE `/shift/stream/situation`, опрос), `server.ts` (все `api.*`), `devices.ts` (киоск, телефон).
-- Ждут бэкенд по `../../docs/BACKEND-CONTRACT.md`: киоски ACC-12, офлайн-снимок ACC-15, `/kiosk/identify`, `/worker/me*`, review лица, refresh-cookie PPL-14. Пока их нет — соответствующие экраны показывают ошибку сервера.
-- Без PPL-14 перезагрузка кабинета = повторный вход (токены только в памяти).
+- Ждут бэкенд по `../../docs/BACKEND-CONTRACT.md`: офлайн-снимок ACC-15, `/kiosk/identify`, `/worker/me*`, review лица. Пока их нет — соответствующие экраны показывают ошибку сервера.
+- Регистрация/сопряжение киоска и refresh-cookie кабинета работают (ACC-12, PPL-14, GW-09). ACC-19: онлайн-коды панели из `/kiosk/me`, без заводского PIN после сопряжения.
 
 ## 2. Карта модуля
 | Путь | Что | Владелец |
@@ -44,3 +44,5 @@
 - 2026-10-08 · miroslavrov · docs: ревизия дизайна (ADR-036): радиусы, иконки Plasma, логотип-заглушка, WebGL/GSAP разрешены
 - 2026-10-10 · miroslavrov · FE-01: порт песочницы на реальный API, демо удалено, Dockerfile, ESLint
 - 2026-10-10 · miroslavrov (агент) · fix: FE-K-08 ошибка запуска с повтором, single-flight регистрации, обновление id после KIOSK_UNKNOWN, таймаут запросов (#112)
+
+- 2026-10-10 · miroslavrov (агент) · ACC-19: серверные хэши панели в `/kiosk/me`, очистка кодов после отвязки, код обязателен после сопряжения, панель закрывается при смене кода и закрытии диалога.
