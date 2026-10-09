@@ -45,7 +45,7 @@ cd ../.. && git add -A documents && sh documents/scripts/guard.sh
 | [docs/DECISIONS.md](docs/DECISIONS.md) | журнал решений и лицензии |
 | [docs/SECURITY.md](docs/SECURITY.md) | вход, ПДн, модель угроз, аудит |
 | [docs/STACK.md](docs/STACK.md) · [docs/DEPLOY.md](docs/DEPLOY.md) | стек и лицензии, сервер и CI/CD |
-| [docs/ROLES.md](docs/ROLES.md) · [docs/PLAN.md](docs/PLAN.md) · [docs/DEMO.md](docs/DEMO.md) | команда, план дня, защита |
+| [docs/ROLES.md](docs/ROLES.md) · [docs/PLAN.md](docs/PLAN.md) · [docs/DEMO.md](docs/DEMO.md) · [docs/DEFENSE.md](docs/DEFENSE.md) | команда, план дня, защита: допуск Д1–Д12, основания снятия, ответы судьям |
 | [docs/WORKFLOW.md](docs/WORKFLOW.md) · [docs/TASKS.md](docs/TASKS.md) · [docs/MEMORY.md](docs/MEMORY.md) | процесс, вехи, состояние |
 | [docs/AGENT_SKILLS.md](docs/AGENT_SKILLS.md) · [docs/QUESTIONS.md](docs/QUESTIONS.md) | скиллы агентов, открытые вопросы |
 | `services/<svc>/docs/`, [frontend/docs/](frontend/docs/) | PRD, ARCHITECTURE, RULES, TASKS, MEMORY модулей; `frontend/docs/DESIGN.md` — дизайн-система |
