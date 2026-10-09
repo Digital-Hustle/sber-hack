@@ -35,6 +35,9 @@ public class DomainExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(DomainException.class)
     ProblemDetail domain(DomainException error) {
+        if (error.code() == ErrorCode.FORBIDDEN) {
+            return ProblemDetailFactory.of(error, HttpStatus.FORBIDDEN.value());
+        }
         return ProblemDetailFactory.of(error, HttpStatus.BAD_REQUEST.value());
     }
 
