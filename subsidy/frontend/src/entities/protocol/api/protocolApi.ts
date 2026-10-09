@@ -1,5 +1,5 @@
 import { api, download } from "@/shared/api";
-import type { Expiring, HistoryEntry, Program, Protocol, ProtocolSummary, Stats } from "../model/types";
+import type { Expiring, RebuildResult, HistoryEntry, Program, Protocol, ProtocolSummary, Stats } from "../model/types";
 
 const qs = (o: Record<string, string | number | undefined | null>) => {
   const p = new URLSearchParams();
@@ -21,6 +21,8 @@ export const protocolApi = {
   stats: (f: { from?: string; to?: string; program?: string }) => api<Stats>("rules", `/stats/errors${qs(f)}`),
   expiring: (days: number) => api<{ items: Expiring[] }>("rules", `/expiring${qs({ days })}`),
   programs: () => api<{ items: Program[] }>("rules", "/programs"),
+  rebuild: (packageId: string) =>
+    api<RebuildResult>("rules", `/packages/${packageId}/projection/rebuild`, { method: "POST" }),
   program: (code: string) => api<Program>("rules", `/programs/${code}`),
   saveProgram: (code: string, body: { name: string; params: unknown; checklist: unknown }) =>
     api<Program>("rules", `/programs/${code}`, { method: "PUT", body }),
