@@ -21,7 +21,6 @@
 | `features/worker` | статус рабочего (`/worker/me`), проекция карточек `workers` (`WorkerDirectoryService`) |
 | `features/report` | табель: `TimesheetService` (интервалы → дни площадки, коды Т/Н), `TimesheetXlsxWriter` (POI) |
 | `features/analytics` | SQL сводки и часов, `LateOvertimeCalculator` (смена против интервалов), `PassStatsQueryService` (отказы по причинам, нагрузка день × час по `pass_events`), `method` в ответе |
-| `features/analytics` | SQL сводки и часов, `LateOvertimeCalculator` (смена против интервалов), `method` в ответе |
 | `features/alert` | `HeartbeatService` (последний heartbeat + геозона), `AlertRules` (B-01), `AlertService` (B-05, одно активное на условие, outbox `shift.alert.v1`, SSE `alert.created`), `AlertJob` |
 | `features/stream` | `TicketService` (одноразовые тикеты), `SseHub` (подписчики, буфер, Last-Event-ID, пульс), `StreamEventsListener` (события после коммита → SSE) |
 | `messaging/consumer/PassEventsConsumer` | `access.pass.v1` → `pass_events` + интервалы, идемпотентно |
