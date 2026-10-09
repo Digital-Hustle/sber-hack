@@ -6,5 +6,5 @@ dependencies {
     api("org.springframework.kafka:spring-kafka")
     api(libs.mapstruct)
     api(libs.uuid.creator)
-    implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    api("org.springframework.boot:spring-boot-starter-jdbc")
 }

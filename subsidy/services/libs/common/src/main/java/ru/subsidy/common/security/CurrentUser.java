@@ -45,16 +45,16 @@ public class CurrentUser extends JwtAuthenticationToken {
         return roles.contains(role);
     }
 
-    public boolean isGuard() {
-        return hasRole("GUARD");
+    public boolean isSpecialist() {
+        return hasRole("SPECIALIST");
     }
 
-    public boolean isAdmin() {
-        return hasRole("ADMIN");
+    public boolean isSenior() {
+        return hasRole("SENIOR_SPECIALIST");
     }
 
-    public boolean isSecurityOfficer() {
-        return hasRole("SECURITY_OFFICER");
+    public boolean isAuditor() {
+        return hasRole("AUDITOR");
     }
 
     @Override
