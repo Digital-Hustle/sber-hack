@@ -69,7 +69,8 @@ class KioskFlowIntegrationTest extends AbstractIntegrationTest {
         deviceId = "d" + UUID.randomUUID().toString().substring(0, 8);
         devices.bind(deviceId, workerId, keys.rawB64u(), Instant.now());
         when(people.accessProfile(workerId)).thenReturn(Optional.of(new WorkerProfile(workerId, "ACTIVE", "Пётр Иванов",
-                "Монтажник", "СтройМонтаж", Set.of(deviceId), LocalDate.now().plusYears(1), Set.of())));
+                "Монтажник", "СтройМонтаж", Set.of(deviceId), LocalDate.now().plusYears(1), Set.of("zone-main"))));
+        when(people.checkpointZone(any())).thenReturn(Optional.of("zone-main"));
         when(face.verify(eq(workerId), anyList(), any())).thenReturn(new FaceResult(true, 0.93, true, 0.9, null));
         when(shift.activeShift(eq(workerId), any()))
                 .thenReturn(Optional.of(new ActiveShift("s1", Instant.now(), Instant.now(), true)));
@@ -89,11 +90,35 @@ class KioskFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.worker.fullName").value("Пётр Иванов"))
                 .andExpect(jsonPath("$.attemptId").value(token));
         assertThat(jdbc.queryForObject("select count(*) from outbox where message_key = ?", Integer.class, workerId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select payload->'payload'->>'zoneId' from outbox where message_key = ?", String.class,
+                workerId)).isEqualTo("zone-main");
         assertThat(jdbc.queryForObject("select inside from worker_state where worker_id = ?", Boolean.class, workerId)).isTrue();
         mockMvc.perform(post("/api/v1/security/journal/verify")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SECURITY_OFFICER"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ok").value(true));
+    }
+
+    @Test
+    void frames_zoneWithoutPermit_noZonePermit() throws Exception {
+        // given
+        when(people.checkpointZone(any())).thenReturn(Optional.of("zone-closed"));
+        String token = token(qrNow());
+
+        // when / then
+        mockMvc.perform(guard(post(SCAN + "/" + token + FRAMES)).content(framesBody()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.decision").value("DENY"))
+                .andExpect(jsonPath("$.code").value("NO_ZONE_PERMIT"));
+    }
+
+    @Test
+    void scan_unknownCheckpoint_404() throws Exception {
+        // given
+        when(people.checkpointZone(any())).thenReturn(Optional.empty());
+
+        // when / then
+        mockMvc.perform(guard(post(SCAN)).content(scanBody(qrNow()))).andExpect(status().isNotFound());
     }
 
     @Test

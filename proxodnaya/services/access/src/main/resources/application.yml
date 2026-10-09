@@ -32,6 +32,17 @@ spring:
         jwt:
           issuer-uri: ${OIDC_ISSUER_URI}
           audiences: access
+      # токен сервиса для /internal/** people, shift и face (client credentials, роль SVC_ACCESS)
+      client:
+        registration:
+          svc:
+            provider: keycloak
+            client-id: ${KC_SVC_ACCESS_CLIENT_ID:svc-access}
+            client-secret: ${KC_SVC_ACCESS_SECRET}
+            authorization-grant-type: client_credentials
+        provider:
+          keycloak:
+            token-uri: ${OIDC_ISSUER_URI}/protocol/openid-connect/token
 
 access:
   qr-tolerance: ${QR_WINDOW_TOLERANCE:90s}

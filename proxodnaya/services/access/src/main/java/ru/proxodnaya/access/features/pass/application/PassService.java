@@ -108,16 +108,22 @@ public class PassService {
         UUID id = UuidCreator.getTimeOrderedEpoch();
         QrCheckResult qrResult = qrCheck.check(rawQr, now);
         if (!qrResult.isOk()) {
-            return ScanOutcome.decided(denyEarly(id, now, checkpointId, Direction.IN, qrResult, qrResult.code(), Map.of(), null));
+            return ScanOutcome.decided(denyEarly(id, now, checkpointId, null, Direction.IN, qrResult, qrResult.code(),
+                    Map.of(), null));
         }
         String workerId = qrResult.workerId();
         Direction direction = query.direction(workerId, now);
         Map<String, Object> details = new LinkedHashMap<>();
         Optional<WorkerProfile> profile = Optional.empty();
+        String zoneId = null;
         ReasonCode code = preCheck(workerId, now);
         if (code == ReasonCode.OK) {
+            CompletableFuture<Optional<WorkerProfile>> profileF = async(() -> people.accessProfile(workerId));
+            CompletableFuture<Optional<String>> zoneF = async(() -> people.checkpointZone(checkpointId));
             try {
-                profile = async(() -> people.accessProfile(workerId)).join();
+                zoneId = zoneF.join()
+                        .orElseThrow(() -> new NotFoundException("Проходная не найдена — проверьте настройку терминала"));
+                profile = profileF.join();
                 code = profileCode(profile, qrResult.deviceId());
             } catch (CompletionException error) {
                 code = ReasonCode.SYSTEM_ERROR;
@@ -126,10 +132,11 @@ public class PassService {
         }
         WorkerPreview preview = profile.map(WorkerPreview::of).orElse(null);
         if (code != ReasonCode.OK) {
-            return ScanOutcome.decided(denyEarly(id, now, checkpointId, direction, qrResult, code, details, preview));
+            return ScanOutcome.decided(denyEarly(id, now, checkpointId, zoneId, direction, qrResult, code, details,
+                    preview));
         }
         PendingAttempt attempt = new PendingAttempt(id, workerId, qrResult.deviceId(), qrResult.window(), direction, checkpointId,
-                ACTIONS[random.nextInt(ACTIONS.length)], props.framesRequired(), now, now.plus(props.challengeTtl()));
+                zoneId, ACTIONS[random.nextInt(ACTIONS.length)], props.framesRequired(), now, now.plus(props.challengeTtl()));
         challenges.create(attempt);
         return ScanOutcome.challenge(attempt, preview);
     }
@@ -159,7 +166,7 @@ public class PassService {
         FaceResult faceResult = join(faceF, FACE, failed);
         Optional<WorkerProfile> profile = Optional.ofNullable(join(profileF, PEOPLE, failed)).flatMap(opt -> opt);
         Optional<ActiveShift> activeShift = Optional.ofNullable(join(shiftF, SHIFT, failed)).flatMap(opt -> opt);
-        PassContext ctx = new PassContext(pending.direction(), pending.deviceId(), null, profile.orElse(null), faceResult,
+        PassContext ctx = new PassContext(pending.direction(), pending.deviceId(), pending.zoneId(), profile.orElse(null), faceResult,
                 activeShift.orElse(null), failed.isEmpty() ? null : String.join(",", failed),
                 LocalDate.ofInstant(now, props.siteZone()));
         DecisionResult decision = engine.decide(ctx);
@@ -197,9 +204,9 @@ public class PassService {
         return code;
     }
 
-    private PassOutcome denyEarly(UUID id, Instant now, String checkpointId, Direction direction, QrCheckResult qrResult,
+    private PassOutcome denyEarly(UUID id, Instant now, String checkpointId, String zoneId, Direction direction, QrCheckResult qrResult,
                                   ReasonCode code, Map<String, Object> details, WorkerPreview worker) {
-        PassRecord rec = new PassRecord(id, now, checkpointId, direction, qrResult.workerId(), qrResult.deviceId(),
+        PassRecord rec = new PassRecord(id, now, checkpointId, zoneId, direction, qrResult.workerId(), qrResult.deviceId(),
                 qrResult.deviceId() == null ? null : qrResult.window(), null, null, null, Decision.DENY, code,
                 latency(now), AttemptSource.KIOSK, details);
         return outcome(recorder.deny(rec), worker);
@@ -207,7 +214,7 @@ public class PassService {
 
     private PassRecord record(PendingAttempt pending, Instant now, DecisionResult verdict, FaceResult faceResult,
                               Map<String, Object> details) {
-        return new PassRecord(pending.token(), now, pending.checkpointId(), pending.direction(), pending.workerId(),
+        return new PassRecord(pending.token(), now, pending.checkpointId(), pending.zoneId(), pending.direction(), pending.workerId(),
                 pending.deviceId(), pending.window(),
                 verdict.score(), faceResult == null ? null : faceResult.liveness(), pending.action(), verdict.decision(), verdict.code(),
                 latency(now), AttemptSource.KIOSK, details);

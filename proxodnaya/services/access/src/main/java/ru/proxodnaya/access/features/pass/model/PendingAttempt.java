@@ -15,6 +15,7 @@ import ru.proxodnaya.access.shared.Direction;
  * @param window         окно QR
  * @param direction      направление, выведенное сервером
  * @param checkpointId   проходная
+ * @param zoneId         зона проходной
  * @param action         действие челленджа
  * @param framesRequired сколько кадров ждём
  * @param startedAt      когда отсканирован QR
@@ -27,6 +28,7 @@ public record PendingAttempt(
         long window,
         Direction direction,
         String checkpointId,
+        String zoneId,
         ChallengeAction action,
         int framesRequired,
         Instant startedAt,

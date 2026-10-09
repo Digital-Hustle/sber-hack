@@ -20,6 +20,9 @@ import ru.proxodnaya.access.features.pass.model.WorkerProfile;
 @Component
 public class PeopleGateway {
 
+    private static final String FAILED = "people ответил ";
+    private static final String EMPTY = "people вернул пустой ответ";
+
     private final RestClient client;
 
     public PeopleGateway(@Qualifier("people") RestClient client) {
@@ -40,9 +43,9 @@ public class PeopleGateway {
                         return null;
                     }
                     if (response.getStatusCode().isError()) {
-                        throw new IllegalStateException("people ответил " + response.getStatusCode().value());
+                        throw new IllegalStateException(FAILED + response.getStatusCode().value());
                     }
-                    return Objects.requireNonNull(response.bodyTo(ProfileRs.class), "people вернул пустой ответ");
+                    return Objects.requireNonNull(response.bodyTo(ProfileRs.class), EMPTY);
                 });
         if (body == null) {
             return Optional.empty();
@@ -55,6 +58,30 @@ public class PeopleGateway {
         return Optional.of(new WorkerProfile(workerId, body.status(), body.fullName(), body.position(), body.contractor(),
                 body.deviceIds() == null ? Set.of() : Set.copyOf(body.deviceIds()), permitUntil,
                 body.zoneIds() == null ? Set.of() : Set.copyOf(body.zoneIds())));
+    }
+
+    /**
+     * Зона, куда ведёт проходная.
+     *
+     * @param checkpointId проходная
+     * @return зона или пусто, если проходной нет
+     */
+    public Optional<String> checkpointZone(String checkpointId) {
+        CheckpointRs body = client.get()
+                .uri("/internal/people/checkpoints/{id}", checkpointId)
+                .exchange((request, response) -> {
+                    if (response.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
+                        return null;
+                    }
+                    if (response.getStatusCode().isError()) {
+                        throw new IllegalStateException(FAILED + response.getStatusCode().value());
+                    }
+                    return Objects.requireNonNull(response.bodyTo(CheckpointRs.class), EMPTY);
+                });
+        return Optional.ofNullable(body).map(CheckpointRs::zoneId);
+    }
+
+    private record CheckpointRs(String id, String zoneId) {
     }
 
     private record ProfileRs(String status, String fullName, String position, String contractor,
