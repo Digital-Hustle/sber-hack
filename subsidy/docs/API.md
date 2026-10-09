@@ -35,7 +35,9 @@ OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `su
 - `GET /programs`, `GET /programs/{code}` → параметры и чек-лист; `PUT /programs/{code}` — только `SENIOR_SPECIALIST`, новая версия
 
 ## assistant (`/assistant/api/v1`)
-- `POST /packages/{id}/ask` `{question}` → `{answer, sources: [{documentId, field?, rule?}], table?, validator: {status: OK|NUMBERS_MISMATCH, details}}` (B-06; ответ только из инструментов, числа сверяет валидатор)
+- `POST /packages/{id}/ask` `{question}` (≤ 1000 симв.) → `{messageId, answer, sources: [{documentId?, field?, rule?}], tools: [имена], validator: {status: OK|NUMBERS_MISMATCH, details: [числа/даты без подтверждения]}, model, createdAt}` (B-06; ответ только из инструментов `get_protocol|get_missing|get_fields|get_anomalies`, ≤ 4 вызова, числа сверяет валидатор). Ошибки: 404 `PACKAGE_NOT_FOUND`, 503 `MODEL_UNAVAILABLE`/`DEPENDENCY_UNAVAILABLE`, 404 `NOT_FOUND` при `ASSISTANT_ENABLED=false`
+- `GET /packages/{id}/messages` → `{items: [{messageId, role: USER|ASSISTANT, content, sources, validatorStatus, validatorDetails, createdAt}]}` — диалог текущего пользователя
+- `GET /packages/{id}/suggestions` → `{items: [вопрос]}` — подсказки по результатам протокола
 
 ## Стадии файла / документа
 | stage | Текст специалисту |

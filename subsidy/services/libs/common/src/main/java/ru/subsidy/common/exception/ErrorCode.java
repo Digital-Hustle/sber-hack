@@ -28,6 +28,7 @@ public enum ErrorCode {
     PROTOCOL_NOT_FOUND,
     NOT_CHECKED_YET,
     MODEL_UNAVAILABLE,
+    DEPENDENCY_UNAVAILABLE,
 
     // System
     SYSTEM_ERROR,
