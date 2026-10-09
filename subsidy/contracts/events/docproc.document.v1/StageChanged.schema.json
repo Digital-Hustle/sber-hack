@@ -43,6 +43,12 @@
         "string",
         "null"
       ]
+    },
+    "reasonCode": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "additionalProperties": false

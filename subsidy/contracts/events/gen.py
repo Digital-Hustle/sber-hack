@@ -18,10 +18,10 @@ E={
   "FileRemoved":({"fileId":U,"packageId":U},None,"package: файл удалён из пакета (мягко)"),
  },
  "docproc.document.v1":{
-  "StageChanged":({**FILE,"stage":{"enum":STAGES},"reason":NS},["reason"],"docproc: смена стадии файла"),
+  "StageChanged":({**FILE,"stage":{"enum":STAGES},"reason":NS,"reasonCode":NS},["reason","reasonCode"],"docproc: смена стадии файла"),
   "DocumentsSegmented":({**FILE,"documents":{"type":"array","items":{"type":"object","required":["documentId","fromPage","toPage"],"properties":{"documentId":U,"fromPage":I,"toPage":I},"additionalProperties":False}}},None,"docproc: файл разбит на документы (сегменты страниц)"),
-  "DocumentParsed":({**FILE,"documentId":U,"fromPage":I,"toPage":I,"type":S,"typeConfidence":{"type":"number","minimum":0,"maximum":1},"source":{"enum":["MODEL","SPECIALIST"]},"stage":{"enum":["PARSED","NEEDS_REVIEW"]},"reason":NS,"resultVersion":I,
-     "fields":{"type":"array","items":{"type":"object","required":["name","value","confidence","checks"],"properties":{"name":S,"value":{},"confidence":{"type":["number","null"]},"checks":{"type":"array","items":{"type":"object","required":["code","status","message"],"properties":{"code":S,"status":S,"message":S}}}}}}},["reason"],"docproc: документ разобран (вид, поля, проверки); новая версия результата — новое событие"),
+  "DocumentParsed":({**FILE,"documentId":U,"fromPage":I,"toPage":I,"type":S,"typeConfidence":{"type":"number","minimum":0,"maximum":1},"source":{"enum":["MODEL","SPECIALIST"]},"stage":{"enum":["PARSED","NEEDS_REVIEW"]},"reason":NS,"reasonCode":NS,"resultVersion":I,
+     "fields":{"type":"array","items":{"type":"object","required":["name","value","confidence","checks"],"properties":{"name":S,"value":{},"confidence":{"type":["number","null"]},"checks":{"type":"array","items":{"type":"object","required":["code","status","message"],"properties":{"code":S,"status":S,"message":S}}}}}}},["reason","reasonCode"],"docproc: документ разобран (вид, поля, проверки); новая версия результата — новое событие"),
   "DocumentUnreadable":({**FILE,"reason":S},None,"docproc: файл не прочитать (TEXT_NOT_FOUND и др.)"),
   "DocumentFailed":({**FILE,"reason":S},None,"docproc: разбор не удался после всех попыток"),
  },
