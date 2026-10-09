@@ -46,6 +46,12 @@ push в `main` → CI зелёный → `docker compose build` (те же Docke
 ## Тема входа Keycloak
 Тема `documents` монтируется в `/opt/keycloak/themes/documents` (`loginTheme` в realm; на существующем realm: `kcadm.sh update realms/documents -s loginTheme=documents`). После правки CSS Keycloak отдаёт старую сжатую копию из `data/tmp/kc-gzip-cache` — очистить: `docker compose exec -u 0 keycloak rm -rf /opt/keycloak/data/tmp/kc-gzip-cache`.
 
+## Вход по коду (FE-UI-02)
+Новый стенд берёт поток `documents-code` из `realm-documents.json`. На уже развёрнутом: `./keycloak/code-login.sh` из `infra/` (повторный запуск безопасен). Первый вход демо-учётки — по паролю из `.env`, затем Keycloak покажет QR для приложения-аутентификатора (Google Authenticator, Яндекс Ключ и т. п.); дальше — логин и 6-значный код. Сброс кода: удалить учётные данные OTP пользователя (`kcadm.sh delete users/<id>/credentials/<credId> -r documents`) и вернуть `requiredActions=["CONFIGURE_TOTP"]`.
+
+## Облачная модель на стенде
+`LLM_PROVIDER=openai`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_VISION_MODEL`, `VISION_FALLBACK_ENABLED=true`, `LLM_API_KEY` — только в `infra/.env` (в git не класть). Облачный API получает текст и сканы документов — на таком стенде только синтетика (`eval/seed_stand.py`). Возврат к локальной: `LLM_PROVIDER=ollama` и `docker compose --profile llm-local up -d docproc review ollama`.
+
 ## Тестовые данные
 `python3 eval/seed_stand.py --base https://<host> --count 8` — заявки с согласованными синтетическими документами через API соискателя (часть — черновики); разбор делает модель стенда.
 
