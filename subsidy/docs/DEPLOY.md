@@ -31,6 +31,12 @@
    - модель по API (OpenAI-совместимый шлюз): `LLM_PROVIDER=openai` + `LLM_BASE_URL`/`LLM_MODEL`/`LLM_VISION_MODEL`/`LLM_API_KEY`/`LLM_JSON_MODE` в `infra/.env` (пример — `docs/LLM.md`), `docker compose up -d` без профиля.
    Переключение — правка `.env` и `docker compose up -d docproc assistant`, пересборка не нужна.
 
+## Текущий стенд
+https://subsidy.digital-hustle.ru (сервер 217.12.40.215, за общим edge, порт кейса 127.0.0.1:8280; копия репо `/root/stand`).
+Модель — по API (`LLM_PROVIDER=openai`, `deepseek-v4-flash` + `qwen3-vl-plus`, `LLM_JSON_MODE=json_object`), ollama не запущен.
+Обновление: `cd /root/stand && git pull && cd subsidy/infra && docker compose build <svc> && docker compose up -d` →
+`EVAL_PASSWORD=<KC_DEMO_SPECIALIST_PASSWORD> scripts/smoke.sh https://subsidy.digital-hustle.ru`. Учётки демо — в `infra/.env` (`KC_DEMO_*`).
+
 ## За общим edge (сервер на несколько кейсов)
 Порты 80/443 держит общий Caddy (`edge/`, TLS Let's Encrypt, маршрут по имени хоста). Кейс поднимается с
 `CADDY_SCHEME=http://`, `HTTP_BIND=127.0.0.1:8280`, `HTTPS_BIND=127.0.0.1:8643`, `PUBLIC_HOST=KC_HOSTNAME=subsidy.<домен>`,
