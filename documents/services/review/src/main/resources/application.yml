@@ -32,6 +32,9 @@ app:
     token-uri: ${KC_TOKEN_URI:http://localhost:8180/auth/realms/documents/protocol/openid-connect/token}
     client-id: svc-review
     client-secret: ${KC_SVC_REVIEW_SECRET}
+  staff:
+    admin-url: ${KC_ADMIN_URL:http://localhost:8180/auth/admin/realms/documents}
+    issuer: ${STAFF_TOTP_ISSUER:Документы}
   review:
     intake-url: ${INTAKE_URL:http://localhost:8081}
     docproc-url: ${DOCPROC_URL:http://localhost:8082}

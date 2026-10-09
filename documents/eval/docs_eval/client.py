@@ -7,8 +7,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import ssl
+import struct
 import time
 import urllib.error
 import urllib.parse
@@ -32,11 +35,19 @@ class DocResult:
     seconds: float
 
 
-class PasswordToken:
-    """Токен оператора по паролю (grant_type=password) с обновлением до истечения — для долгих прогонов на CPU."""
+def totp(secret: str, at: float | None = None) -> str:
+    """Код TOTP (RFC 6238) для секрета в формате Keycloak: ключ HMAC — байты строки секрета."""
+    counter = struct.pack(">Q", int(time.time() if at is None else at) // 30)
+    h = hmac.new(secret.encode(), counter, hashlib.sha1).digest()
+    o = h[-1] & 15
+    return "%06d" % ((struct.unpack(">I", h[o:o + 4])[0] & 0x7FFFFFFF) % 1_000_000)
 
-    def __init__(self, url: str, client_id: str, username: str, password: str, insecure: bool = False) -> None:
-        self.url, self.client_id, self.username, self.password = url, client_id, username, password
+
+class PasswordToken:
+    """Токен оператора по коду (grant_type=password без пароля, otp — FE-UI-03) с обновлением до истечения."""
+
+    def __init__(self, url: str, client_id: str, username: str, totp_secret: str, insecure: bool = False) -> None:
+        self.url, self.client_id, self.username, self.secret = url, client_id, username, totp_secret
         self.ssl = ssl._create_unverified_context() if insecure else None
         self.token: str | None = None
         self.until = 0.0
@@ -45,7 +56,7 @@ class PasswordToken:
         if self.token and time.monotonic() < self.until:
             return self.token
         body = urllib.parse.urlencode({"grant_type": "password", "client_id": self.client_id,
-                                       "username": self.username, "password": self.password}).encode()
+                                       "username": self.username, "otp": totp(self.secret)}).encode()
         req = urllib.request.Request(self.url, data=body, method="POST")
         req.add_header("Content-Type", "application/x-www-form-urlencoded")
         try:

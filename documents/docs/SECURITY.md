@@ -12,7 +12,7 @@
 | Сервисы | Keycloak service account (client credentials), `aud=<сервис>` | только `/internal/**` своего контракта | `SVC_<SERVICE>` |
 
 ## 2. Keycloak
-Realm `documents` из `infra/keycloak/realm-documents.json` (секреты — плейсхолдеры `${ENV}`), хранит данные в PostgreSQL. Клиенты: `documents-operator` (public, PKCE, redirect `https://<host>/operator/*`), `documents-api` (audience), `svc-intake`, `svc-docproc`, `svc-review` (confidential). Политики: пароль ≥ 12, brute-force detection, access token 5 мин, refresh с ротацией, SSO idle 30 мин, required action `CONFIGURE_TOTP` для `SENIOR_OPERATOR`/`AUDITOR`. Демо-пользователи создаются из `.env` (`KC_DEMO_OPERATOR_PASSWORD`).
+Realm `documents` из `infra/keycloak/realm-documents.json` (секреты — плейсхолдеры `${ENV}`), хранит данные в PostgreSQL. Клиенты: `documents-operator` (public, PKCE, redirect `https://<host>/operator/*`), `documents-api` (audience), `svc-intake`, `svc-docproc`, `svc-review` (confidential). Вход сотрудников — только логин + TOTP (ADR-020): паролей и писем нет; потоки `documents-code` (браузер; без кода — отказ) и `documents-code-direct` (форма фронта). Коды выдаёт старший через review `/staff` (svc-review: manage-users/view-users/query-users, без view-realm); секрет отдаётся один раз и не хранится у нас. Brute-force detection (5 попыток), access token 5 мин, SSO idle. Демо-коды — из `.env` (`KC_DEMO_*_TOTP`).
 
 ## 3. Модель угроз → защита → проверка
 | # | Угроза | Защита | Проверка |

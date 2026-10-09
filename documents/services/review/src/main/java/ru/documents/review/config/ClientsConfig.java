@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
 /**
- * HTTP-клиенты зависимостей с тайм-аутами (intake, docproc).
+ * HTTP-клиенты зависимостей с тайм-аутами (intake, docproc, Keycloak Admin).
  */
 @Configuration
 public class ClientsConfig {
@@ -28,6 +28,12 @@ public class ClientsConfig {
     @Bean
     public RestClient docprocRestClient(ReviewProperties props) {
         return client(props.docprocUrl());
+    }
+
+    /** Admin REST Keycloak (сотрудники, FE-UI-03). */
+    @Bean
+    public RestClient keycloakAdminRestClient(StaffProperties props) {
+        return client(props.adminUrl());
     }
 
     private static RestClient client(String base) {

@@ -13,6 +13,7 @@ const NAV: { to: string; label: string; perm: Perm; end?: boolean }[] = [
   { to: routes.operator, label: "Очередь", perm: "queue", end: true },
   { to: routes.operatorExpiring, label: "Истекающие", perm: "reports" },
   { to: routes.operatorMetrics, label: "Метрики", perm: "metrics" },
+  { to: routes.operatorStaff, label: "Сотрудники", perm: "staff" },
 ];
 
 /** FE-OP-01: зона оператора — SSO (PKCE), разделы по ролям, статус модели, тема. */

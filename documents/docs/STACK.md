@@ -25,7 +25,7 @@ Java 21, Spring Boot 3.5.x, Spring Cloud Gateway, Gradle Kotlin DSL (wrapper, ve
 **Нельзя**: PyMuPDF/fitz (AGPL), pdf2image + poppler (GPL), ghostscript, wand/ImageMagick-обёртки для PDF (тянут ghostscript).
 
 ## Frontend — скилл `frontend-fsd`
-Одно Vite-приложение, React 19, TS strict, npm, FSD; Tailwind 4 + shadcn/ui; axios `$api`, TanStack Query, типы из `openapi-typescript`; zustand; react-hook-form + zod; i18next; React Router (зоны `/apply`, `/operator`); `oidc-client-ts` (операторы); `react-dropzone` (загрузка), камера через `<input capture>` + `getUserMedia`; `react-pdf` (pdf.js) и свой просмотрщик изображений с зумом и подсветкой bbox; recharts (метрики очереди).
+Одно Vite-приложение, React 19, TS strict, npm, FSD; Tailwind 4 + shadcn/ui; axios `$api`, TanStack Query, типы из `openapi-typescript`; zustand; react-hook-form + zod; i18next; React Router (зоны `/apply`, `/operator`); вход операторов — своя форма «логин + код» (ADR-020); `react-dropzone` (загрузка), камера через `<input capture>` + `getUserMedia`; `react-pdf` (pdf.js) и свой просмотрщик изображений с зумом и подсветкой bbox; recharts (метрики очереди).
 
 ## LLM
 | Режим | Провайдер | Модель |
