@@ -27,6 +27,7 @@ public interface PassStatsController {
      * @param from       начало, по умолчанию 7 дней назад
      * @param until      конец, не включая (параметр {@code to}), по умолчанию сейчас; период до 93 дней
      * @param checkpoint проходная
+     * @param simulated  включать демо-историю симулятора
      * @return статистика
      */
     @Operation(summary = "Отказы по причинам")
@@ -34,7 +35,8 @@ public interface PassStatsController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SECURITY_OFFICER')")
     RefusalsRs refusals(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
                         @RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant until,
-                        @RequestParam(required = false) String checkpoint);
+                        @RequestParam(required = false) String checkpoint,
+                        @RequestParam(defaultValue = "false") boolean simulated);
 
     /**
      * Нагрузка на проходные по дню недели и часу (heatmap).
@@ -42,6 +44,7 @@ public interface PassStatsController {
      * @param from       начало, по умолчанию 28 дней назад
      * @param until      конец, не включая (параметр {@code to}), по умолчанию сейчас; период до 93 дней
      * @param checkpoint проходная
+     * @param simulated  включать демо-историю симулятора
      * @return клетки
      */
     @Operation(summary = "Нагрузка по часам")
@@ -49,5 +52,6 @@ public interface PassStatsController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SECURITY_OFFICER')")
     LoadByHourRs loadByHour(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
                             @RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant until,
-                            @RequestParam(required = false) String checkpoint);
+                            @RequestParam(required = false) String checkpoint,
+                        @RequestParam(defaultValue = "false") boolean simulated);
 }

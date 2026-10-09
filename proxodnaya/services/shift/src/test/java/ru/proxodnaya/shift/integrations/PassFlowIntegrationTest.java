@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,6 +130,31 @@ class PassFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items.length()").value(0));
         mockMvc.perform(staff(get("/api/v1/intervals")).param("worker", workerId).param("simulated", "true"))
                 .andExpect(jsonPath("$.items.length()").value(1));
+    }
+
+    @Test
+    void simulatorHistory_separateChain_realIntervalKept_hoursByFlag() throws Exception {
+        // given: человек сейчас на объекте 2 ч, симулятор досылает вчерашний вход и выход (1 ч)
+        Instant yesterday = now.minusSeconds(26 * 3600);
+        send(UUID.randomUUID(), pass("IN", "ALLOW", "zone-main", now.minusSeconds(2 * 3600), "KIOSK"));
+
+        // when
+        send(UUID.randomUUID(), pass("IN", "ALLOW", "zone-main", yesterday, "SIMULATOR"));
+        send(UUID.randomUUID(), pass("OUT", "ALLOW", "zone-main", yesterday.plusSeconds(3600), "SIMULATOR"));
+
+        // then
+        await(() -> count("select count(*) from presence_intervals where worker_id = ? and simulated and close_reason = 'EXIT'") == 1);
+        assertThat(count("select count(*) from presence_intervals where worker_id = ? and not simulated and exited_at is null"))
+                .isEqualTo(1);
+        String from = now.minusSeconds(48 * 3600).toString();
+        mockMvc.perform(staff(get("/api/v1/analytics/hours")).param("worker", workerId).param("from", from).param("to", now.toString()))
+                .andExpect(jsonPath("$.items[0].workedMinutes").value(120))
+                .andExpect(jsonPath("$.method").value(Matchers.containsString("Симулятор исключён")));
+        mockMvc.perform(staff(get("/api/v1/analytics/hours")).param("worker", workerId).param("from", from).param("to", now.toString())
+                        .param("simulated", "true"))
+                .andExpect(jsonPath("$.items[0].workedMinutes").value(180))
+                .andExpect(jsonPath("$.items[0].intervals").value(2))
+                .andExpect(jsonPath("$.method").value(Matchers.containsString("демо-историю симулятора")));
     }
 
     @Test

@@ -31,7 +31,7 @@ class AdaptersTest {
 
     private static LlmProperties props(String provider, String base) {
         return new LlmProperties(provider, base, "text-model", "vision-model", "secret-key", Duration.ofSeconds(5), 1, 0,
-                "json_schema", "basic-auth-key", "GIGACHAT_API_PERS", base + "/oauth", null);
+                "json_schema", "basic-auth-key", "GIGACHAT_API_PERS", base + "/oauth", null, 4);
     }
 
     private static LlmRequest rq(List<byte[]> images) throws IOException {
@@ -52,6 +52,8 @@ class AdaptersTest {
             assertThat(body.path("format").path("required").get(0).asText()).isEqualTo("type");
             assertThat(body.path("stream").asBoolean()).isFalse();
             assertThat(body.path("options").path("temperature").asInt()).isZero();
+            assertThat(body.path("options").path("num_thread").asInt()).isEqualTo(4);
+            assertThat(body.path("options").path("num_predict").asInt()).isEqualTo(2048);
             assertThat(body.path("messages").get(1).path("images").get(0).asText()).isEqualTo("AQID");
         }
     }

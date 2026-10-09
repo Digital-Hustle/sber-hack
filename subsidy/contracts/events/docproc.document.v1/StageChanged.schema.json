@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "subsidy/events/docproc.document.v1/StageChanged",
+  "$id": "urn:subsidy:events:docproc.document.v1:StageChanged",
   "title": "StageChanged",
   "description": "docproc: смена стадии файла. Это схема payload; конверт — envelope.schema.json.",
   "type": "object",
@@ -39,6 +39,12 @@
       ]
     },
     "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reasonCode": {
       "type": [
         "string",
         "null"

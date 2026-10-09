@@ -20,14 +20,20 @@ import ru.documents.llm.infra.HttpSupport;
 public class OllamaAdapter implements LlmProvider {
 
     private static final int NUM_CTX = 8192;
+
+    // Потолок ответа: реальный JSON полей ~600–800 токенов; без него зациклившаяся модель держит CPU до таймаута (X-07).
+
+    private static final int NUM_PREDICT = 2048;
     private static final int SEED = 42;
 
     private final HttpSupport http;
     private final String base;
+    private final int numThread;
 
     public OllamaAdapter(HttpSupport http, LlmProperties props) {
         this.http = http;
         this.base = props.baseUrl().replaceAll("/+$", "");
+        this.numThread = props.numThread();
     }
 
     @Override
@@ -56,7 +62,13 @@ public class OllamaAdapter implements LlmProvider {
         body.put("stream", false);
         body.put("think", false);
         body.put("keep_alive", "30m");
-        body.put("options", Map.of("temperature", 0, "seed", SEED, "num_ctx", NUM_CTX));
+        Map<String, Object> options = new LinkedHashMap<>(
+                Map.of("temperature", 0, "seed", SEED, "num_ctx", NUM_CTX, "num_predict", NUM_PREDICT));
+        if (numThread > 0) {
+            // Потоков меньше, чем ядер: при чужой нагрузке на сервере llama.cpp иначе замедляется в десятки раз (X-07).
+            options.put("num_thread", numThread);
+        }
+        body.put("options", options);
         JsonNode rs = http.postJson(base + "/api/chat", body);
         return new Completion(rs.path("message").path("content").asText(null),
                 rs.has("prompt_eval_count") ? rs.get("prompt_eval_count").asInt() : null,

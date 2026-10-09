@@ -31,12 +31,12 @@ public class AnalyticsControllerImpl implements AnalyticsController {
     }
 
     @Override
-    public HoursRs hours(Instant from, Instant until, String worker, String zone) {
-        return mapper.convert(analytics.hours(from, until, worker, zone));
+    public HoursRs hours(Instant from, Instant until, String worker, String zone, boolean simulated) {
+        return mapper.convert(analytics.hours(from, until, worker, zone, simulated));
     }
 
     @Override
-    public LateOvertimeRs lateOvertime(Instant from, Instant until, String worker) {
-        return mapper.convert(analytics.lateOvertime(from, until, worker));
+    public LateOvertimeRs lateOvertime(Instant from, Instant until, String worker, boolean simulated) {
+        return mapper.convert(analytics.lateOvertime(from, until, worker, simulated));
     }
 }

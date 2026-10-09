@@ -38,7 +38,8 @@ public final class HttpSupport {
     public HttpSupport(ObjectMapper json, Duration timeout, String caCertPath) {
         this.json = json;
         this.timeout = timeout;
-        HttpClient.Builder b = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(CONNECT_TIMEOUT_S));
+        HttpClient.Builder b = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(CONNECT_TIMEOUT_S));
         if (caCertPath != null && !caCertPath.isBlank()) {
             b.sslContext(sslWithExtraCa(Path.of(caCertPath)));
         }

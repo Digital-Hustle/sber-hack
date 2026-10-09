@@ -141,7 +141,10 @@ public class DocumentEventsService {
             return Optional.empty();
         }
         switch (type) {
-            case "ApplicationAssigned" -> repo.setStatus(app, "IN_REVIEW", null, now);
+            case "ApplicationAssigned" -> {
+                repo.setStatus(app, "IN_REVIEW", null, now);
+                repo.setAssignee(app, text(p, "assignee"), now);
+            }
             case "ResubmitRequested" -> {
                 for (JsonNode it : p.path("items")) {
                     UUID doc = it.hasNonNull(DOC) ? UUID.fromString(it.get(DOC).asText()) : null;

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "subsidy/events/package.package.v1/PackageCreated",
+  "$id": "urn:subsidy:events:package.package.v1:PackageCreated",
   "title": "PackageCreated",
   "description": "package: пакет создан (POST /packages). Это схема payload; конверт — envelope.schema.json.",
   "type": "object",

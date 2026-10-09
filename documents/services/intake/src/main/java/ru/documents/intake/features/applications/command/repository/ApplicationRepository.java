@@ -52,6 +52,12 @@ public class ApplicationRepository {
                         + " where id = ? and status <> 'DELETED'").params(status, comment, ts(now), id).update();
     }
 
+    /** Назначенный оператор (B-07, из события review ApplicationAssigned). */
+    public void setAssignee(UUID id, String assignee, Instant now) {
+        jdbc.sql("update applications set assignee = ?, updated_at = ? where id = ? and status <> 'DELETED'")
+                .params(assignee, ts(now), id).update();
+    }
+
     /** Отметить изменение заявки. */
     public void touch(UUID id, Instant now) {
         jdbc.sql("update applications set updated_at = ? where id = ?").params(ts(now), id).update();

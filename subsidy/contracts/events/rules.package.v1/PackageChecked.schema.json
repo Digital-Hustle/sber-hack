@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "subsidy/events/rules.package.v1/PackageChecked",
+  "$id": "urn:subsidy:events:rules.package.v1:PackageChecked",
   "title": "PackageChecked",
   "description": "rules: новая версия протокола проверки. Это схема payload; конверт — envelope.schema.json.",
   "type": "object",

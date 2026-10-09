@@ -9,6 +9,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -57,6 +58,18 @@ class PassStatsIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.peak.hour").value(9))
                 .andExpect(jsonPath("$.peak.attempts").value(4))
                 .andExpect(jsonPath("$.peak.denied").value(3));
+        mockMvc.perform(get("/api/v1/analytics/refusals").with(staff()).param("from", FROM).param("to", TO).param("checkpoint", checkpoint)
+                        .param("simulated", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attempts").value(5))
+                .andExpect(jsonPath("$.denied").value(4))
+                .andExpect(jsonPath("$.byReason[0].count").value(3))
+                .andExpect(jsonPath("$.method").value(Matchers.containsString("демо-историю симулятора")));
+        mockMvc.perform(get("/api/v1/analytics/load-by-hour").with(staff()).param("from", FROM).param("to", TO)
+                        .param("checkpoint", checkpoint).param("simulated", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.peak.attempts").value(5))
+                .andExpect(jsonPath("$.peak.denied").value(4));
         mockMvc.perform(get("/api/v1/analytics/refusals").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_GUARD"))))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/analytics/load-by-hour").with(staff()).param("from", TO).param("to", FROM))

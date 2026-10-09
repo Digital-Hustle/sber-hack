@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    testImplementation(testFixtures(project(":libs:common")))
     implementation(libs.tika.core)
     implementation(libs.pdfbox)
     implementation(libs.imageio.jpeg)

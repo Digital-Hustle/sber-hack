@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "subsidy/events/package.file.v1/FileReceived",
+  "$id": "urn:subsidy:events:package.file.v1:FileReceived",
   "title": "FileReceived",
   "description": "package: файл принят в пакет. Это схема payload; конверт — envelope.schema.json.",
   "type": "object",
