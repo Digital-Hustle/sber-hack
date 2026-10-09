@@ -119,7 +119,7 @@ class DeviceActivationIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(as("ADMIN", post(WORKERS + "/" + workerId + "/block"))).andExpect(status().isOk());
         mockMvc.perform(as("ADMIN", post(WORKERS + "/" + workerId + "/invite")))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("WORKER_BLOCKED"));
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("WORKER_BLOCKED"));
     }
 
     @Test
