@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import ru.proxodnaya.shift.api.constants.PathConstants;
 import ru.proxodnaya.shift.api.dto.response.HoursRs;
+import ru.proxodnaya.shift.api.dto.response.LateOvertimeRs;
 import ru.proxodnaya.shift.api.dto.response.SummaryRs;
 
 /**
@@ -47,4 +48,19 @@ public interface AnalyticsController {
                   @RequestParam(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant until,
                   @RequestParam(required = false) String worker,
                   @RequestParam(required = false) String zone);
+
+    /**
+     * Опоздания и переработки относительно графика.
+     *
+     * @param from   начало, включительно (по началу смены)
+     * @param until  конец, не включая (параметр {@code to}); период до 93 дней
+     * @param worker рабочий; с ним в ответе — разбор по сменам
+     * @return отчёт
+     */
+    @Operation(summary = "Опоздания и переработки за период")
+    @GetMapping(PathConstants.LATE_OVERTIME)
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    LateOvertimeRs lateOvertime(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+                                @RequestParam(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant until,
+                                @RequestParam(required = false) String worker);
 }

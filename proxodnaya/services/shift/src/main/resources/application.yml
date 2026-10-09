@@ -40,6 +40,10 @@ shift:
   early-entry: ${SHIFT_EARLY_ENTRY:60m}
   auto-close-after: ${AUTO_CLOSE_AFTER:2h}
   presence-ttl: ${PRESENCE_TTL:16h}
+  analytics:
+    # опоздание — вход позже начала смены больше чем на это; переработка — выход позже конца не меньше чем на это
+    late-grace: ${LATE_GRACE:5m}
+    overtime-threshold: ${OVERTIME_THRESHOLD:15m}
   stream:
     ticket-ttl: ${STREAM_TICKET_TTL:30s}
     heartbeat: ${STREAM_HEARTBEAT:15s}

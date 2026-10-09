@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.List;
 
 import org.jooq.Condition;
@@ -13,6 +14,8 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.springframework.stereotype.Repository;
 
+import ru.proxodnaya.shift.features.analytics.query.model.PresenceFact;
+import ru.proxodnaya.shift.features.analytics.query.model.ShiftSlot;
 import ru.proxodnaya.shift.features.analytics.query.model.Summary;
 import ru.proxodnaya.shift.features.analytics.query.model.WorkerHours;
 import ru.proxodnaya.shift.jooq.Tables;
@@ -25,7 +28,9 @@ public class AnalyticsRepository {
 
     private static final ru.proxodnaya.shift.jooq.tables.PresenceIntervals INTERVALS = Tables.PRESENCE_INTERVALS;
     private static final ru.proxodnaya.shift.jooq.tables.PassEvents PASS_EVENTS = Tables.PASS_EVENTS;
+    private static final ru.proxodnaya.shift.jooq.tables.Shifts SHIFTS = Tables.SHIFTS;
     private static final String SIMULATOR = "SIMULATOR";
+    private static final String UNCONFIRMED = "'UNCONFIRMED_EXIT' = any({0})";
     private static final long SECONDS_IN_MINUTE = 60;
 
     private final DSLContext dsl;
@@ -101,7 +106,7 @@ public class AnalyticsRepository {
         Field<Double> seconds = DSL.field("extract(epoch from (least({0}, {1}) - greatest({2}, {3})))", SQLDataType.DOUBLE,
                 end, DSL.val(utc(until)), INTERVALS.ENTERED_AT, DSL.val(utc(from)));
         Field<BigDecimal> total = DSL.coalesce(DSL.sum(DSL.greatest(seconds, DSL.inline(0d))), BigDecimal.ZERO);
-        Condition incomplete = DSL.condition("'UNCONFIRMED_EXIT' = any({0})", INTERVALS.FLAGS)
+        Condition incomplete = DSL.condition(UNCONFIRMED, INTERVALS.FLAGS)
                 .or(INTERVALS.EXITED_AT.isNull().and(fresh.not()));
         Condition where = INTERVALS.SIMULATED.isFalse()
                 .and(INTERVALS.ENTERED_AT.lt(utc(until)))
@@ -118,6 +123,56 @@ public class AnalyticsRepository {
                 .groupBy(INTERVALS.WORKER_ID)
                 .orderBy(total.desc(), INTERVALS.WORKER_ID)
                 .fetch(row -> new WorkerHours(row.value1(), row.value2().longValue() / SECONDS_IN_MINUTE, row.value3(), row.value4()));
+    }
+
+    /**
+     * Смены, начавшиеся в {@code [from, until)} и уже начавшиеся к {@code now}, по началу.
+     *
+     * @param from     начало
+     * @param until    конец
+     * @param now      текущий момент
+     * @param workerId рабочий или {@code null}
+     * @return смены
+     */
+    public List<ShiftSlot> startedShifts(Instant from, Instant until, Instant now, String workerId) {
+        Condition where = SHIFTS.STARTS_AT.ge(utc(from)).and(SHIFTS.STARTS_AT.lt(utc(until))).and(SHIFTS.STARTS_AT.le(utc(now)));
+        if (workerId != null) {
+            where = where.and(SHIFTS.WORKER_ID.eq(workerId));
+        }
+        return dsl.select(SHIFTS.ID, SHIFTS.WORKER_ID, SHIFTS.STARTS_AT, SHIFTS.ENDS_AT)
+                .from(SHIFTS)
+                .where(where)
+                .orderBy(SHIFTS.STARTS_AT, SHIFTS.ID)
+                .fetch(row -> new ShiftSlot(row.value1(), row.value2(), row.value3().toInstant(), row.value4().toInstant()));
+    }
+
+    /**
+     * Интервалы рабочих, пересекающие {@code [from, until)}, по входу. Свежий открытый — до {@code now}, устаревший —
+     * нулевой длины и {@code unconfirmed}.
+     *
+     * @param workerIds  рабочие
+     * @param from       начало
+     * @param until      конец
+     * @param now        текущий момент
+     * @param freshSince граница свежести открытого интервала
+     * @return факты присутствия
+     */
+    public List<PresenceFact> presence(Collection<String> workerIds, Instant from, Instant until, Instant now, Instant freshSince) {
+        Condition fresh = INTERVALS.ENTERED_AT.ge(utc(freshSince));
+        Field<OffsetDateTime> end = DSL.coalesce(INTERVALS.EXITED_AT,
+                DSL.when(fresh, DSL.val(utc(now))).otherwise(INTERVALS.ENTERED_AT));
+        Field<Boolean> open = DSL.field(INTERVALS.EXITED_AT.isNull().and(fresh));
+        Field<Boolean> unconfirmed = DSL.field(DSL.condition(UNCONFIRMED, INTERVALS.FLAGS)
+                .or(INTERVALS.EXITED_AT.isNull().and(fresh.not())));
+        return dsl.select(INTERVALS.WORKER_ID, INTERVALS.ENTERED_AT, end, open, unconfirmed)
+                .from(INTERVALS)
+                .where(INTERVALS.SIMULATED.isFalse())
+                .and(INTERVALS.WORKER_ID.in(workerIds))
+                .and(INTERVALS.ENTERED_AT.lt(utc(until)))
+                .and(INTERVALS.EXITED_AT.isNull().or(INTERVALS.EXITED_AT.ge(utc(from))))
+                .orderBy(INTERVALS.WORKER_ID, INTERVALS.ENTERED_AT)
+                .fetch(row -> new PresenceFact(row.value1(), row.value2().toInstant(), row.value3().toInstant(),
+                        Boolean.TRUE.equals(row.value4()), Boolean.TRUE.equals(row.value5())));
     }
 
     private static OffsetDateTime utc(Instant moment) {

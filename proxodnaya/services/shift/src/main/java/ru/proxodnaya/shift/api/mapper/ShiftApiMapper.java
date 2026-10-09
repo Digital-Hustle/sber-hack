@@ -10,6 +10,7 @@ import ru.proxodnaya.shift.api.dto.request.WeekdayRq;
 import ru.proxodnaya.shift.api.dto.response.ActiveShiftRs;
 import ru.proxodnaya.shift.api.dto.response.BulkShiftRs;
 import ru.proxodnaya.shift.api.dto.response.HoursRs;
+import ru.proxodnaya.shift.api.dto.response.LateOvertimeRs;
 import ru.proxodnaya.shift.api.dto.response.IntervalPageRs;
 import ru.proxodnaya.shift.api.dto.response.IntervalRs;
 import ru.proxodnaya.shift.api.dto.response.PageRs;
@@ -20,6 +21,7 @@ import ru.proxodnaya.shift.api.dto.response.ShiftTemplatesRs;
 import ru.proxodnaya.shift.api.dto.response.SummaryRs;
 import ru.proxodnaya.shift.api.dto.response.WorkerMeRs;
 import ru.proxodnaya.shift.features.analytics.query.model.HoursReport;
+import ru.proxodnaya.shift.features.analytics.query.model.LateOvertimeReport;
 import ru.proxodnaya.shift.features.analytics.query.model.Summary;
 import ru.proxodnaya.shift.features.interval.model.Interval;
 import ru.proxodnaya.shift.features.shift.api.ActiveShift;
@@ -119,6 +121,22 @@ public class ShiftApiMapper {
     public HoursRs convert(HoursReport report) {
         return new HoursRs(report.from(), report.to(), report.items().stream()
                 .map(row -> new HoursRs.WorkerHoursRs(row.workerId(), row.workedMinutes(), row.intervals(), row.incomplete()))
+                .toList(), report.method());
+    }
+
+    /**
+     * Опоздания и переработки.
+     *
+     * @param report отчёт
+     * @return DTO
+     */
+    public LateOvertimeRs convert(LateOvertimeReport report) {
+        return new LateOvertimeRs(report.from(), report.to(), report.items().stream()
+                .map(row -> new LateOvertimeRs.WorkerLateOvertimeRs(row.workerId(), row.shifts(), row.late(), row.lateMinutes(),
+                        row.absent(), row.overtime(), row.overtimeMinutes(), row.incomplete()))
+                .toList(), report.details().stream()
+                .map(item -> new LateOvertimeRs.ShiftOutcomeRs(item.shiftId(), item.start(), item.end(), item.arrival().name(),
+                        item.firstEntry(), item.lastExit(), item.lateMinutes(), item.overtimeMinutes(), item.overtime(), item.incomplete()))
                 .toList(), report.method());
     }
 
