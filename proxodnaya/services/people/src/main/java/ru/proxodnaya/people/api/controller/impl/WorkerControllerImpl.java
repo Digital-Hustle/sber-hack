@@ -41,22 +41,25 @@ public class WorkerControllerImpl implements WorkerController {
 
     @Override
     public WorkerRs create(CreateWorkerRq request) {
-        return mapper.toRs(commands.create(mapper.toDraft(request)));
+        return mapper.toRs(queries.get(commands.create(mapper.toDraft(request)).id()));
     }
 
     @Override
     public WorkerRs update(UUID id, UpdateWorkerRq request) {
-        return mapper.toRs(commands.update(id, mapper.toDraft(request)));
+        commands.update(id, mapper.toDraft(request));
+        return mapper.toRs(queries.get(id));
     }
 
     @Override
     public WorkerRs block(UUID id) {
-        return mapper.toRs(commands.block(id));
+        commands.block(id);
+        return mapper.toRs(queries.get(id));
     }
 
     @Override
     public WorkerRs unblock(UUID id) {
-        return mapper.toRs(commands.unblock(id));
+        commands.unblock(id);
+        return mapper.toRs(queries.get(id));
     }
 
     @Override

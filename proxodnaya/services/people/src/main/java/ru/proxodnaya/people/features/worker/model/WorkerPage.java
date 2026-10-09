@@ -9,5 +9,5 @@ import java.util.List;
  * @param next   курсор следующей страницы или {@code null}
  * @param total  сколько всего под фильтром
  */
-public record WorkerPage(List<Worker> items, String next, long total) {
+public record WorkerPage(List<WorkerView> items, String next, long total) {
 }

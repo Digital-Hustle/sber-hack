@@ -1,6 +1,8 @@
 package ru.proxodnaya.people.features.worker.query.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -8,9 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ru.proxodnaya.common.exception.DomainException;
 import ru.proxodnaya.common.exception.ErrorCode;
+import ru.proxodnaya.people.features.worker.model.Permit;
 import ru.proxodnaya.people.features.worker.model.Worker;
 import ru.proxodnaya.people.features.worker.model.WorkerFilter;
 import ru.proxodnaya.people.features.worker.model.WorkerPage;
+import ru.proxodnaya.people.features.worker.model.WorkerView;
 import ru.proxodnaya.people.features.worker.query.repository.WorkerReadRepository;
 import ru.proxodnaya.people.shared.Cursor;
 
@@ -38,8 +42,11 @@ public class WorkerQueryService {
      * @return рабочий
      * @throws DomainException WORKER_NOT_FOUND
      */
-    public Worker get(UUID id) {
-        return repository.find(id).orElseThrow(() -> new DomainException(ErrorCode.WORKER_NOT_FOUND, "Рабочий не найден"));
+    @Transactional(readOnly = true)
+    public WorkerView get(UUID id) {
+        Worker worker = repository.find(id)
+                .orElseThrow(() -> new DomainException(ErrorCode.WORKER_NOT_FOUND, "Рабочий не найден"));
+        return views(List.of(worker)).getFirst();
     }
 
     /**
@@ -63,6 +70,19 @@ public class WorkerQueryService {
         boolean more = rows.size() > size;
         List<Worker> items = more ? rows.subList(0, size) : rows;
         String next = more ? Cursor.encode(items.getLast().id()) : null;
-        return new WorkerPage(List.copyOf(items), next, repository.count(query, parsed));
+        return new WorkerPage(views(items), next, repository.count(query, parsed));
+    }
+
+    private List<WorkerView> views(List<Worker> workers) {
+        if (workers.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> ids = workers.stream().map(Worker::id).toList();
+        Map<UUID, Set<UUID>> zones = repository.zonesOf(ids);
+        Map<UUID, List<Permit>> permits = repository.permitsOf(ids);
+        return workers.stream()
+                .map(worker -> new WorkerView(worker, Set.copyOf(zones.getOrDefault(worker.id(), Set.of())),
+                        List.copyOf(permits.getOrDefault(worker.id(), List.of()))))
+                .toList();
     }
 }

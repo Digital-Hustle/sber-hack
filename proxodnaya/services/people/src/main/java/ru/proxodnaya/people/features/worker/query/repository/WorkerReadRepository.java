@@ -1,7 +1,13 @@
 package ru.proxodnaya.people.features.worker.query.repository;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.jooq.Condition;
@@ -10,6 +16,8 @@ import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
+import ru.proxodnaya.people.features.worker.model.Permit;
+import ru.proxodnaya.people.features.worker.model.PermitType;
 import ru.proxodnaya.people.features.worker.model.Worker;
 import ru.proxodnaya.people.features.worker.model.WorkerFilter;
 import ru.proxodnaya.people.jooq.Tables;
@@ -71,6 +79,35 @@ public class WorkerReadRepository {
      */
     public long count(String query, WorkerFilter filter) {
         return dsl.fetchCount(WORKERS, matching(query, filter));
+    }
+
+    /**
+     * Зоны допуска рабочих.
+     *
+     * @param workerIds рабочие
+     * @return рабочий → зоны
+     */
+    public Map<UUID, Set<UUID>> zonesOf(Collection<UUID> workerIds) {
+        Map<UUID, Set<UUID>> result = new HashMap<>();
+        dsl.select(Tables.WORKER_ZONES.WORKER_ID, Tables.WORKER_ZONES.ZONE_ID).from(Tables.WORKER_ZONES)
+                .where(Tables.WORKER_ZONES.WORKER_ID.in(workerIds))
+                .forEach(row -> result.computeIfAbsent(row.value1(), key -> new HashSet<>()).add(row.value2()));
+        return result;
+    }
+
+    /**
+     * Допуски со сроком.
+     *
+     * @param workerIds рабочие
+     * @return рабочий → допуски по виду
+     */
+    public Map<UUID, List<Permit>> permitsOf(Collection<UUID> workerIds) {
+        Map<UUID, List<Permit>> result = new HashMap<>();
+        dsl.select(Tables.PERMITS.WORKER_ID, Tables.PERMITS.TYPE, Tables.PERMITS.VALID_UNTIL).from(Tables.PERMITS)
+                .where(Tables.PERMITS.WORKER_ID.in(workerIds)).orderBy(Tables.PERMITS.TYPE)
+                .forEach(row -> result.computeIfAbsent(row.value1(), key -> new ArrayList<>())
+                        .add(new Permit(PermitType.valueOf(row.value2()), row.value3())));
+        return result;
     }
 
     private static Condition matching(String query, WorkerFilter filter) {

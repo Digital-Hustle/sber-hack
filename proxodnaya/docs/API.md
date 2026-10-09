@@ -36,7 +36,8 @@
 - **[есть, PPL-02]** `GET /workers?q&filter=all|active|blocked&cursor&limit` → `{items: WorkerRs[], page: {next, total}}` (новые сверху, `limit` 1..200, по умолчанию 50; `inside` считает shift, а не people); `GET /workers/{id}`; `POST /workers` `{fullName, position, contractor}` → 201 `WorkerRs`; `PATCH /workers/{id}` (пустое поле не меняется); `POST /workers/{id}/block|unblock`; `DELETE /workers/{id}` → 204 (мягкое удаление, `WorkerDeleted`). `WorkerRs = {id, fullName, position, contractor, status: ACTIVE|BLOCKED, createdAt, updatedAt}`. Читают ADMIN/MANAGER/SECURITY_OFFICER, меняет ADMIN. Событие `people.worker.v1`: `WorkerCreated|WorkerUpdated|WorkerBlocked|WorkerDeleted`, payload `{workerId, status, fullName, position, contractor}`
 - `POST /workers/{id}/face` (кадры) → `{quality, accepted}`, `POST /workers/{id}/invite` **[есть]** (ADMIN) → 201 `{inviteCode (6 символов, без 0/1/I/O), link = PUBLIC_URL/worker/activate?c=CODE, qrPayload = link, expiresAt}` (срок `INVITE_TTL`, 72 ч; прежний неиспользованный отзывается; в БД — только HMAC кода), `POST /workers/{id}/block`
 - `GET /workers/{id}/devices` **[есть]** (ADMIN, SECURITY_OFFICER) → `{items: [{deviceId, status, boundAt, revokedAt}]}`; `DELETE /workers/{id}/devices/{deviceId}` **[есть]** (ADMIN) → 204, `DeviceRevoked`
-- `GET|POST /zones`, `GET|POST /checkpoints`, `POST /checkpoints/{id}/pairing-code`
+- **[есть, PPL-06]** `GET|POST /sites` `{name, address?}`; `GET /zones?siteId`, `POST /zones` `{siteId, name, capacity?}`; `GET /checkpoints?zoneId`, `POST /checkpoints` `{zoneId, name}` (проходная ведёт в зону `zoneId`) → `{items: [...]}`; 409 при повторе имени. Читают ADMIN/MANAGER/SECURITY_OFFICER/GUARD, меняет ADMIN. `POST /checkpoints/{id}/pairing-code` — PPL-07
+- Допуски рабочего **[есть, PPL-08]**: в `POST|PATCH /workers` поля `zoneIds: uuid[]` и `permits: [{type: BRIEFING|MEDICAL, validUntil: YYYY-MM-DD}]` (заменяются целиком); в `WorkerRs` — `zoneIds`, `permits`, `permitUntil` (ближайший срок; нет допусков → `null` → access отказывает `PERMIT_EXPIRED`)
 - `GET|POST /shifts`, `POST /shifts/bulk` `{workerIds, from, to, days: [{weekday 0..6 (0=Пн), start, end}]}` (своё время на каждый день недели), `GET|POST /shift-templates`
 - `GET /attempts?from&to&checkpoint&worker&decision&reason&source`
 - `GET /intervals?from&to&worker&zone`
@@ -86,6 +87,6 @@
 
 ## Внутренние API (только service accounts)
 - face: `POST /internal/face/verify` `{workerId, frames[], challenge}` → `{match, score, liveness, quality, reason?}`
-- people: `GET /internal/people/workers/{id}/access-profile` → `{status, deviceIds, permits[], zoneIds}`
+- people **[есть]** (роль `SVC_ACCESS`): `GET /internal/people/workers/{id}/access-profile` → `{status, fullName, position, contractor, deviceIds (действующие), permits: [{type, validUntil}], zoneIds}`, 404 — рабочего нет; `GET /internal/people/checkpoints/{id}` → `{id, zoneId, siteId, name}`
 - shift: `GET /internal/shift/workers/{id}/active-shift?at=` → `{shiftId, start, end, windowOk}`
 - access: `GET /internal/access/stats?...` (для assistant)

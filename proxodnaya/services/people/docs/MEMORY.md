@@ -3,7 +3,7 @@
 Память сервиса между сессиями и агентами. §1 — перезаписываемое текущее состояние (≤ 10 строк). §2 — карта, обновлять при новых пакетах/файлах. §3–4 — добавлять строки, неактуальное ~~зачёркивать~~. §5 — **только дописывать в конец** (`merge=union`). Решения для всей системы — ADR в `../../../docs/DECISIONS.md`.
 
 ## 1. Текущее состояние
-- Есть каркас (PPL-01) и рабочие (PPL-02): CRUD, курсор по UUIDv7, поиск, блок, outbox `people.worker.v1`. Инвайты и активация телефона (PPL-03/04) → `DeviceBound`/`DeviceRevoked` для access. Дальше PPL-06/08 (зоны, допуски, access-profile), PPL-05 (device-токен).
+- Есть каркас (PPL-01) и рабочие (PPL-02): CRUD, курсор по UUIDv7, поиск, блок, outbox `people.worker.v1`. Инвайты и активация телефона (PPL-03/04) → `DeviceBound`/`DeviceRevoked` для access. Объекты/зоны/проходные и допуски (PPL-06/08), `/internal/people/**` под ролью `SVC_ACCESS`. Дальше: сервисные токены (PLT-06) — без них access получит 401; PPL-05 device-токен; PPL-07 сопряжение киоска.
 - Открытые вопросы: Где хранить ключ подписи device-токенов (env vs Keycloak как издатель) — сейчас env, см. SECURITY.md.
 
 ## 2. Карта сервиса
@@ -16,6 +16,8 @@
 | `exception/ApiExceptionHandler` | problem+json, `errors[]` для полей, коды → HTTP-статус |
 | `features/device/` | инвайты (`InviteService`, `InviteCodes` HMAC), активация/отвязка (`DeviceService`, `DeviceKeys` — проверка JWK) |
 | `features/worker/api/` | `WorkerDirectory`/`WorkerCard` — рабочий для других фич |
+| `features/site/` | объекты, зоны, проходные; `api/ZoneDirectory` для проверки зон рабочего |
+| `api/controller/InternalController` | `/internal/people/**` для access (`SVC_ACCESS`) |
 | `shared/` | `WorkerStatus`, `Cursor`, `Limits` |
 
 ## 3. Решения
@@ -27,6 +29,7 @@
 | 2026-10-08 | Подрядчик — строка в `workers`, без справочника `contractors` | хватит для MVP | PPL-02 |
 | 2026-10-08 | Код инвайта хранится как HMAC-SHA256 с `INVITE_PEPPER` | 6 символов перебираются за минуты при утечке БД | PPL-03 |
 | 2026-10-08 | Активация публичная (`permitAll`) | у рабочего нет токена, подтверждает одноразовый инвайт; rate-limit — gateway GW-05 | PPL-04 |
+| 2026-10-08 | Проходная ведёт в одну зону (`zone_id`), вместо `zone_from/zone_to` | вход в зону = IN, выход = OUT; хватает для MVP | PPL-06 |
 | 2026-10-08 | Outbox скопирован из access, не в `libs/common` | jOOQ-классы у сервисов свои | PLT-07 |
 
 ## 4. Известные баги и ограничения
@@ -38,3 +41,4 @@
 - 2026-10-08 · miroslavrov · docs: документы сервиса (ADR-034)
 - 2026-10-08 · miroslavrov · feat: PPL-01/02 — каркас people, рабочие, outbox `people.worker.v1`
 - 2026-10-08 · miroslavrov · feat: PPL-03/04 — инвайты, активация телефона, список/отвязка устройств
+- 2026-10-08 · miroslavrov · feat: PPL-06/08 — объекты, зоны, проходные, допуски, access-profile
