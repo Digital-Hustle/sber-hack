@@ -12,10 +12,10 @@ OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `su
 - `POST /packages/{id}/files` multipart `files[]` (файлы или ZIP) → **202** `{files: [{fileId, stage: RECEIVED, duplicateOf?}], rejected: [{name, code, detail, hint}]}` — отказ одного файла не отменяет остальные
 - `POST /packages/{id}/files/{fileId}/versions` multipart `file` → 202 (замена / повторная загрузка, FR-65)
 - `DELETE /packages/{id}/files/{fileId}` → 204
-- `GET /packages/{id}` → `{status, org, program, files: [{fileId, version, mime, pages, stage, reasonCode?, documents: [{documentId, fromPage, toPage, type, typeConfidence, source, stage}]}]}`
+- `GET /packages/{id}` → `{packageId, status, org, program, protocol: {status, completeness, failed, warnings, needsReview}|null, decision: {decision, comment, decidedBy, decidedAt}|null, updatedAt, files: [{fileId, version, name, mime, pages, stage, reasonCode?, documents: [{documentId, fromPage, toPage, type, typeConfidence, source, stage}]}]}`
 - `GET /files/{fileId}/content?version=` → оригинал (роль + аудит); `GET /files/{fileId}/pages/{n}.png` → превью страницы
 - `GET /stream?packageId=&ticket=` (SSE, билет из `GET /stream/ticket`) — `file.stage`, `document.parsed`, `package.checked`; heartbeat `: ping` каждые 15 с
-- `POST /packages/{id}/decision` `{decision: APPROVE|REJECT|RETURN, comment}` → только `SENIOR_SPECIALIST`, только при наличии протокола
+- `POST /packages/{id}/decision` `{decision: APPROVE|REJECT|RETURN, comment}` → 200 `{packageId, status, decision, decidedBy, decidedAt}`; только `SENIOR_SPECIALIST`, только при наличии протокола (`PROTOCOL_NOT_FOUND` 422), комментарий обязателен для REJECT/RETURN (400), повтор → `PACKAGE_DECIDED` 409. RETURN возвращает пакет в `COLLECTING` (дозагрузка), APPROVE/REJECT → `DECIDED`; событие `PackageDecided`
 
 ## docproc (`/docproc/api/v1`)
 - `GET /documents/{id}/result` → `{type, typeConfidence, evidence, fields: [{name, value, raw, page, bbox, confidence, checks}], model, promptVersion, schemaVersion}`
