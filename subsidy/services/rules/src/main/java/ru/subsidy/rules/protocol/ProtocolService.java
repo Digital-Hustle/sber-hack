@@ -219,7 +219,7 @@ public class ProtocolService {
     }
 
     private static boolean docNeedsReview(DocFacts doc) {
-        return REVIEW_REASONS.contains(doc.reasonCode())
+        return doc.reasonCode() != null && REVIEW_REASONS.contains(doc.reasonCode())
                 || doc.fields().values().stream().anyMatch(field -> field.flagged());
     }
 
