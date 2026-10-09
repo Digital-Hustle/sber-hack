@@ -34,10 +34,7 @@ public class PassQueryService {
      * @return IN или OUT
      */
     public Direction direction(String workerId, Instant now) {
-        Presence presence = presence(workerId);
-        boolean inside = presence.inside() && presence.lastInAt() != null
-                && presence.lastInAt().isAfter(now.minus(props.presenceTtl()));
-        return inside ? Direction.OUT : Direction.IN;
+        return presence(workerId).nextDirection(now, props.presenceTtl());
     }
 
     /**

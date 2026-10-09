@@ -90,7 +90,7 @@
 | `kioskScan(qr, checkpointId, mode)` | `POST /access/api/v1/kiosk/attempts` **[изменить]** | `{ qr }` → `ScanRs`. **Без `direction`**: направление выводит сервер (ADR-037) |
 | `kioskFrames(token, frames)` | `POST /access/api/v1/kiosk/attempts/{token}/frames` **[есть]** | `{ frames }` → `DecisionRs` |
 | `kioskIdentify` («Сначала лицо») | `POST /access/api/v1/kiosk/identify` **[новый]** | `{ frames }` → `DecisionRs` (1:N со строгим порогом `faceThreshold + FACE_FIRST_MARGIN`; не узнали — `FACE_NOT_FOUND`, киоск предлагает QR) |
-| `kioskManual` | `POST /access/api/v1/kiosk/manual` **[новый]** | `{ workerId, note, guardCode? }` → `DecisionRs` (`decision: MANUAL`, `code: MANUAL_GUARD`) |
+| `kioskManual` | `POST /access/api/v1/kiosk/manual` **[есть]** | `{ workerId, checkpointId, note }` (`checkpointId` — до ACC-12; `guardCode` — с офлайн-режимом) → `DecisionRs` (`decision: MANUAL`, `code: MANUAL_GUARD`) |
 | `reviewManual` | `POST /access/api/v1/attempts/{id}/review` (SECURITY_OFFICER) | `{ status: CONFIRMED|DISPUTED, comment? }` |
 | `kioskSnapshot` | `GET /access/api/v1/kiosk/offline-snapshot` **[изменить]** | → `OfflineSnapshotRs` (ниже) |
 | `syncOffline(batch, sig)` | `POST /access/api/v1/kiosk/offline-attempts` **[изменить]** | `{ batch, signature }` → `{ ok, error?, accepted: [id], synced, conflicts, rejected }` |
@@ -116,7 +116,7 @@
 | `regenerateInvite` | `POST /people/api/v1/workers/{id}/invite` **[есть]** | → `{ inviteCode, link, expiresAt }` |
 | блок / разблок | `POST /people/api/v1/workers/{id}/block` **[есть]** | + `/unblock` **[новый]** |
 | `revokeDevice` (админ) | `DELETE /people/api/v1/workers/{id}/devices/{deviceId}` **[есть]** | |
-| `queryAttempts` / `exportAttempts` | `GET /access/api/v1/attempts?from&to&checkpoint&worker&decision&reason&source&cursor` **[есть]**, `GET …/attempts.csv` **[новый]** | `source = QR|MANUAL|FACE|OFFLINE`, у офлайн — `offline: { kioskId, syncedAt, conflict?, seq, signed }` |
+| `queryAttempts` / `exportAttempts` | `GET /access/api/v1/attempts?from&to&checkpoint&worker&decision&reason&source&direction&cursor&limit` **[есть]** → `{ items, page: { next, total } }`, `GET …/attempts.csv` **[новый]** | `source = QR|MANUAL|FACE|OFFLINE`, у офлайн — `offline: { kioskId, syncedAt, conflict?, seq, signed }` |
 | `queryShiftRows` | `GET /shift/api/v1/shifts/day?day&q&filter&cursor` **[новый]** | план/факт на день, `filter = all|planned|unplanned`: `{ worker, shift?, intervals: [{ start, end? }] }` |
 | `upsertShift` / `deleteShift` | `POST|PATCH|DELETE /shift/api/v1/shifts` **[есть]** | |
 | `assignSchedule` | `POST /shift/api/v1/shifts/bulk` **[изменить]** | `{ workerIds, from, to, days: [{ weekday: 0..6 (0 = Пн), start, end }] }` → `{ created }`. **Своё время на каждый день недели** (ADR-046); смены в эти дни заменяются; `start < end`, иначе `422`, «Конец смены должен быть позже начала» |

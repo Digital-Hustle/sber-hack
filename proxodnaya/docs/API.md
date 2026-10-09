@@ -16,7 +16,7 @@
 ## Worker (device-токен; профиль — people, смены и поток — shift, история — access)
 - **QR без запроса к серверу**: `v1.<workerId>.<deviceId>.<window>.<sig>`, `window = floor(unixTime / 30)`, `sig = base64url(ECDSA-P256-SHA256("v1|workerId|deviceId|window"))` в формате WebCrypto (P1363, r‖s, 64 байта; DER тоже принимается). Как в BACKEND-CONTRACT.md и песочнице. Телефон перерисовывает QR каждые 30 с с таймером; часы сверяет по `serverTime` при онлайне.
 - `GET /worker/me` → статус: на объекте, зона, смена, отработано сегодня
-- `GET /worker/attempts?limit=` — история с причинами
+- **[есть, ACC-11]** `GET /access/api/v1/worker/attempts?cursor&limit` (WORKER) — своя история (рабочий из токена) с причинами, формат как у `GET /attempts`
 - `GET /worker/shifts?from&to`
 - `POST /worker/heartbeat` `{lat, lon, accuracy}`
 - `DELETE /worker/me/device` — сотрудник отвязывает свой телефон («Выйти с этого телефона»)
@@ -26,10 +26,12 @@
 ## Kiosk (access: `/access/api/v1/kiosk/...`; роль GUARD + подпись ключом киоска)
 - `POST /kiosk/attempts` `{qr, checkpointId}` → `ScanRs` = `{kind: "decision", result: DecisionRs}` | `{kind: "challenge", token, challenge: {kind: turn-left|turn-right|blink|nod, text, timeoutMs}, worker: {id, fullName, position, contractor}}`. Направление выводит сервер (ADR-037): внутри и вход моложе `PRESENCE_TTL` (16 ч) → OUT, иначе IN. Успешный проход того же человека меньше 30 с назад → `REPEAT_SCAN`. `checkpointId` в теле временно — до подписи запросов киоска (ACC-12), потом берётся из ключа киоска.
 - `POST /kiosk/attempts/{token}/frames` `{frames: [base64 jpeg]}` → `DecisionRs = {attemptId, decision: ALLOW|DENY, code, message, hint, worker?, direction, score?, ts}`. Токен одноразовый (повтор → 404). На этом шаге QR гасится при любом итоге (один QR — один челлендж); тот же QR, уже погашенный на другом киоске → `QR_REUSED`. Выход не требует смены и допуска.
+- **[есть, ACC-13]** `POST /kiosk/manual` (GUARD) `{workerId, checkpointId, note (3..500)}` → `DecisionRs` с `decision: MANUAL`, `code: MANUAL_GUARD`, `source=MANUAL`. Снимает проверки QR, лица и смены, но не блокировку (`WORKER_BLOCKED`); направление — сервер, как у киоска; причина и охранник (`sub` токена) — в журнале. Неизвестные рабочий/проходная → 404, people недоступен → `SYSTEM_ERROR`.
+- Anti-passback **[есть, ACC-09]**: присутствие блокируется в транзакции решения; если за время челленджа направление сменилось (второй киоск успел пропустить) → `ALREADY_INSIDE` / `NOT_INSIDE`. Вместимость зоны (`ZONE_FULL`) — ACC-17.
 - `POST /security/journal/verify` (SECURITY_OFFICER, ADMIN) → `{ok, checked, brokenAt?}` — проверка hash-chain журнала.
 
 - `GET /kiosk/offline-snapshot` → `{issuedAt, expiresAt, workers: [{id, name, photoThumb, devices: [{deviceId, publicKeyJwk}], shiftWindow, permitsValidUntil}], codes?: {service?, guard?}, signature}` (ADR-029, только при `OFFLINE_MODE_ENABLED`; `codes` — PBKDF2-хэши кодов терминала `{salt, hash, iter, digits}`, чтобы код охранника проверялся без связи)
-- `POST /kiosk/identify` `{frames}` → решение (режим «Сначала лицо», 1:N со строгим порогом); `POST /kiosk/manual` `{workerId, note}` → `MANUAL_GUARD`
+- `POST /kiosk/identify` `{frames}` → решение (режим «Сначала лицо», 1:N со строгим порогом)
 - `POST /kiosk/offline-attempts` `{attempts: [{localId, ts, qr, direction, guardDecision, guardReason, prevHash, hash}]}` → `{accepted, conflicts: [...]}`
 
 ## Admin / Manager (people: workers/zones/checkpoints/staff; access: attempts/security; shift: shifts/intervals/analytics/reports/stream/alerts; assistant)
@@ -40,7 +42,7 @@
   - **[предложено, ADR-047 песочницы]** правка и удаление (только ADMIN, иначе `403`): `PATCH /sites/{id}` `{name?, address?}`, `PATCH /zones/{id}` `{name?, capacity?, siteId?}` (перенос в другой объект), `PATCH /checkpoints/{id}` `{name?, zoneId?, mode?: AUTO|IN|OUT}` (`mode` может менять и SECURITY_OFFICER). `DELETE /sites/{id}` → `409 SITE_NOT_EMPTY`, пока есть зоны; `DELETE /zones/{id}` → `409 ZONE_HAS_CHECKPOINTS` / `ZONE_NOT_EMPTY` (люди внутри), иначе `204 {permitsRemoved}` и допуск снимается у всех; `DELETE /checkpoints/{id}` — мягкое удаление, имя остаётся в журнале, привязанные киоски получают новый код сопряжения → `{kiosksUnpaired}`. Имена без учёта регистра: объект — в базе, зона — в объекте, проходная — в базе → `409 NAME_TAKEN`; длина 2–80, вместимость 1–100 000 → `422`. Подсказки до удаления: `GET /zones/{id}/usage` → `{checkpoints, permits, inside}`. Каждое изменение — в `GET /staff/access-log` (`action: OBJECT|WORKER, detail`)
 - Допуски рабочего **[есть, PPL-08]**: в `POST|PATCH /workers` поля `zoneIds: uuid[]` и `permits: [{type: BRIEFING|MEDICAL, validUntil: YYYY-MM-DD}]` (заменяются целиком); в `WorkerRs` — `zoneIds`, `permits`, `permitUntil` (ближайший срок; нет допусков → `null` → access отказывает `PERMIT_EXPIRED`)
 - `GET|POST /shifts`, `POST /shifts/bulk` `{workerIds, from, to, days: [{weekday 0..6 (0=Пн), start, end}]}` (своё время на каждый день недели), `GET|POST /shift-templates`
-- `GET /attempts?from&to&checkpoint&worker&decision&reason&source`
+- **[есть, ACC-11]** `GET /access/api/v1/attempts?from&to&checkpoint&worker&decision&reason&source&direction&cursor&limit` (ADMIN/MANAGER/SECURITY_OFFICER) → `{items: AttemptRs[], page: {next, total}}`, новые сверху, keyset-курсор, `limit` 1..200 (по умолчанию 50), `from` включительно, `to` — нет; неверный параметр → 400 `VALIDATION_ERROR`. `AttemptRs = {id, ts, checkpointId, zoneId, direction, workerId, decision, code, message, source, score, latencyMs, note?, guardId?}`. Миниатюры кадров — нет: снимок в журнал пока не пишется
 - `GET /intervals?from&to&worker&zone`
 - `GET /analytics/summary|hours|late-overtime|refusals|load-by-hour|occupancy` (+ общие фильтры)
 - `GET /reports/timesheet.xlsx?from&to&contractor`
