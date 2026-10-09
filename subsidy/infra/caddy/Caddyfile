@@ -20,8 +20,11 @@
 	}
 
 	# Внутренние эндпоинты снаружи закрыты (rules.md §2)
+	# respond вне handle выполняется после handle (порядок директив Caddy) — SPA отдала бы 200, поэтому handle.
 	@internal path /internal/* /*/internal/* /ocr/*
-	respond @internal 404
+	handle @internal {
+		respond 404
+	}
 
 	@api path /package/* /docproc/* /rules/* /assistant/* /actuator/health
 	handle @api {
