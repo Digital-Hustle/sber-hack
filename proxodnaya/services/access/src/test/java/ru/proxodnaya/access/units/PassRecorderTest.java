@@ -2,6 +2,7 @@ package ru.proxodnaya.access.units;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -48,14 +49,14 @@ class PassRecorderTest {
         when(presence.lockDirection("w1", NOW, TTL)).thenReturn(Direction.OUT);
 
         // when
-        PassRecord saved = recorder.finish(allow(Direction.IN));
+        PassRecord saved = recorder.finish(allow(Direction.IN), null);
 
         // then
         assertThat(saved.decision()).isEqualTo(Decision.DENY);
         assertThat(saved.code()).isEqualTo(ReasonCode.ALREADY_INSIDE);
         assertThat(saved.details()).containsEntry("computedCode", "OK");
         verify(journal).append(saved);
-        verify(presence, never()).apply(any(), any(), any());
+        verify(presence, never()).apply(any(), any(), any(), any());
     }
 
     @Test
@@ -65,11 +66,11 @@ class PassRecorderTest {
         when(presence.lockDirection("w1", NOW, TTL)).thenReturn(Direction.IN);
 
         // when
-        PassRecord saved = recorder.finish(allow(Direction.OUT));
+        PassRecord saved = recorder.finish(allow(Direction.OUT), null);
 
         // then
         assertThat(saved.code()).isEqualTo(ReasonCode.NOT_INSIDE);
-        verify(presence, never()).apply(any(), any(), any());
+        verify(presence, never()).apply(any(), any(), any(), any());
     }
 
     @Test
@@ -79,11 +80,41 @@ class PassRecorderTest {
         when(presence.lockDirection("w1", NOW, TTL)).thenReturn(Direction.IN);
 
         // when
-        PassRecord saved = recorder.finish(allow(Direction.IN));
+        PassRecord saved = recorder.finish(allow(Direction.IN), null);
 
         // then
         assertThat(saved.decision()).isEqualTo(Decision.ALLOW);
-        verify(presence).apply("w1", Direction.IN, NOW);
+        verify(presence).apply("w1", "z1", Direction.IN, NOW);
+    }
+
+    @Test
+    void finish_entryIntoFullZone_zoneFullWithoutPresenceChange() {
+        // given
+        when(qrUses.consume(anyString(), anyLong(), any(), any())).thenReturn(true);
+        when(presence.lockDirection("w1", NOW, TTL)).thenReturn(Direction.IN);
+        when(presence.zoneFull("z1", 2, "w1", NOW, TTL)).thenReturn(true);
+
+        // when
+        PassRecord saved = recorder.finish(allow(Direction.IN), 2);
+
+        // then
+        assertThat(saved.decision()).isEqualTo(Decision.DENY);
+        assertThat(saved.code()).isEqualTo(ReasonCode.ZONE_FULL);
+        verify(presence, never()).apply(any(), any(), any(), any());
+    }
+
+    @Test
+    void finish_exitFromZoneWithCapacity_noCapacityCheck() {
+        // given
+        when(qrUses.consume(anyString(), anyLong(), any(), any())).thenReturn(true);
+        when(presence.lockDirection("w1", NOW, TTL)).thenReturn(Direction.OUT);
+
+        // when
+        PassRecord saved = recorder.finish(allow(Direction.OUT), 1);
+
+        // then
+        assertThat(saved.decision()).isEqualTo(Decision.ALLOW);
+        verify(presence, never()).zoneFull(any(), anyInt(), any(), any(), any());
     }
 
     @Test
@@ -92,7 +123,7 @@ class PassRecorderTest {
         when(qrUses.consume(anyString(), anyLong(), any(), any())).thenReturn(false);
 
         // when
-        PassRecord saved = recorder.finish(allow(Direction.IN));
+        PassRecord saved = recorder.finish(allow(Direction.IN), null);
 
         // then
         assertThat(saved.code()).isEqualTo(ReasonCode.QR_REUSED);
@@ -113,7 +144,7 @@ class PassRecorderTest {
         assertThat(saved.direction()).isEqualTo(Direction.OUT);
         assertThat(saved.code()).isEqualTo(ReasonCode.MANUAL_GUARD);
         verify(qrUses, never()).consume(any(), anyLong(), any(), any());
-        verify(presence).apply("w1", Direction.OUT, NOW);
+        verify(presence).apply("w1", "z1", Direction.OUT, NOW);
         verify(outbox).add(any(), eq("PassDecided"), eq("w1"), any());
     }
 

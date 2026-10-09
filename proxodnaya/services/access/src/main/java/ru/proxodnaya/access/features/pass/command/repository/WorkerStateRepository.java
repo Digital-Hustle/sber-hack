@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import ru.proxodnaya.access.features.pass.model.Presence;
@@ -17,6 +18,7 @@ import ru.proxodnaya.access.jooq.Tables;
 public class WorkerStateRepository {
 
     private static final ru.proxodnaya.access.jooq.tables.WorkerState WORKER_STATE = Tables.WORKER_STATE;
+    private static final String ZONE_LOCK = "zone:";
 
     private final DSLContext dsl;
 
@@ -68,21 +70,49 @@ public class WorkerStateRepository {
     }
 
     /**
+     * Сериализует входы в зону до конца транзакции ({@code pg_advisory_xact_lock}): два киоска не займут последнее
+     * место одновременно.
+     *
+     * @param zoneId зона
+     */
+    public void lockZone(String zoneId) {
+        dsl.execute("select pg_advisory_xact_lock(hashtext({0}))", DSL.val(ZONE_LOCK + zoneId));
+    }
+
+    /**
+     * Сколько человек внутри зоны: отмечен вход не раньше {@code freshSince}, выхода нет.
+     *
+     * @param zoneId     зона
+     * @param freshSince граница свежести входа
+     * @param exceptId   рабочий, которого не считать
+     * @return число
+     */
+    public int insideZone(String zoneId, Instant freshSince, String exceptId) {
+        return dsl.fetchCount(WORKER_STATE, WORKER_STATE.INSIDE.isTrue()
+                .and(WORKER_STATE.ZONE_ID.eq(zoneId))
+                .and(WORKER_STATE.LAST_IN_AT.ge(freshSince.atOffset(ZoneOffset.UTC)))
+                .and(WORKER_STATE.WORKER_ID.ne(exceptId)));
+    }
+
+    /**
      * Отмечает вход.
      *
      * @param workerId рабочий
-     * @param moment       время прохода
+     * @param zoneId   зона
+     * @param moment   время прохода
      */
-    public void markIn(String workerId, Instant moment) {
+    public void markIn(String workerId, String zoneId, Instant moment) {
         OffsetDateTime stamp = moment.atOffset(ZoneOffset.UTC);
         dsl.insertInto(WORKER_STATE)
                 .set(WORKER_STATE.WORKER_ID, workerId)
                 .set(WORKER_STATE.INSIDE, true)
+                .set(WORKER_STATE.ZONE_ID, zoneId)
                 .set(WORKER_STATE.LAST_IN_AT, stamp)
                 .set(WORKER_STATE.UPDATED_AT, stamp)
                 .onConflict(WORKER_STATE.WORKER_ID)
                 .doUpdate()
                 .set(WORKER_STATE.INSIDE, true)
+                .set(WORKER_STATE.ZONE_ID, zoneId)
                 .set(WORKER_STATE.LAST_IN_AT, stamp)
                 .set(WORKER_STATE.UPDATED_AT, stamp)
                 .execute();

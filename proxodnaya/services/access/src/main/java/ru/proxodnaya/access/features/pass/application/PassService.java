@@ -160,13 +160,18 @@ public class PassService {
         }
         CompletableFuture<FaceResult> faceF = async(() -> face.verify(pending.workerId(), frames, pending.action()));
         CompletableFuture<Optional<WorkerProfile>> profileF = async(() -> people.accessProfile(pending.workerId()));
-        CompletableFuture<Optional<ActiveShift>> shiftF = pending.direction() == Direction.IN
+        boolean entry = pending.direction() == Direction.IN;
+        CompletableFuture<Optional<ActiveShift>> shiftF = entry
                 ? async(() -> shift.activeShift(pending.workerId(), now))
                 : CompletableFuture.completedFuture(Optional.empty());
+        CompletableFuture<Integer> capacityF = entry
+                ? async(() -> people.zoneCapacity(pending.checkpointId()))
+                : CompletableFuture.completedFuture(null);
         List<String> failed = new ArrayList<>();
         FaceResult faceResult = join(faceF, FACE, failed);
         Optional<WorkerProfile> profile = Optional.ofNullable(join(profileF, PEOPLE, failed)).flatMap(opt -> opt);
         Optional<ActiveShift> activeShift = Optional.ofNullable(join(shiftF, SHIFT, failed)).flatMap(opt -> opt);
+        Integer capacity = join(capacityF, PEOPLE, failed);
         PassContext ctx = new PassContext(pending.direction(), pending.deviceId(), pending.zoneId(), profile.orElse(null), faceResult,
                 activeShift.orElse(null), failed.isEmpty() ? null : String.join(",", failed),
                 LocalDate.ofInstant(now, props.siteZone()));
@@ -179,7 +184,7 @@ public class PassService {
             details.put("faceQuality", faceResult.quality());
             details.put("faceReason", faceResult.reason());
         }
-        PassRecord saved = recorder.finish(record(pending, now, decision, faceResult, details));
+        PassRecord saved = recorder.finish(record(pending, now, decision, faceResult, details), capacity);
         return outcome(saved, profile.map(WorkerPreview::of).orElse(null));
     }
 
@@ -233,7 +238,9 @@ public class PassService {
         try {
             return future.join();
         } catch (CompletionException error) {
-            failed.add(name);
+            if (!failed.contains(name)) {
+                failed.add(name);
+            }
             return null;
         }
     }

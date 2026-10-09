@@ -6,7 +6,8 @@
 - Поток прохода end-to-end: скан QR → челлендж → кадры → решение; гашение QR + журнал + присутствие + outbox в одной транзакции (`PassRecorder`).
 - Есть: ручной проход охранника, журнал `/attempts` с keyset-курсором, зона проходной из people, симулятор (ACC-14).
 - Симулятор: `PassRecorder.simulated` — журнал + `access.pass.v1` с `source=SIMULATOR`, присутствие не трогает; флаг `SIMULATOR_ENABLED`.
-- Нет: circuit breaker, подпись киоска (ACC-12, `checkpointId` в теле), офлайн (ACC-15), `/internal/access/stats` (ACC-16), `ZONE_FULL` (ACC-17).
+- Вместимость (ACC-17): `worker_state.zone_id` + `PresenceService.zoneFull` под `pg_advisory_xact_lock` зоны в `PassRecorder.finish`; `capacity` — `zoneCapacity` из `/internal/people/checkpoints/{id}` при кадрах входа.
+- Нет: circuit breaker, подпись киоска (ACC-12, `checkpointId` в теле), офлайн (ACC-15), `/internal/access/stats` (ACC-16).
 
 ## 2. Карта сервиса
 | Путь | Что |
@@ -45,3 +46,4 @@
 - 2026-10-09 · miroslavrov · feat(access): ACC-06 service-токен (OAuth2 client-credentials, клиент svc-access) на клиентах face/people/shift; зона пункта пропуска из people (`/internal/people/checkpoints/{id}`) → NO_ZONE_PERMIT, zone_id в попытках и PassDecided
 - 2026-10-09 · KIRI4444, miroslavrov · feat(access): ACC-09/11/13 — anti-passback под блокировкой присутствия, журнал `GET /attempts` и `/worker/attempts` (keyset-курсор, `{items, page}`), ручной проход `POST /kiosk/manual` (MANUAL_GUARD, присутствие, охранник и причина в журнале)
 - 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)
+- 2026-10-09 · miroslavrov (агент) · feat: ACC-17 вместимость зоны → `ZONE_FULL` (`worker_state.zone_id`, блокировка зоны, `zoneCapacity` от people) (#PR)

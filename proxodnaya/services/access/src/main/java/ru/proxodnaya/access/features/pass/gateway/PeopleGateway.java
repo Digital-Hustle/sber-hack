@@ -22,6 +22,7 @@ public class PeopleGateway {
 
     private static final String FAILED = "people ответил ";
     private static final String EMPTY = "people вернул пустой ответ";
+    private static final String CHECKPOINT_URI = "/internal/people/checkpoints/{id}";
 
     private final RestClient client;
 
@@ -67,8 +68,22 @@ public class PeopleGateway {
      * @return зона или пусто, если проходной нет
      */
     public Optional<String> checkpointZone(String checkpointId) {
-        CheckpointRs body = client.get()
-                .uri("/internal/people/checkpoints/{id}", checkpointId)
+        return checkpoint(checkpointId).map(CheckpointRs::zoneId);
+    }
+
+    /**
+     * Вместимость зоны, куда ведёт проходная (FR-08, ACC-17).
+     *
+     * @param checkpointId проходная
+     * @return вместимость или {@code null} — без ограничения (или проходной нет: её отсекает скан)
+     */
+    public Integer zoneCapacity(String checkpointId) {
+        return checkpoint(checkpointId).map(CheckpointRs::zoneCapacity).orElse(null);
+    }
+
+    private Optional<CheckpointRs> checkpoint(String checkpointId) {
+        return Optional.ofNullable(client.get()
+                .uri(CHECKPOINT_URI, checkpointId)
                 .exchange((request, response) -> {
                     if (response.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
                         return null;
@@ -77,11 +92,10 @@ public class PeopleGateway {
                         throw new IllegalStateException(FAILED + response.getStatusCode().value());
                     }
                     return Objects.requireNonNull(response.bodyTo(CheckpointRs.class), EMPTY);
-                });
-        return Optional.ofNullable(body).map(CheckpointRs::zoneId);
+                }));
     }
 
-    private record CheckpointRs(String id, String zoneId) {
+    private record CheckpointRs(String id, String zoneId, Integer zoneCapacity) {
     }
 
     private record ProfileRs(String status, String fullName, String position, String contractor,

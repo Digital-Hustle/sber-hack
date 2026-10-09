@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import ru.proxodnaya.people.api.constants.PathConstants;
 import ru.proxodnaya.people.api.dto.response.AccessProfileRs;
-import ru.proxodnaya.people.api.dto.response.CheckpointRs;
+import ru.proxodnaya.people.api.dto.response.InternalCheckpointRs;
 
 /**
  * Внутренний API для access (PPL-08). Gateway наружу {@code /internal/**} не пускает; нужна роль сервиса.
@@ -32,13 +32,13 @@ public interface InternalController {
     AccessProfileRs accessProfile(@PathVariable UUID id);
 
     /**
-     * Проходная: в какую зону ведёт.
+     * Проходная: в какую зону ведёт и вместимость зоны (ACC-17).
      *
      * @param id проходная
-     * @return проходная
+     * @return проходная; 404 — нет
      */
     @Operation(summary = "Проходная для access")
     @GetMapping(PathConstants.INTERNAL_CHECKPOINT)
     @PreAuthorize("hasRole('SVC_ACCESS')")
-    CheckpointRs checkpoint(@PathVariable UUID id);
+    InternalCheckpointRs checkpoint(@PathVariable UUID id);
 }
