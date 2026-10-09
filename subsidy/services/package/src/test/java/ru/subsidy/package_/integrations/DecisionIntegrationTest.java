@@ -92,7 +92,10 @@ class DecisionIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.decision.decision").value("APPROVE"))
                 .andExpect(jsonPath("$.protocol.completeness").value(100));
-        assertThat(dsl.fetchCount(Tables.OUTBOX, Tables.OUTBOX.MESSAGE_KEY.eq(packageId))).isEqualTo(1);
+        assertThat(dsl.fetchCount(Tables.OUTBOX, Tables.OUTBOX.MESSAGE_KEY.eq(packageId)
+                .and(Tables.OUTBOX.PAYLOAD.cast(String.class).contains("PackageDecided")))).isEqualTo(1);
+        assertThat(dsl.fetchCount(Tables.OUTBOX, Tables.OUTBOX.MESSAGE_KEY.eq(packageId)
+                .and(Tables.OUTBOX.PAYLOAD.cast(String.class).contains("PackageCreated")))).isEqualTo(1);
     }
 
     @Test
