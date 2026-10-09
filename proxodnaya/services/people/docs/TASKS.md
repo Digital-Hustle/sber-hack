@@ -13,5 +13,6 @@
 | PPL-07 | FR-64 | Код сопряжения киоска → ключ киоска, `/auth/kiosk/pair` | B1 | todo |
 | PPL-08 | FR-07 | Допуски: инструктаж/медосмотр со сроком, допуски в зоны; `/internal/.../access-profile` | B1 | done (#7): допуски и зоны в карточке, access-profile, internal checkpoint |
 | PPL-09 | FR-60 | Provisioning персонала в Keycloak (`POST /staff`) | B1 | todo |
-| PPL-10 | NFR-10 | Удаление рабочего: каскад в face, `WorkerDeleted` | B1 | todo |
+| PPL-10 | NFR-10 | Удаление рабочего: каскад в face, `WorkerDeleted` | B1 | review #PR |
 | PPL-11 | FR-65 | `EndpointSecurityMatrixTest`, IDOR-тесты | B1 | todo |
+| PPL-12 | FR-13 | Эталон лица из кабинета: `POST/DELETE /workers/{id}/face`, `POST /workers/face/check` → face, `faceEnrolledAt` в карточке | B1 | review #PR |

@@ -7,6 +7,7 @@ dependencies {
     implementation("org.liquibase:liquibase-core")
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.springframework.kafka:spring-kafka")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")

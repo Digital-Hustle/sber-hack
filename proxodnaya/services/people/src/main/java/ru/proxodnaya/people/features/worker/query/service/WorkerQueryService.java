@@ -1,5 +1,6 @@
 package ru.proxodnaya.people.features.worker.query.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -80,9 +81,10 @@ public class WorkerQueryService {
         List<UUID> ids = workers.stream().map(Worker::id).toList();
         Map<UUID, Set<UUID>> zones = repository.zonesOf(ids);
         Map<UUID, List<Permit>> permits = repository.permitsOf(ids);
+        Map<UUID, Instant> faces = repository.facesOf(ids);
         return workers.stream()
                 .map(worker -> new WorkerView(worker, Set.copyOf(zones.getOrDefault(worker.id(), Set.of())),
-                        List.copyOf(permits.getOrDefault(worker.id(), List.of()))))
+                        List.copyOf(permits.getOrDefault(worker.id(), List.of())), faces.get(worker.id())))
                 .toList();
     }
 }

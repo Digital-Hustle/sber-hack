@@ -6,13 +6,17 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.kafka.KafkaContainer;
 
+import ru.proxodnaya.people.features.worker.gateway.FaceGateway;
+
 /**
  * База для всех *IntegrationTest: Postgres и Kafka в Testcontainers, общие зависимости — protected.
+ * face — внешний сервис: подменён одним моком на все тесты (один контекст Spring).
  */
 @Tag("integration")
 @SpringBootTest
@@ -30,6 +34,9 @@ public abstract class AbstractIntegrationTest {
         POSTGRES.start();
         KAFKA.start();
     }
+
+    @MockitoBean
+    protected FaceGateway face;
 
     @Autowired
     protected MockMvc mockMvc;

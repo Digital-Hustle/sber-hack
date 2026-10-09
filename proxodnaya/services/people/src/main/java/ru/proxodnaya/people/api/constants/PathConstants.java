@@ -11,6 +11,8 @@ public final class PathConstants {
     public static final String BLOCK = "/{id}/block";
     public static final String UNBLOCK = "/{id}/unblock";
     public static final String INVITE = "/{id}/invite";
+    public static final String FACE = "/{id}/face";
+    public static final String FACE_CHECK = "/face/check";
     public static final String DEVICES = "/{id}/devices";
     public static final String DEVICE = "/{id}/devices/{deviceId}";
     public static final String AUTH = API_V1 + "/auth";

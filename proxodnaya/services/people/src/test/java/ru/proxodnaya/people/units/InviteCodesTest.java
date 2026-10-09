@@ -14,7 +14,8 @@ import ru.proxodnaya.people.features.device.command.service.InviteCodes;
 class InviteCodesTest {
 
     private static InviteCodes codes(String pepper) {
-        return new InviteCodes(new PeopleProperties(new PeopleProperties.Invite(Duration.ofHours(1), pepper, "https://x")));
+        return new InviteCodes(new PeopleProperties(new PeopleProperties.Invite(Duration.ofHours(1), pepper, "https://x"),
+                new PeopleProperties.Face("http://face", Duration.ofSeconds(1))));
     }
 
     @Test

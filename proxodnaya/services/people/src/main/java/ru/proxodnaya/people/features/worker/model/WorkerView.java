@@ -1,5 +1,6 @@
 package ru.proxodnaya.people.features.worker.model;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -12,8 +13,9 @@ import java.util.UUID;
  * @param worker  рабочий
  * @param zoneIds зоны, куда есть допуск
  * @param permits допуски со сроком
+ * @param faceEnrolledAt когда заведён эталон лица ({@code null} — нет эталона, проход по лицу невозможен)
  */
-public record WorkerView(Worker worker, Set<UUID> zoneIds, List<Permit> permits) {
+public record WorkerView(Worker worker, Set<UUID> zoneIds, List<Permit> permits, Instant faceEnrolledAt) {
 
     /**
      * Ближайший срок окончания допусков: без них проход закрыт.

@@ -48,6 +48,7 @@ public enum ErrorCode {
 
     // System
     SYSTEM_ERROR,
+    SERVICE_UNAVAILABLE,
 
     // Generic HTTP
     NOT_FOUND,

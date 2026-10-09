@@ -61,7 +61,7 @@ public class WorkerApiMapper {
                 worker.status().name(),
                 view.zoneIds().stream().map(UUID::toString).sorted().toList(),
                 view.permits().stream().map(permit -> new PermitRs(permit.type().name(), permit.validUntil())).toList(),
-                view.permitUntil(), worker.createdAt(), worker.updatedAt());
+                view.permitUntil(), view.faceEnrolledAt(), worker.createdAt(), worker.updatedAt());
     }
 
     /**
