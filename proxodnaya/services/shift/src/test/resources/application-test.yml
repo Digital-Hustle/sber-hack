@@ -10,3 +10,12 @@ spring:
 management:
   tracing:
     enabled: false
+shift:
+  alerts:
+    # правила гоняет сам тест (AlertService.runRules), планировщик — раз в час
+    every: PT1H
+    site-lat: 55.75
+    site-lon: 37.62
+    site-radius: 300
+    crowd-limit: 1
+    crowd-for: 0s

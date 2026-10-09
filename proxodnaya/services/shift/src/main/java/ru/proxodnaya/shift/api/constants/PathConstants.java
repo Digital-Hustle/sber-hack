@@ -22,6 +22,9 @@ public final class PathConstants {
     public static final String STREAM = API + "/stream";
     public static final String TICKET = "/ticket";
     public static final String SITUATION = "/situation";
+    public static final String HEARTBEAT = "/heartbeat";
+    public static final String ALERTS = API + "/alerts";
+    public static final String ACK = "/{id}/ack";
     public static final String REPORTS = API + "/reports";
     public static final String TIMESHEET = "/timesheet.xlsx";
     public static final String INTERNAL_WORKERS = "/internal/shift/workers";
