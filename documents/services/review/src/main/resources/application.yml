@@ -23,11 +23,9 @@ spring:
     async:
       request-timeout: -1
   mail:
-    # общий почтовый узел сервера (../../mail/): без SMTP_HOST письма не уходят
+    # общий почтовый узел сервера (../../mail/), без логина: без SMTP_HOST письма не уходят
     host: ${SMTP_HOST:}
     port: ${SMTP_PORT:587}
-    username: ${SMTP_USER:}
-    password: ${SMTP_PASSWORD:}
     properties:
       mail.smtp.auth: ${SMTP_AUTH:false}
       mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}

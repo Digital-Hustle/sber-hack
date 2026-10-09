@@ -18,7 +18,7 @@ public final class Totp {
     private static final int DIGITS = 1_000_000;
     private static final int LAST = 19;
     private static final int NIBBLE = 0xF;
-    private static final int SIGN = 0x7fffffff;
+    private static final int SIGN = 0x7FFFFFFF;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private Totp() {

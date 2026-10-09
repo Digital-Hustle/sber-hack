@@ -1,6 +1,7 @@
 package ru.documents.review.features.staff.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -26,10 +27,12 @@ public class StaffService {
 
     private final KeycloakAdminGateway keycloak;
     private final StaffMailer mailer;
+    private final Clock clock;
 
-    public StaffService(KeycloakAdminGateway keycloak, StaffMailer mailer) {
+    public StaffService(KeycloakAdminGateway keycloak, StaffMailer mailer, Clock clock) {
         this.keycloak = keycloak;
         this.mailer = mailer;
+        this.clock = clock;
     }
 
     /** Все сотрудники рабочего места, по фамилии. */
@@ -72,7 +75,7 @@ public class StaffService {
         keycloak.create(e, first, last, e, role.realmRoles());
         LOG.info("staff.created role={} by={}", role, actor);
         mailer.invitation(e, first, role.title());
-        return new StaffMember(e, e, first, last, role, true, Instant.now());
+        return new StaffMember(e, e, first, last, role, true, clock.instant());
     }
 
     /**
