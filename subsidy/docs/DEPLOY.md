@@ -4,7 +4,8 @@
 
 ## Сервер
 - **8 vCPU / 32 ГБ RAM / 100 ГБ NVMe**, Ubuntu 24.04 (локальная модель с vision — самое тяжёлое). Без локальной модели (облачный провайдер) хватит 8 vCPU / 16 ГБ. С NVIDIA GPU разбор на локальной модели в 5–10 раз быстрее.
-- Домен или `<ip>.sslip.io`; `auth.` — Keycloak. HTTPS обязателен.
+- Домен или `<ip>.sslip.io`; Keycloak — под `https://<host>/auth` (Caddy, `KC_HTTP_RELATIVE_PATH=/auth`). HTTPS обязателен; без домена — `tls internal` (внутренний CA Caddy).
+- Текущий стенд команды: `217.12.40.215` (Debian 13, 10 CPU, 20 ГБ RAM, 40 ГБ) — общий с кейсом «Документы»: следить за RAM, локальные модели (~11 ГБ) и стенд «Документов» вместе впритык.
 - **Запасной стенд** — ноутбук 32 ГБ с тем же compose и скачанными моделями.
 
 ## Контейнеры (лимиты RAM)
@@ -27,7 +28,10 @@
 2. `git clone` в `/opt/sber-hack` (нужна `subsidy/infra/`), `subsidy/scripts/gen-env.sh` на сервере, вписать хост и ключи моделей.
 3. `docker login ghcr.io` (read-only токен); `docker compose --profile llm-local up -d`; `scripts/smoke.sh https://<host>`.
 
-## CI (`.github/workflows/subsidy-ci.yml`)
+## CI на сервере (основной, ADR-017)
+GitHub Actions сейчас не стартуют (биллинг аккаунта), поэтому те же шаги гоняет `/root/sub-ci/run.sh pr-N` на сервере (под `flock`, своя БД `sub-pg` на 5434) и ставит commit status `server-ci`. Мерж — при зелёном `server-ci`. Подробно — в handoff агентов и `docs/WORKFLOW.md`.
+
+## CI (`.github/workflows/subsidy-ci.yml`, когда Actions снова доступны)
 На PR и push в `main` с изменениями `subsidy/**`: changes → services (матрица изменённых: Java — Postgres service, Liquibase, jOOQ, `check`, be-check, контракт; Python ocr — ruff, mypy, pytest) → frontend (`gen:api`, токены, lint, typecheck, build, fsd-check) → eval (синтетика, если есть `eval/run.py`) → security (gitleaks по истории, `subsidy/scripts/guard.sh`, Trivy) → infra (`compose config`) → smoke (только `main`).
 
 ## CD (`.github/workflows/subsidy-deploy.yml`)
