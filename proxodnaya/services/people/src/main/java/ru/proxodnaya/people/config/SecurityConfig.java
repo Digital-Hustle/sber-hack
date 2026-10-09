@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -19,10 +20,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
 
 import ru.proxodnaya.common.security.CurrentUser;
+import ru.proxodnaya.common.security.TrustedIssuers;
 import ru.proxodnaya.people.api.constants.PathConstants;
 
 /**
- * Resource server: JWT Keycloak, роли из {@code realm_access.roles} → {@code ROLE_*} (docs/SECURITY.md).
+ * Resource server: JWT двух издателей — Keycloak и people (ADR-040), роли из {@code realm_access.roles} → {@code ROLE_*}
+ * (docs/SECURITY.md).
  */
 @Configuration
 @EnableWebSecurity
@@ -30,16 +33,21 @@ import ru.proxodnaya.people.api.constants.PathConstants;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, Environment env) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/v3/api-docs/**").permitAll()
                         // рабочего без пароля подтверждает одноразовый инвайт; rate-limit — на gateway (GW-05)
                         .requestMatchers(HttpMethod.POST, PathConstants.AUTH + PathConstants.ACTIVATE).permitAll()
+                        // device-токен: телефон подтверждает себя подписью challenge (PPL-05)
+                        .requestMatchers(HttpMethod.POST, PathConstants.AUTH + PathConstants.DEVICE_CHALLENGE,
+                                PathConstants.AUTH + PathConstants.DEVICE_TOKEN).permitAll()
+                        // открытые ключи токенов people — для gateway и сервисов во внутренней сети
+                        .requestMatchers(HttpMethod.GET, PathConstants.INTERNAL + PathConstants.JWKS).permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(csrf -> csrf.disable())
-                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(realmRoles())));
+                .oauth2ResourceServer(oauth -> oauth.authenticationManagerResolver(TrustedIssuers.resolver(env, realmRoles())));
         return http.build();
     }
 

@@ -12,3 +12,7 @@ management:
     enabled: false
 assistant:
   api-key: ""
+proxodnaya:
+  security:
+    people-issuer: ""
+    people-jwks-uri: ""

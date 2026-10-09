@@ -19,3 +19,7 @@ shift:
     site-radius: 300
     crowd-limit: 1
     crowd-for: 0s
+proxodnaya:
+  security:
+    people-issuer: ""
+    people-jwks-uri: ""

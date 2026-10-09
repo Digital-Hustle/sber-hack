@@ -8,6 +8,7 @@ import ru.proxodnaya.people.api.controller.InternalController;
 import ru.proxodnaya.people.api.dto.response.AccessProfileRs;
 import ru.proxodnaya.people.api.dto.response.CheckpointRs;
 import ru.proxodnaya.people.api.dto.response.InternalCheckpointRs;
+import ru.proxodnaya.people.api.dto.response.JwksRs;
 import ru.proxodnaya.people.api.dto.response.WorkerRs;
 import ru.proxodnaya.people.api.mapper.SiteApiMapper;
 import ru.proxodnaya.people.api.mapper.WorkerApiMapper;
@@ -15,6 +16,7 @@ import ru.proxodnaya.people.features.device.model.Device;
 import ru.proxodnaya.people.features.device.query.service.DeviceQueryService;
 import ru.proxodnaya.people.features.site.model.Checkpoint;
 import ru.proxodnaya.people.features.site.query.service.SiteQueryService;
+import ru.proxodnaya.people.features.token.api.TokenIssuer;
 import ru.proxodnaya.people.features.worker.query.service.WorkerQueryService;
 
 /**
@@ -28,14 +30,16 @@ public class InternalControllerImpl implements InternalController {
     private final SiteQueryService sites;
     private final WorkerApiMapper workerMapper;
     private final SiteApiMapper siteMapper;
+    private final TokenIssuer issuer;
 
     public InternalControllerImpl(WorkerQueryService workers, DeviceQueryService devices, SiteQueryService sites,
-                                  WorkerApiMapper workerMapper, SiteApiMapper siteMapper) {
+                                  WorkerApiMapper workerMapper, SiteApiMapper siteMapper, TokenIssuer issuer) {
         this.workers = workers;
         this.devices = devices;
         this.sites = sites;
         this.workerMapper = workerMapper;
         this.siteMapper = siteMapper;
+        this.issuer = issuer;
     }
 
     @Override
@@ -52,5 +56,10 @@ public class InternalControllerImpl implements InternalController {
         Checkpoint checkpoint = sites.checkpoint(id);
         CheckpointRs view = siteMapper.toRs(checkpoint);
         return new InternalCheckpointRs(view.id(), view.zoneId(), view.siteId(), view.name(), sites.zoneCapacity(checkpoint.zoneId()));
+    }
+
+    @Override
+    public JwksRs jwks() {
+        return new JwksRs(issuer.publicKeys());
     }
 }

@@ -91,3 +91,9 @@ management:
 springdoc:
   api-docs:
     path: /v3/api-docs
+
+proxodnaya:
+  security:
+    # издатель токенов people: телефоны рабочих и персонал по коду из письма (ADR-040); ключи — из внутренней сети
+    people-issuer: ${PEOPLE_TOKEN_ISSUER}
+    people-jwks-uri: ${PEOPLE_JWKS_URI}

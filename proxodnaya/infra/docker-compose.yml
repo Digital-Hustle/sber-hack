@@ -18,6 +18,9 @@ x-java: &java
     OIDC_ISSUER_URI: https://${PUBLIC_HOST}/auth/realms/proxodnaya
     OIDC_JWKS_URI: http://keycloak:8080/auth/realms/proxodnaya/protocol/openid-connect/certs
     OIDC_TOKEN_URI: http://keycloak:8080/auth/realms/proxodnaya/protocol/openid-connect/token
+    # второй издатель (ADR-040): people — device-токены телефонов и сессии персонала; JWKS из внутренней сети
+    PEOPLE_TOKEN_ISSUER: https://${PUBLIC_HOST}/people
+    PEOPLE_JWKS_URI: http://people:8081/internal/people/jwks
     OTLP_ENDPOINT: ${OTLP_ENDPOINT:-http://jaeger:4318/v1/traces}
     SITE_ZONE: ${SITE_ZONE:-Europe/Moscow}
     PRESENCE_TTL: ${PRESENCE_TTL:-16h}
@@ -163,6 +166,8 @@ services:
       INVITE_PEPPER: ${INVITE_PEPPER}
       INVITE_TTL: ${INVITE_TTL:-72h}
       PUBLIC_URL: https://${PUBLIC_HOST}
+      DEVICE_TOKEN_SIGNING_KEY: ${DEVICE_TOKEN_SIGNING_KEY}
+      DEVICE_TOKEN_TTL: ${DEVICE_TOKEN_TTL:-10m}
 
   access:
     <<: *java
