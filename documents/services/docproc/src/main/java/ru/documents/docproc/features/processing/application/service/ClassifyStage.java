@@ -111,6 +111,11 @@ public class ClassifyStage {
         if (multi && !Stages.UNKNOWN.equals(type)) {
             segment(out, r.json().path("segments"), type, pageNumbers, codes, registry);
         }
+        String quality = text.path("qualityReason").asText("");
+        if (Stages.UNKNOWN.equals(type) && !quality.isEmpty()) {
+            // снимок плохой, текста нет и модель документ не узнала: просим переснять с причиной, а не «тип не определён»
+            return new StepOutcome(out, results.unreadable(text, quality));
+        }
         if (Stages.UNKNOWN.equals(type) || conf < props.classifyMinConfidence()) {
             out.put("ms", 0);
             Map<String, JsonNode> all = new java.util.HashMap<>(outputs);
