@@ -1,4 +1,4 @@
-# Единая точка входа: фронт, Keycloak под /auth, API через gateway (добавится с сервисом gateway).
+# Единая точка входа: фронт, Keycloak под /auth, API через gateway.
 {
 	admin 127.0.0.1:2019
 }
@@ -18,6 +18,13 @@
 	# Внутренние эндпоинты снаружи закрыты (rules.md §2)
 	@internal path /internal/* /*/internal/* /ocr/*
 	respond @internal 404
+
+	@api path /package/* /docproc/* /rules/* /assistant/* /actuator/health
+	handle @api {
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
 
 	handle /auth/* {
 		reverse_proxy keycloak:8080
