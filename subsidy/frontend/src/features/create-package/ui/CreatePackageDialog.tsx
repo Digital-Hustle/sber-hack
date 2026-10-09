@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FolderPlus } from "lucide-react";
 import { packageApi, packageKeys } from "@/entities/package";
@@ -12,7 +12,14 @@ const INN_RE = /^\d{10}$|^\d{12}$/;
 
 /** FE-PK-01: ИНН (контрольную сумму проверяет сервер) + программа → пакет, Idempotency-Key от двойного клика. */
 export const CreatePackageButton = () => {
-  const [open, setOpen] = useState(false);
+  const [local, setLocal] = useState(false);
+  const [sp, setSp] = useSearchParams();
+  // «Новый пакет» в шапке ведёт сюда с ?new=1 — диалог открывается сразу
+  const open = local || sp.has("new");
+  const setOpen = (v: boolean) => {
+    setLocal(v);
+    if (!v && sp.has("new")) setSp((p) => { const n = new URLSearchParams(p); n.delete("new"); return n; }, { replace: true });
+  };
   const [inn, setInn] = useState("");
   const [program, setProgram] = useState("");
   const nav = useNavigate();
@@ -28,7 +35,7 @@ export const CreatePackageButton = () => {
   const valid = INN_RE.test(inn) && !!chosen;
   return (
     <>
-      <Button onClick={() => setOpen(true)}><FolderPlus />Новый пакет</Button>
+      <Button variant="brand" className="hidden md:inline-flex" onClick={() => setOpen(true)}><FolderPlus />Новый пакет</Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Новый пакет" description="Пакет документов организации на субсидию"
         footer={<Button disabled={!valid || create.isPending} onClick={() => create.mutate()}>{create.isPending ? "Создаём…" : "Создать"}</Button>}>
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); if (valid) create.mutate(); }}>

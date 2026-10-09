@@ -1,65 +1,101 @@
 import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { LogIn, LogOut, ShieldCheck } from "lucide-react";
-import { useSession, useSpecialistAuth, can, roleLabel, type Perm } from "@/entities/session";
-import { Avatar, Button, Card, Dialog, EmptyState, HeaderBar, Logo, NavTrack, OfflineBanner, PreferencesButton, Spinner, Status } from "@/shared/ui";
+import { FolderOpen, CalendarClock, BarChart3, ListChecks, MoreHorizontal, Home, ChevronRight, UserCog, LogOut, Repeat2, ShieldCheck, FolderPlus } from "lucide-react";
+import { useSession, useSpecialistAuth, forgetLogin, can, roleLabel, type Perm } from "@/entities/session";
+import { Avatar, Button, Dialog, EmptyState, HeaderBar, Logo, NavTrack, OfflineBanner, PreferencesButton, Spinner, Status, ThemePicker, TrackIndicator, useTrackIndicator } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
-import { pageIn } from "@/shared/config/motion";
+import { cn } from "@/shared/lib";
+import { duration, pageIn, press } from "@/shared/config/motion";
 import { ModelStatusBadge } from "./ModelStatusBadge";
+import { SignIn } from "./SignIn";
 
-const NAV: { to: string; label: string; perm: Perm }[] = [
-  { to: routes.packages, label: "Пакеты", perm: "stats" },
-  { to: routes.expiring, label: "Истекающие", perm: "stats" },
-  { to: routes.stats, label: "Частые ошибки", perm: "stats" },
-  { to: routes.programs, label: "Программы", perm: "stats" },
+const NAV: { to: string; label: string; short: string; icon: typeof FolderOpen; perm: Perm }[] = [
+  { to: routes.packages, label: "Пакеты", short: "Пакеты", icon: FolderOpen, perm: "stats" },
+  { to: routes.expiring, label: "Истекающие", short: "Сроки", icon: CalendarClock, perm: "stats" },
+  { to: routes.stats, label: "Частые ошибки", short: "Ошибки", icon: BarChart3, perm: "stats" },
+  { to: routes.programs, label: "Программы", short: "Программы", icon: ListChecks, perm: "stats" },
 ];
 
-const SignIn = ({ onSignIn }: { onSignIn: () => void }) => (
-  <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center px-4">
-    <Card className="p-6 sm:p-8">
-      <Logo sub="специалист" />
-      <h1 className="mt-6 font-display text-2xl font-semibold tracking-display">Вход для специалистов</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Единый вход через корпоративную учётную запись (Keycloak). Права проверяет сервер.</p>
-      <Button size="lg" block className="mt-6" onClick={onSignIn}><LogIn />Войти</Button>
-    </Card>
-  </div>
-);
-
-/** Рабочее место: SSO (PKCE), разделы по ролям, статус модели, тема. */
+/** Рабочее место: SSO (PKCE) с входом на странице, разделы по ролям, статус модели, тема; на телефоне — нижняя панель. */
 export const SpecialistShell = () => {
   useSpecialistAuth();
   const s = useSession();
   const loc = useLocation();
+  const nav = useNavigate();
   const [account, setAccount] = useState(false);
+  const [more, setMore] = useState(false);
+  const ind = useTrackIndicator(loc.pathname);
   if (!s.ready) return <div className="grid min-h-svh place-items-center"><Spinner className="size-8" /></div>;
-  if (!s.user) return <SignIn onSignIn={() => void s.signIn()} />;
-  const items = NAV.filter((n) => can(s.roles, n.perm)).map(({ to, label }) => ({ to, label }));
+  if (!s.user) return <SignIn />;
+  const items = NAV.filter((n) => can(s.roles, n.perm));
+  const switchUser = () => { forgetLogin(); void s.signOut(); };
   return (
     <div className="relative isolate min-h-svh text-foreground">
+      {/* Шапка-пилюля, как на sberbank.ru */}
       <HeaderBar>
-        <Link to={routes.packages} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="специалист" /></Link>
-        <NavTrack items={items} className="ml-auto hidden lg:block xl:ml-6" />
+        <Link to={routes.home} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="специалист" /></Link>
+        <NavTrack items={items.map(({ to, label }) => ({ to, label }))} className="ml-auto hidden lg:block xl:ml-6" />
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <ModelStatusBadge className="hidden xl:inline-flex" />
-          <PreferencesButton className="hidden sm:flex" />
-          <Button variant="quiet" className="h-12 rounded-md" onClick={() => setAccount(true)} aria-label={`Пользователь: ${s.name}`}><Avatar name={s.name} className="size-7" /><span className="hidden xl:inline">{roleLabel(s.role)}</span></Button>
+          <PreferencesButton className="hidden lg:flex" />
+          <Button variant="quiet" className="hidden h-12 rounded-md md:inline-flex" onClick={() => setAccount(true)} aria-label={`Пользователь: ${s.name}, ${roleLabel(s.role)}`}>
+            <Avatar name={s.name} className="size-7" /><span className="hidden 2xl:inline">{roleLabel(s.role)}</span>
+          </Button>
+          {can(s.roles, "work") && (<>
+            <Link to={`${routes.packages}?new=1`} className="hidden md:block" tabIndex={-1}><Button variant="brand" className="h-12 rounded-md"><FolderPlus />Новый пакет</Button></Link>
+            <Link to={`${routes.packages}?new=1`} className="md:hidden" tabIndex={-1}><Button variant="brand" size="icon" className="size-12" aria-label="Новый пакет"><FolderPlus /></Button></Link>
+          </>)}
         </div>
       </HeaderBar>
+
       <OfflineBanner />
-      <nav className="mx-auto mt-3 flex max-w-7xl px-4 lg:hidden" aria-label="Разделы"><NavTrack items={items} /></nav>
-      <motion.main key={loc.pathname} {...pageIn} className="mx-auto w-full max-w-screen-2xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
-        {s.roles.length ? <Outlet /> : <EmptyState icon={<ShieldCheck />} title="Нет роли" text="Учётной записи не назначена роль специалиста — обратитесь к администратору" className="py-24" />}
+      <motion.main key={loc.pathname} {...pageIn} className="mx-auto w-full max-w-screen-2xl px-4 pb-nav pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pb-16">
+        {s.roles.length ? <Outlet /> : <EmptyState icon={<ShieldCheck />} title="Нет роли" text="Учётной записи не назначена роль специалиста — обратитесь к администратору" action={<Button variant="secondary" onClick={() => setAccount(true)}><UserCog />Учётная запись</Button>} className="py-24" />}
       </motion.main>
-      <Dialog open={account} onClose={() => setAccount(false)} title="Учётная запись">
+
+      {/* Нижняя навигация телефона: плавающая панель */}
+      <nav className="fixed inset-x-0 bottom-0 z-nav px-3 pb-safe lg:hidden" aria-label="Разделы">
+        <div ref={ind.ref} className="relative mx-auto mb-3 flex max-w-md items-stretch gap-0.5 rounded-xl bg-card/90 p-1 shadow-float backdrop-blur-xl">
+          <TrackIndicator ind={ind} className="inset-y-1 rounded-lg bg-accent" />
+          {items.map(({ to, short, icon: Icon }) => (
+            <NavLink key={to} to={to} className={({ isActive }) => cn("relative flex min-h-control-lg min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-xs font-medium outline-none", isActive ? "text-accent-foreground" : "text-muted-foreground")}>
+              <Icon className="relative z-raised size-5" /><span className="relative z-raised max-w-full truncate tracking-tight">{short}</span>
+            </NavLink>
+          ))}
+          <motion.button type="button" {...press} onClick={() => setMore(true)} className="relative flex min-h-control-lg min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-xs font-medium text-muted-foreground">
+            <MoreHorizontal className="relative z-raised size-5" /><span className="relative z-raised">Ещё</span>
+          </motion.button>
+        </div>
+      </nav>
+
+      <Dialog open={more} onClose={() => setMore(false)} title="Ещё">
+        <div className="flex flex-col gap-1">
+          <button type="button" onClick={() => { setMore(false); setAccount(true); }} className="flex min-h-control-lg items-center gap-3 rounded-md px-3 text-left text-base font-medium transition-colors duration-fast hover:bg-surface">
+            <UserCog className="size-5 shrink-0" /><span className="flex-1">{s.name}<span className="block text-sm font-normal text-muted-foreground">{roleLabel(s.role)}</span></span><ChevronRight className="size-4 text-subtle-foreground" />
+          </button>
+          <button type="button" onClick={() => { setMore(false); nav(routes.home); }} className="flex min-h-control-lg items-center gap-3 rounded-md px-3 text-left text-base font-medium transition-colors duration-fast hover:bg-surface">
+            <Home className="size-5 shrink-0" /><span className="flex-1">На главную</span><ChevronRight className="size-4 text-subtle-foreground" />
+          </button>
+          <div className="mt-3 flex flex-col gap-3 border-t border-border px-1 pt-4">
+            <span className="px-2 text-sm font-medium text-muted-foreground">Модель</span><ModelStatusBadge className="self-start" />
+            <span className="px-2 text-sm font-medium text-muted-foreground">Оформление</span><ThemePicker onPick={() => setTimeout(() => setMore(false), duration.slow * 1000)} />
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog open={account} onClose={() => setAccount(false)} title="Учётная запись" description="Вход — корпоративная учётная запись Keycloak. Роль назначает администратор, права проверяет сервер">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-lg bg-muted p-4">
             <Avatar name={s.name} className="size-11" />
-            <span className="flex min-w-0 flex-1 flex-col"><span className="truncate font-medium">{s.name}</span><span className="truncate text-sm text-muted-foreground">{s.login}</span></span>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="truncate font-medium">{s.name}</span><span className="truncate text-sm text-muted-foreground">{s.login}</span></span>
             <Status tone="success">{roleLabel(s.role)}</Status>
           </div>
           <ModelStatusBadge className="self-start" />
-          <Button variant="danger-soft" onClick={() => void s.signOut()}><LogOut />Выйти</Button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button variant="secondary" onClick={switchUser}><Repeat2 />Войти другим</Button>
+            <Button variant="danger-soft" onClick={() => void s.signOut()}><LogOut />Выйти</Button>
+          </div>
         </div>
       </Dialog>
     </div>

@@ -36,6 +36,8 @@ https://subsidy.digital-hustle.ru (сервер 217.12.40.215, за общим e
 Модель — по API (`LLM_PROVIDER=openai`, `deepseek-v4-flash` + `qwen3-vl-plus`, `LLM_JSON_MODE=json_object`), ollama не запущен.
 Обновление: `cd /root/stand && git pull && cd subsidy/infra && docker compose build <svc> && docker compose up -d` →
 `EVAL_PASSWORD=<KC_DEMO_SPECIALIST_PASSWORD> scripts/smoke.sh https://subsidy.digital-hustle.ru`. Учётки демо — в `infra/.env` (`KC_DEMO_*`).
+Realm импортируется только в пустую БД Keycloak: на работающем стенде новые настройки realm (тема входа `subsidy`, «запомнить меня») ставит
+`docker compose exec keycloak /opt/keycloak/bin/kcadm.sh update realms/subsidy -s loginTheme=subsidy -s rememberMe=true --server http://localhost:8080/auth --realm master --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"` (после `up -d keycloak` с примонтированной темой).
 
 ## За общим edge (сервер на несколько кейсов)
 Порты 80/443 держит общий Caddy (`edge/`, TLS Let's Encrypt, маршрут по имени хоста). Кейс поднимается с

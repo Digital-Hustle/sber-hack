@@ -1,37 +1,78 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { useRef } from "react";
+import { createBrowserRouter, Navigate, useLocation, useOutlet } from "react-router";
+import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { Aurora } from "@/shared/ui";
+import { tween } from "@/shared/config/motion";
 import { routes } from "@/shared/const/router";
+import { HomePage } from "@/pages/home";
 import { SpecialistShell } from "@/widgets/specialist-shell";
-import { PackagesPage } from "@/pages/packages";
 import { CallbackPage } from "@/pages/callback";
-import { PackagePage } from "@/pages/package";
-import { ExpiringPage } from "@/pages/expiring";
-import { StatsPage } from "@/pages/stats";
-import { ProgramsPage } from "@/pages/programs";
-import { OrganizationPage } from "@/pages/organization";
 
-const RootLayout = ({ children }: { children: React.ReactNode }) => (
-  <div className="relative isolate min-h-svh text-foreground">
-    <Aurora fixed />
-    {children}
-  </div>
-);
+// Каждая страница — отдельный чанк (recharts, просмотрщик и т. п. не грузятся на главной).
+// react-router дожидается чанка до смены экрана, поэтому переход без мигания пустого экрана.
+const packages = () => import("@/pages/packages");
+const pkg = () => import("@/pages/package");
+const expiring = () => import("@/pages/expiring");
+const stats = () => import("@/pages/stats");
+const programs = () => import("@/pages/programs");
+const org = () => import("@/pages/organization");
 
-// Зона специалиста /specialist (rules.md §4). Разделы добавляются по мере готовности серверной части.
+/** Фоновая предзагрузка страниц после первого экрана: дальнейшие переходы мгновенные. */
+export const prefetchRoutes = () => {
+  const run = () => [packages, pkg, expiring, stats, programs, org].forEach((f) => { f().catch(() => {}); });
+  if ("requestIdleCallback" in window) requestIdleCallback(run); else setTimeout(run, 1);
+};
+
+/** Уходящий раздел дорисовывает свой последний экран, пока гаснет (иначе он мгновенно подменился бы новым). */
+const Frozen = () => {
+  const outlet = useOutlet();
+  const present = useIsPresent();
+  const last = useRef(outlet);
+  if (present) last.current = outlet;
+  return last.current;
+};
+
+/**
+ * Общий корень: одно живое сияние на все разделы (не пересоздаётся при переходе — фон не мигает)
+ * и мягкая смена раздела: главная ↔ рабочее место — затухание и проявление.
+ * Внутри раздела страницы меняются своим pageIn (оболочка и шапка остаются на месте).
+ */
+const RootLayout = () => {
+  const { pathname } = useLocation();
+  const section = pathname.split("/")[1] || "home";
+  return (
+    <div className="relative isolate min-h-svh text-foreground">
+      <Aurora fixed />
+      <AnimatePresence mode="wait" initial={false} onExitComplete={() => scrollTo(0, 0)}>
+        <motion.div key={section} initial={{ opacity: 0 }} animate={{ opacity: 1, transition: tween.base }} exit={{ opacity: 0, transition: tween.exit }}>
+          <Frozen />
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// Зона специалиста /specialist (rules.md §4), главная — «/».
 export const router = createBrowserRouter([
-  { path: routes.callback, element: <RootLayout><CallbackPage /></RootLayout> },
   {
-    path: routes.specialist,
-    element: <RootLayout><SpecialistShell /></RootLayout>,
+    element: <RootLayout />,
     children: [
-      { index: true, element: <Navigate to={routes.packages} replace /> },
-      { path: "packages", element: <PackagesPage /> },
-      { path: "packages/:id", element: <PackagePage /> },
-      { path: "expiring", element: <ExpiringPage /> },
-      { path: "stats", element: <StatsPage /> },
-      { path: "programs", element: <ProgramsPage /> },
-      { path: "organizations/:inn", element: <OrganizationPage /> },
+      { path: routes.home, element: <HomePage /> },
+      { path: routes.callback, element: <CallbackPage /> },
+      {
+        path: routes.specialist,
+        element: <SpecialistShell />,
+        children: [
+          { index: true, element: <Navigate to={routes.packages} replace /> },
+          { path: "packages", lazy: async () => ({ Component: (await packages()).PackagesPage }) },
+          { path: "packages/:id", lazy: async () => ({ Component: (await pkg()).PackagePage }) },
+          { path: "expiring", lazy: async () => ({ Component: (await expiring()).ExpiringPage }) },
+          { path: "stats", lazy: async () => ({ Component: (await stats()).StatsPage }) },
+          { path: "programs", lazy: async () => ({ Component: (await programs()).ProgramsPage }) },
+          { path: "organizations/:inn", lazy: async () => ({ Component: (await org()).OrganizationPage }) },
+        ],
+      },
     ],
   },
-  { path: "*", element: <Navigate to={routes.packages} replace /> },
+  { path: "*", element: <Navigate to={routes.home} replace /> },
 ]);
