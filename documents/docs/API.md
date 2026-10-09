@@ -37,8 +37,8 @@
 - `PATCH /documents/{id}/type` `{type}` → смена типа → переизвлечение полей по новой схеме (job `EXTRACTING_FIELDS`)
 - `POST /documents/{id}/confirm`; `POST /applications/{id}/request` `{items: [{type?, documentId?, reason}]}` → соискателю (FR-55, B-01)
 - `POST /applications/{id}/decision` `{decision: ACCEPTED|RETURNED, comment}`
-- `GET /applications/{id}/history` (B-08) · `GET /applications/{id}/export?format=docx|xlsx|pdf` (B-05)
-- `GET /reports/expiring?days=30` + `?format=xlsx` (B-04) · `GET /stream` (SSE, ticket): `queue.changed`, `document.stage`
+- `GET /applications/{id}/history` (B-08) · `GET /applications/{id}/export?format=docx|xlsx` (B-05, SENIOR_OPERATOR; PDF — нет)
+- `GET /reports/expiring?days=30`, XLSX — `GET /reports/expiring/export?days=30` (SENIOR_OPERATOR) (B-04) · `GET /metrics` (B-06, с формулами «как посчитано») · `POST /applications/next` — взять следующую свободную · `GET /stream` (SSE, ticket): `queue.changed`, `document.stage`
 - `POST /applications/{id}/reveal` `{field}` → полный номер документа + запись в аудит (B-07)
 
 ## Стадии документа

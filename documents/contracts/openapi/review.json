@@ -1,0 +1,1195 @@
+{
+  "components" : {
+    "schemas" : {
+      "AppRow" : {
+        "properties" : {
+          "applicantName" : {
+            "type" : "string"
+          },
+          "assignedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "assignee" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "decidedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "missing" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "requiredTypes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "source" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "submittedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CardRs" : {
+        "properties" : {
+          "application" : {
+            "$ref" : "#/components/schemas/AppRow"
+          },
+          "contactEmail" : {
+            "type" : "string"
+          },
+          "contactPhone" : {
+            "type" : "string"
+          },
+          "counters" : {
+            "$ref" : "#/components/schemas/Counters"
+          },
+          "decision" : {
+            "$ref" : "#/components/schemas/Decision"
+          },
+          "documents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentCard"
+            },
+            "type" : "array"
+          },
+          "findings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Finding"
+            },
+            "type" : "array"
+          },
+          "history" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HistoryEntry"
+            },
+            "type" : "array"
+          },
+          "profile" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "requests" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          }
+        },
+        "type" : "object"
+      },
+      "Counters" : {
+        "properties" : {
+          "documentsConfirmed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "documentsTotal" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "fieldsAttention" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "fieldsCorrected" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "fieldsTotal" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "Decision" : {
+        "properties" : {
+          "actor" : {
+            "type" : "string"
+          },
+          "comment" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "decision" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DecisionRq" : {
+        "properties" : {
+          "comment" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "decision" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "decision" ],
+        "type" : "object"
+      },
+      "DocumentCard" : {
+        "properties" : {
+          "attention" : {
+            "type" : "boolean"
+          },
+          "confirmed" : {
+            "type" : "boolean"
+          },
+          "confirmedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "confirmedBy" : {
+            "type" : "string"
+          },
+          "expiresOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "fields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FieldCard"
+            },
+            "type" : "array"
+          },
+          "files" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "model" : {
+            "type" : "string"
+          },
+          "pages" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "promptVersion" : {
+            "type" : "string"
+          },
+          "quality" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "reasonCode" : {
+            "type" : "string"
+          },
+          "reasons" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "slotType" : {
+            "type" : "string"
+          },
+          "stage" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "typeConfidence" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "typeName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ExpiringItem" : {
+        "properties" : {
+          "applicantName" : {
+            "type" : "string"
+          },
+          "applicationId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "daysLeft" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "documentId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "expiresOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "typeName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ExpiringRs" : {
+        "properties" : {
+          "days" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ExpiringItem"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "FieldCard" : {
+        "properties" : {
+          "attention" : {
+            "type" : "boolean"
+          },
+          "bbox" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "checks" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "confidence" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "corrected" : {
+            "type" : "boolean"
+          },
+          "correctedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "correctedBy" : {
+            "type" : "string"
+          },
+          "masked" : {
+            "type" : "boolean"
+          },
+          "modelValue" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "raw" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FieldsRq" : {
+        "properties" : {
+          "fields" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "fields" ],
+        "type" : "object"
+      },
+      "Finding" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "documentIds" : {
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "field" : {
+            "type" : "string"
+          },
+          "params" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
+      "HistoryEntry" : {
+        "properties" : {
+          "action" : {
+            "type" : "string"
+          },
+          "actor" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "details" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "documentId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "source" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HistoryRs" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HistoryEntry"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "Item" : {
+        "properties" : {
+          "documentId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "JsonNode" : { },
+      "MetricsRs" : {
+        "properties" : {
+          "applications" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "computedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "decision" : {
+            "$ref" : "#/components/schemas/Percentiles"
+          },
+          "documents" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "fieldsCorrected" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "fieldsTotal" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "formulas" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "waiting" : {
+            "$ref" : "#/components/schemas/Percentiles"
+          }
+        },
+        "type" : "object"
+      },
+      "NextRs" : {
+        "properties" : {
+          "applicationId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PageRs" : {
+        "properties" : {
+          "next" : {
+            "type" : "string"
+          },
+          "total" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "Percentiles" : {
+        "properties" : {
+          "count" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "p50" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "p95" : {
+            "format" : "double",
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "QueueItem" : {
+        "properties" : {
+          "applicantName" : {
+            "type" : "string"
+          },
+          "assignee" : {
+            "type" : "string"
+          },
+          "attention" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "confirmed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "documents" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "missing" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "processing" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "source" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "submittedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "waitingSeconds" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "QueueRs" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/QueueItem"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "$ref" : "#/components/schemas/PageRs"
+          }
+        },
+        "type" : "object"
+      },
+      "ResubmitRq" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "maxItems" : 20,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "items" ],
+        "type" : "object"
+      },
+      "RevealRq" : {
+        "properties" : {
+          "documentId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "field" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentId", "field" ],
+        "type" : "object"
+      },
+      "RevealRs" : {
+        "properties" : {
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SseEmitter" : {
+        "properties" : {
+          "timeout" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "TicketRs" : {
+        "properties" : {
+          "ticket" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TypeRq" : {
+        "properties" : {
+          "type" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "type" ],
+        "type" : "object"
+      }
+    }
+  },
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/api/v1/applications" : {
+      "get" : {
+        "operationId" : "queue",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "assignee",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "attention",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "default" : "waiting",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "cursor",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "default" : 50,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/QueueRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Очередь заявок с фильтрами и курсором",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/applications/next" : {
+      "post" : {
+        "operationId" : "next",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NextRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Взять следующую заявку",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/applications/{id}" : {
+      "get" : {
+        "operationId" : "card",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CardRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Карточка заявки",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/applications/{id}/assign" : {
+      "post" : {
+        "operationId" : "assign",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "force",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Назначить себе",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/applications/{id}/decision" : {
+      "post" : {
+        "operationId" : "decision",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DecisionRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Принять или вернуть заявку",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/applications/{id}/export" : {
+      "get" : {
+        "operationId" : "export",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "format",
+          "required" : false,
+          "schema" : {
+            "default" : "docx",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Выгрузить карточку соискателя (docx | xlsx)",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/applications/{id}/history" : {
+      "get" : {
+        "operationId" : "history",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HistoryRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "История заявки",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/applications/{id}/request" : {
+      "post" : {
+        "operationId" : "request",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResubmitRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Запросить у соискателя документы",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/applications/{id}/reveal" : {
+      "post" : {
+        "operationId" : "reveal",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RevealRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RevealRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Показать полный номер",
+        "tags" : [ "applications" ]
+      }
+    },
+    "/api/v1/documents/{id}/confirm" : {
+      "post" : {
+        "operationId" : "confirm",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Подтвердить документ",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/v1/documents/{id}/fields" : {
+      "patch" : {
+        "operationId" : "fields",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FieldsRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Исправить поля",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/v1/documents/{id}/reprocess" : {
+      "post" : {
+        "operationId" : "reprocess",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Разобрать заново",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/v1/documents/{id}/type" : {
+      "patch" : {
+        "operationId" : "type",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TypeRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Сменить вид документа",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/v1/metrics" : {
+      "get" : {
+        "operationId" : "metrics",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MetricsRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Метрики очереди",
+        "tags" : [ "reports" ]
+      }
+    },
+    "/api/v1/reports/expiring" : {
+      "get" : {
+        "operationId" : "expiring",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "days",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpiringRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Истекающие документы",
+        "tags" : [ "reports" ]
+      }
+    },
+    "/api/v1/reports/expiring/export" : {
+      "get" : {
+        "operationId" : "expiringXlsx",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "days",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Истекающие документы в XLSX",
+        "tags" : [ "reports" ]
+      }
+    },
+    "/api/v1/stream" : {
+      "get" : {
+        "operationId" : "stream",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "ticket",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/event-stream" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SseEmitter"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Поток событий очереди",
+        "tags" : [ "stream" ]
+      }
+    },
+    "/api/v1/stream/ticket" : {
+      "get" : {
+        "operationId" : "ticket",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketRs"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Билет для EventSource",
+        "tags" : [ "stream" ]
+      }
+    }
+  },
+  "servers" : [ {
+    "description" : "Generated server url",
+    "url" : "http://localhost"
+  } ]
+}
