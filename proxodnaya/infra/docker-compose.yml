@@ -221,10 +221,9 @@ services:
       FACE_PITCH_DELTA: ${FACE_PITCH_DELTA:-0.12}
       FACE_MIRRORED: ${FACE_MIRRORED:-false}
 
-  # Сервис пока пустой — включается профилем, когда появится код
+  # Помощник (AS-01..): без модели отвечает 503, остальное работает; локальная модель — профиль llm-local
   assistant:
     <<: *java
-    profiles: [ assistant ]
     image: ghcr.io/digital-hustle/gate-assistant:${IMAGE_TAG:-latest}
     build: { context: ../services, args: { SERVICE: assistant } }
     environment:
@@ -238,6 +237,7 @@ services:
       LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-30}
       GIGACHAT_AUTH_KEY: ${GIGACHAT_AUTH_KEY:-}
       GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}
+      SHIFT_URL: http://shift:8083
 
   # SPA (образ собирает CD из frontend/); без него Caddy отдаёт 502 на страницы, API работает
   frontend:
