@@ -119,9 +119,10 @@ public class ProtocolService {
     }
 
     private Optional<UUID> create(PackageFacts facts, Program program) {
-        JsonNode snapshot = json.valueToTree(Map.of("program", program.code() + "@" + program.version(),
+        // через текст: сравнение со снимком из jsonb не зависит от типов чисел Jackson (DecimalNode vs DoubleNode)
+        JsonNode snapshot = read(write(Map.of("program", program.code() + "@" + program.version(),
                 "rules", RuleEngine.RULES_VERSION, "documents", facts.documents(), "files", facts.files(),
-                "inn", String.valueOf(facts.inn()), "packageDate", facts.packageDate().toString()));
+                "inn", String.valueOf(facts.inn()), "packageDate", facts.packageDate().toString())));
         Optional<JsonNode> previous = latestFacts(facts.packageId());
         if (previous.isPresent() && previous.get().equals(snapshot)) {
             LOG.debug("facts unchanged package={}", facts.packageId());
