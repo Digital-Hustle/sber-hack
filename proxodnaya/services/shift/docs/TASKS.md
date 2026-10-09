@@ -13,7 +13,7 @@
 | SH-07 | FR-30/32 | `/analytics/summary` «сейчас на объекте» + `method`, `incomplete` | B3 | review #37 (`summary`: inside по зонам, incomplete, проходы за день) |
 | SH-08 | B-02 | SSE-хаб + ticket, `/stream/situation`, `/stream/worker`, Last-Event-ID | B3 | review #57 |
 | SH-09 | B-06 | Табель XLSX (Apache POI) | B3 | review #59 (проекция `people.worker.v1` → `workers` для ФИО/подрядчика) |
-| SH-10 | B-03 | Опоздания и переработки | B3 | review #PR (`/analytics/late-overtime`) |
+| SH-10 | B-03 | Опоздания и переработки | B3 | review #60 (`/analytics/late-overtime`) |
 | SH-11 | B-01/B-05 | Heartbeat, оповещения: покинул геозону/нет связи, скопление в зоне | B3 | todo |
 | SH-12 | B-07/B-08 | Отказы по причинам и нагрузка по часам | B3 | todo |
 | SH-13 | B-04 | Напоминание о невыходе через 30 мин после смены (SSE worker) | B3 | todo |
