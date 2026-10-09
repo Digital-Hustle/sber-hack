@@ -6,7 +6,11 @@ import path from "node:path";
 
 const root = path.resolve(process.argv[2] ?? ".");
 const warnOnly = process.argv.includes("--warn-only");
-const ROOT_PKG = "ru.proxodnaya";
+// корень пакетов: ru.<case>, где <case> из rootProject.name = "<case>-services" (proxodnaya | documents | subsidy)
+const settingsFile = path.join(root, "settings.gradle.kts");
+const caseName = (fs.existsSync(settingsFile)
+  && (fs.readFileSync(settingsFile, "utf8").match(/rootProject\.name\s*=\s*"([a-z]+)-services"/) || [])[1]) || "proxodnaya";
+const ROOT_PKG = `ru.${caseName}`;
 const issues = [];
 const add = (rule, file, msg) => issues.push({ rule, file: path.relative(root, file), msg });
 

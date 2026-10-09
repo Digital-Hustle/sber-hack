@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # Создаёт скелет Gradle-монорепы бэкенда (один раз, на старте хакатона).
-# Использование: init-backend.sh <dir> [group-root=ru.proxodnaya]
+# Использование: init-backend.sh <dir> [group-root=ru.<case>]
+# <case> = имя папки кейса над <dir> (proxodnaya | documents | subsidy) или env PROJECT; по умолчанию proxodnaya.
 set -euo pipefail
 DIR=${1:?usage: init-backend.sh <dir>}
-ROOT_PKG=${2:-ru.proxodnaya}
+ABS_DIR=$(mkdir -p "$DIR" && cd "$DIR" && pwd)
+PROJECT=${PROJECT:-$(basename "$(dirname "$ABS_DIR")")}
+case "$PROJECT" in proxodnaya|documents|subsidy) ;; *) PROJECT=proxodnaya ;; esac
+ROOT_PKG=${2:-ru.$PROJECT}
 SKILL=$(cd "$(dirname "$0")/.." && pwd)
 GRADLE_VERSION=9.3.0
 mkdir -p "$DIR" && cd "$DIR"
@@ -413,6 +417,12 @@ build/
 *.iml
 .idea/
 EOF
+
+# Имя кейса в сгенерированных файлах (шаблоны написаны для proxodnaya)
+if [ "$PROJECT" != proxodnaya ]; then
+  for f in build-logic/src/main/kotlin/proxodnaya.*.gradle.kts; do mv "$f" "${f/proxodnaya./$PROJECT.}"; done
+  grep -rlI 'proxodnaya' settings.gradle.kts build-logic libs config 2>/dev/null | xargs -r sed -i "s/proxodnaya/$PROJECT/g"
+fi
 
 # Gradle wrapper
 # (генерируем в пустой папке, чтобы не конфигурировать ещё не готовую сборку)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Новый сервис из шаблона. Запуск из корня Gradle-монорепы (proxodnaya/services).
+# Новый сервис из шаблона. Запуск из корня Gradle-монорепы (<case>/services: proxodnaya | documents | subsidy).
 # Использование: new-service.sh <svc> <port> <Owner> [--no-db|--gateway]
 set -euo pipefail
 SVC=${1:?usage: new-service.sh <svc> <port> <Owner> [--no-db|--gateway]}; PORT=${2:?port}; OWNER=${3:?owner (B1..B3)}
@@ -8,7 +8,9 @@ KIND=${4:-db}; KIND=${KIND#--}
 [ -f settings.gradle.kts ] || { echo "запусти из корня Gradle-монорепы"; exit 1; }
 # папка может уже существовать с документами модуля (AGENTS.md, CLAUDE.md, docs/) — это не код
 { [ -e "$SVC/build.gradle.kts" ] || [ -e "$SVC/src" ] || [ -e "$SVC/pyproject.toml" ]; } && { echo "$SVC уже существует"; exit 1; }
-ROOT_PKG=ru.proxodnaya; PKG=$ROOT_PKG.$SVC
+# кейс берём из rootProject.name = "<case>-services" (init-backend.sh)
+PROJECT=$(sed -nE 's/^rootProject.name *= *"([a-z]+)-services".*/\1/p' settings.gradle.kts); PROJECT=${PROJECT:-proxodnaya}
+ROOT_PKG=ru.$PROJECT; PKG=$ROOT_PKG.$SVC
 CLS="$(tr '[:lower:]' '[:upper:]' <<<"${SVC:0:1}")${SVC:1}"
 MAIN=$SVC/src/main/java/$(tr . / <<<"$PKG"); TEST=$SVC/src/test/java/$(tr . / <<<"$PKG")
 RES=$SVC/src/main/resources; TRES=$SVC/src/test/resources
@@ -372,4 +374,6 @@ EOF
 
 echo "Создан $SVC ($KIND, порт $PORT, владелец $OWNER). Дальше вручную:"
 echo " - маршрут в gateway (application.yml), контейнер и БД в infra/, client '$SVC' в realm Keycloak"
-echo " - владелец в .github/CODEOWNERS, строка в proxodnaya/AGENTS.md"
+echo " - владелец в .github/CODEOWNERS, строка в $PROJECT/AGENTS.md"
+[ "$PROJECT" != proxodnaya ] && grep -rlI 'proxodnaya' "$SVC" | xargs -r sed -i "s/proxodnaya/$PROJECT/g"
+true
