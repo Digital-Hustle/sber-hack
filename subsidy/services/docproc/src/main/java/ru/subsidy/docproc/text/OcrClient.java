@@ -3,7 +3,9 @@ package ru.subsidy.docproc.text;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
@@ -11,6 +13,7 @@ import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import ru.subsidy.common.security.ServiceTokenProvider;
 import ru.subsidy.docproc.config.DocprocProperties;
 
 /**
@@ -21,13 +24,16 @@ public class OcrClient {
 
     private final RestClient http;
     private final boolean enabled;
+    private final ObjectProvider<ServiceTokenProvider> tokens;
 
     /**
      * Конструктор.
      *
      * @param props настройки
+     * @param tokens токен сервисного аккаунта (aud=ocr)
      */
-    public OcrClient(DocprocProperties props) {
+    public OcrClient(DocprocProperties props, ObjectProvider<ServiceTokenProvider> tokens) {
+        this.tokens = tokens;
         this.enabled = props.ocrUrl() != null && !props.ocrUrl().isBlank();
         this.http = RestClient.builder().baseUrl(enabled ? props.ocrUrl() : "http://localhost").build();
     }
@@ -56,7 +62,13 @@ public class OcrClient {
                 return "document";
             }
         }).contentType(MediaType.parseMediaType(mime));
+        ServiceTokenProvider provider = tokens.getIfAvailable();
         JsonNode body = http.post().uri("/v1/extract").contentType(MediaType.MULTIPART_FORM_DATA)
+                .headers(headers -> {
+                    if (provider != null) {
+                        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + provider.token());
+                    }
+                })
                 .body(form.build()).retrieve().body(JsonNode.class);
         List<PageText> pages = new ArrayList<>();
         if (body != null) {
