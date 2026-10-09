@@ -120,4 +120,18 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.files.length()").value(2))
                 .andExpect(jsonPath("$.rejected.length()").value(0));
     }
+
+    @Test
+    void upload_sameFileTwice_secondRejectedAsDuplicate() throws Exception {
+        String packageId = createPackage();
+        byte[] content = pdf();
+        mockMvc.perform(multipart("/api/v1/packages/" + packageId + "/files")
+                        .file(new MockMultipartFile("files", "one.pdf", "application/pdf", content))
+                        .file(new MockMultipartFile("files", "copy.pdf", "application/pdf", content))
+                        .with(authentication(user("SPECIALIST"))))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.files.length()").value(1))
+                .andExpect(jsonPath("$.rejected[0].code").value("DUPLICATE_FILE"))
+                .andExpect(jsonPath("$.rejected[0].name").value("copy.pdf"));
+    }
 }
