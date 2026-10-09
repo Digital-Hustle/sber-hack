@@ -93,6 +93,9 @@ services:
       KC_DEMO_OPERATOR_TOTP: ${KC_DEMO_OPERATOR_TOTP}
       KC_DEMO_SENIOR_TOTP: ${KC_DEMO_SENIOR_TOTP}
       KC_DEMO_AUDITOR_TOTP: ${KC_DEMO_AUDITOR_TOTP}
+      KC_DEMO_OPERATOR_EMAIL: ${KC_DEMO_OPERATOR_EMAIL:-operator@documents.local}
+      KC_DEMO_SENIOR_EMAIL: ${KC_DEMO_SENIOR_EMAIL:-senior@documents.local}
+      KC_DEMO_AUDITOR_EMAIL: ${KC_DEMO_AUDITOR_EMAIL:-auditor@documents.local}
       JAVA_OPTS_KC_HEAP: "-Xms256m -Xmx512m"
     volumes:
       - ./keycloak/realm-documents.json:/opt/keycloak/data/import/realm-documents.json:ro
@@ -203,11 +206,19 @@ services:
       DOCPROC_URL: ${DOCPROC_URL:-http://docproc:8082}
       KC_SVC_REVIEW_SECRET: ${KC_SVC_REVIEW_SECRET}
       KC_ADMIN_URL: http://keycloak:8080/auth/admin/realms/documents
+      # вход по коду из письма (FE-UI-04): общий почтовый узел сервера (../../mail/), режим стенда dev|prod
+      APP_MODE: ${APP_MODE:-prod}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-2525}
+      SMTP_FROM: ${SMTP_FROM:-Документы <no-reply@digital-hustle.ru>}
+      STAFF_LOGIN_URL: https://${PUBLIC_HOST}/operator
+      STAFF_LOG_CODES: ${STAFF_LOG_CODES:-false}
       EXPIRING_DAYS: ${EXPIRING_DAYS:-30}
       FIELD_REVIEW_THRESHOLD: ${FIELD_REVIEW_THRESHOLD:-0.8}
 
   caddy:
-    build: { context: .., dockerfile: frontend/Dockerfile }
+    # APP_MODE=dev собирает фронт с тестовым входом (быстрые кнопки, код 000000); prod — без этого кода вовсе
+    build: { context: .., dockerfile: frontend/Dockerfile, args: { VITE_APP_MODE: "${APP_MODE:-prod}" } }
     image: ${IMAGE_REGISTRY:-documents}/caddy:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports: ["${HTTP_BIND:-80}:80", "${HTTPS_BIND:-443}:443"]
