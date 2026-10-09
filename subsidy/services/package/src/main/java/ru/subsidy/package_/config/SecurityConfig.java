@@ -46,13 +46,8 @@ public class SecurityConfig {
                 .build();
     }
 
-    /**
-     * JWT → {@link CurrentUser} с ролями realm.
-     *
-     * @return конвертер
-     */
-    @Bean
-    public Converter<Jwt, AbstractAuthenticationToken> currentUserConverter() {
+    // Не @Bean: Kafka регистрирует все Converter-бины и падает на лямбде без типов.
+    private static Converter<Jwt, AbstractAuthenticationToken> currentUserConverter() {
         return jwt -> new CurrentUser(jwt, authorities(jwt));
     }
 
