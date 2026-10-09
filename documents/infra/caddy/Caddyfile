@@ -12,6 +12,12 @@
 		-Server
 	}
 
+	# Внутреннее и служебное наружу не отдаём: ни SPA-заглушкой (200), ни прокси.
+	# Админка Keycloak — только изнутри (docker compose exec keycloak /opt/keycloak/bin/kcadm.sh ...).
+	@hidden path /internal/* /*/internal/* /ocr/* /auth/admin /auth/admin/* /auth/realms/master/*
+	handle @hidden {
+		respond 404
+	}
 	handle /auth/* {
 		reverse_proxy keycloak:8080
 	}
