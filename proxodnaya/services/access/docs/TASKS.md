@@ -15,7 +15,7 @@
 | ACC-09 | FR-08 | Anti-passback и вместимость зоны | B2 | review #31 (anti-passback; без `ZONE_FULL` → ACC-17) |
 | ACC-10 | FR-11 | TEMP_LOCKED: 5 неудачных сверок за 10 мин + алерт | B2 | review #3 (блокировка есть, алерта нет) |
 | ACC-11 | FR-10/31 | `GET /attempts` (фильтры, курсоры), `/worker/attempts`, миниатюры только ADMIN | B2 | review #31 (без миниатюр — снимок в журнал не пишется) |
-| ACC-12 | FR-64 | Проверка подписи запросов киоска (`X-Kiosk-*`, nonce, окно) | B2 | review: регистрация ключа, код сопряжения, `/kiosk/me`, `/kiosks` CRUD, подпись запросов |
+| ACC-12 | FR-64 | Проверка подписи запросов киоска (`X-Kiosk-*`, nonce, окно) | B2 | done #109: регистрация ключа, код сопряжения, `/kiosk/me`, `/kiosks` CRUD, подпись запросов |
 | ACC-13 | FR-14 | Ручной проход GUARD с причиной, `source=MANUAL` | B2 | review #31 |
 | ACC-14 | FR-34 | Симулятор проходов `source=SIMULATOR` через тот же движок, флаг | B2 | review #82 |
 | ACC-15 | FR-70 | Офлайн-снимок (подпись, TTL 12 ч) и приём `offline-attempts` с конфликтами | B2 | todo |
