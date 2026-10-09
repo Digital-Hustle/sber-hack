@@ -9,7 +9,9 @@ public final class PathConstants {
     public static final String KIOSK_ATTEMPTS = API_V1 + "/kiosk/attempts";
     public static final String FRAMES = "/{token}/frames";
     public static final String MANUAL = "/kiosk/manual";
+    public static final String SIMULATE = API_V1 + "/simulate";
     public static final String ATTEMPTS = API_V1 + "/attempts";
+    public static final String INTERNAL_STATS = API_V1 + "/internal/access/stats";
     public static final String SECURITY = API_V1 + "/security";
     public static final String JOURNAL_VERIFY = "/journal/verify";
 

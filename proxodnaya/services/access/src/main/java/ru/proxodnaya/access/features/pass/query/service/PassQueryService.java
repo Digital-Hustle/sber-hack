@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ru.proxodnaya.access.config.properties.AccessProperties;
 import ru.proxodnaya.access.features.pass.model.Presence;
+import ru.proxodnaya.access.features.pass.query.model.AccessStats;
 import ru.proxodnaya.access.shared.Direction;
 import ru.proxodnaya.access.features.pass.query.repository.PassReadRepository;
 import ru.proxodnaya.access.jooq.tables.records.PassAttemptsRecord;
@@ -111,5 +112,12 @@ public class PassQueryService {
             String workerId, String checkpoint, String decision, String code, String source,
             Instant from, Instant to) {
         return repository.countAttempts(workerId, checkpoint, decision, code, source, from, to);
+    }
+
+    /**
+     * Статистика для assistant (/internal/access/stats, FR-42).
+     */
+    public AccessStats stats(Instant from, Instant to) {
+        return repository.stats(from, to);
     }
 }

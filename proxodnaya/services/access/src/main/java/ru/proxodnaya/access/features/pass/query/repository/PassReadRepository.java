@@ -14,6 +14,7 @@ import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import ru.proxodnaya.access.features.pass.model.Presence;
+import ru.proxodnaya.access.features.pass.query.model.AccessStats;
 import ru.proxodnaya.access.jooq.tables.records.PassAttemptsRecord;
 import ru.proxodnaya.access.jooq.Tables;
 
@@ -168,5 +169,49 @@ public class PassReadRepository {
             c = c.and(PASS_ATTEMPTS.TS.lessOrEqual(to.atOffset(ZoneOffset.UTC)));
         }
         return dsl.fetchCount(PASS_ATTEMPTS, c);
+    }
+
+    private static final java.util.Set<String> SYSTEM_CODES = java.util.Set.of(
+            "FACE_NOT_FOUND", "FACE_LOW_QUALITY", "CHALLENGE_EXPIRED", "SYSTEM_ERROR", "QR_MISSING");
+
+    /**
+     * Статистика для assistant (/internal/access/stats, FR-42).
+     *
+     * @param from начало
+     * @param to   конец
+     * @return агрегаты
+     */
+    public AccessStats stats(Instant from, Instant to) {
+        Condition range = PASS_ATTEMPTS.TS.greaterOrEqual(from.atOffset(ZoneOffset.UTC))
+                .and(PASS_ATTEMPTS.TS.lessOrEqual(to.atOffset(ZoneOffset.UTC)));
+
+        long total = dsl.fetchCount(PASS_ATTEMPTS, range);
+        long allow = dsl.fetchCount(PASS_ATTEMPTS, range.and(PASS_ATTEMPTS.DECISION.in("ALLOW", "MANUAL")));
+        long deny = dsl.fetchCount(PASS_ATTEMPTS, range.and(PASS_ATTEMPTS.DECISION.eq("DENY")));
+
+        Condition denyRange = range.and(PASS_ATTEMPTS.DECISION.eq("DENY"));
+        long denySystem = dsl.fetchCount(PASS_ATTEMPTS, denyRange.and(PASS_ATTEMPTS.REASON_CODE.in(SYSTEM_CODES)));
+
+        var refusals = dsl.select(PASS_ATTEMPTS.REASON_CODE, org.jooq.impl.DSL.count())
+                .from(PASS_ATTEMPTS)
+                .where(denyRange)
+                .groupBy(PASS_ATTEMPTS.REASON_CODE)
+                .fetch()
+                .map(r -> new AccessStats.RefusalStat(r.value1(), r.value2(), SYSTEM_CODES.contains(r.value1())));
+
+        var load = new java.util.ArrayList<AccessStats.HourLoad>();
+        for (int h = 0; h < 24; h++) {
+            long in = dsl.fetchCount(PASS_ATTEMPTS, range
+                    .and(PASS_ATTEMPTS.DECISION.in("ALLOW", "MANUAL"))
+                    .and(PASS_ATTEMPTS.DIRECTION.eq("IN"))
+                    .and(org.jooq.impl.DSL.extract(org.jooq.impl.DSL.field("ts"), org.jooq.DatePart.HOUR).eq(h)));
+            long out = dsl.fetchCount(PASS_ATTEMPTS, range
+                    .and(PASS_ATTEMPTS.DECISION.in("ALLOW", "MANUAL"))
+                    .and(PASS_ATTEMPTS.DIRECTION.eq("OUT"))
+                    .and(org.jooq.impl.DSL.extract(org.jooq.impl.DSL.field("ts"), org.jooq.DatePart.HOUR).eq(h)));
+            load.add(new AccessStats.HourLoad(h, in, out));
+        }
+
+        return new AccessStats(from, to, total, allow, deny, denySystem, refusals, load);
     }
 }

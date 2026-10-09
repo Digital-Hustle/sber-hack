@@ -280,4 +280,52 @@ public class PassService {
         return new PassOutcome(saved.id(), saved.decision(), saved.code(), preview.orElse(null),
                 saved.direction(), saved.faceScore(), saved.ts());
     }
+
+    /**
+     * Симулятор проходов (FR-34, source=SIMULATOR). Тот же DecisionEngine, но без QR и без лица:
+     * face = OK (match, liveness, quality), решение по смене/допуску/anti-passback.
+     * Записывается в журнал с source=SIMULATOR. В интерфейсе помечается.
+     *
+     * @param workerId    рабочий
+     * @param direction    IN | OUT
+     * @param checkpointId проходная
+     * @param now          время
+     * @return итог
+     */
+    public PassOutcome simulatePass(String workerId, Direction direction, String checkpointId, Instant now) {
+        UUID id = UuidCreator.getTimeOrderedEpoch();
+        Optional<WorkerProfile> profile;
+        Optional<ActiveShift> activeShift = Optional.empty();
+        String zoneId = null;
+        try {
+            var zoneF = async(() -> people.checkpointZone(checkpointId));
+            var profileF = async(() -> people.accessProfile(workerId));
+            if (direction == Direction.IN) {
+                var shiftF = async(() -> shift.activeShift(workerId, now));
+                activeShift = shiftF.join();
+            }
+            zoneId = zoneF.join().orElse(null);
+            profile = profileF.join();
+        } catch (CompletionException error) {
+            profile = Optional.empty();
+        }
+
+        FaceResult faceResult = new FaceResult(true, 0.95, true, 0.9, null);
+        boolean inside = query.presence(workerId).inside();
+        PassContext ctx = new PassContext(direction, "simulator", zoneId, profile.orElse(null), faceResult,
+                activeShift.orElse(null), null,
+                LocalDate.ofInstant(now, props.siteZone()), inside);
+        DecisionResult decision = engine.decide(ctx);
+
+        PassRecord rec = new PassRecord(
+                id, now, checkpointId, zoneId, direction, workerId, "simulator", 0L,
+                decision.score(), true, null, decision.decision(), decision.code(),
+                latency(now), AttemptSource.SIMULATOR,
+                Map.of("simulated", true)
+        );
+        PassRecord saved = recorder.finish(rec);
+        return new PassOutcome(saved.id(), saved.decision(), saved.code(),
+                profile.map(WorkerPreview::of).orElse(null),
+                saved.direction(), saved.faceScore(), saved.ts());
+    }
 }
