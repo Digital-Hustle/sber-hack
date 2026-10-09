@@ -79,3 +79,35 @@ _Для агента с пустой памятью и пустой локалк
 - Пока нет ACC-12/ACC-15/`/worker/me` — киоск висит на «Регистрируем терминал…», телефон показывает карточку из активации.
 - Заводского кода охранника нет: ручной пропуск без связи — только после задания кода в кабинете. Сервисный заводской код `2580` — для первого запуска киоска.
 - Токен GitHub и SSH-ключ передавались в чатах — **сменить после хакатона**.
+
+## 7. ДЕПЛОЙ — твоя первая задача (боевой стенд, живые данные)
+**Цель:** полноценный боевой деплой на **https://proxodnaya.digital-hustle.ru** (DNS уже указывает на 217.12.40.215). Никаких демо-кнопок/автозаполнения/сидов — данные вводятся руками через UI. Модель — **по API, не локальная** (сервер загружен другими кейсами, профиль `llm-local` не включать).
+
+**Что уже подготовлено (ветка `feat/DEPLOY-01-stand`, запушена, НЕ смержена — проверь, доведи до merge через серверный CI):**
+- `infra/Caddyfile`: адрес `{$CADDY_SCHEME}{$PUBLIC_HOST}` + `trusted_proxies static private_ranges` (работа за общим edge).
+- `infra/docker-compose.yml`: caddy `ports: ["${HTTP_BIND:-80}:80", "${HTTPS_BIND:-443}:443"]`, env `CADDY_SCHEME`; `frontend` собирается из `../frontend` (`build:`), без profile.
+- `infra/.env.example`: CADDY_SCHEME/HTTP_BIND/HTTPS_BIND.
+- фронт: убраны последние демо-тексты (подвал главной, подсказка ассистента «Что с Ивановым»).
+- `scripts/deploy-server.sh`: jar-ы (jOOQ из временного postgres `gate-build-pg` на 127.0.0.1:5439, чтобы не мешать `ci-pg:5432`) → `docker compose -p proxodnaya build` → `up -d --wait`. Порт 5434 занят чужим — не использовать.
+
+**Состояние сервера:**
+- Общий edge (`/opt/sber-hack/edge`, контейнер `edge-edge-1`, network_mode host) уже держит 80/443 и маршрутизирует `proxodnaya.digital-hustle.ru` → `127.0.0.1:8380`. Edge не трогать.
+- Рядом работает стенд **documents** (`/opt/sber-hack/documents`, `docker compose ls`) — **не останавливать** и не трогать `/opt/sber-hack`.
+- Для «Проходной» склонирован отдельный checkout **`/opt/gate`** (ветка `feat/DEPLOY-01-stand`, detached). Создан `/opt/gate/proxodnaya/infra/.env` (gen-env.sh) с правками:
+  `PUBLIC_HOST=proxodnaya.digital-hustle.ru`, `CADDY_SCHEME=http://`, `HTTP_BIND=127.0.0.1:8380`, `HTTPS_BIND=127.0.0.1:8743`,
+  `LLM_PROVIDER=openai`, `LLM_BASE_URL=https://api.reformboss.com/v1`, `LLM_MODEL=deepseek-v4-flash`, `LLM_API_KEY=<уже вписан, ключ даст пользователь>`, `LLM_TIMEOUT_SECONDS=60`,
+  `SIMULATOR_ENABLED=false`, `STAFF_BOOTSTRAP_ADMIN_EMAIL=admin@digital-hustle.ru` (уточни у пользователя реальную почту!), `STAFF_LOG_CODES=true` (пока нет SMTP — код входа в `docker logs proxodnaya-people-1`), `SMTP_FROM=no-reply@digital-hustle.ru`.
+  `.env` не коммитить, не печатать целиком.
+- Первый запуск `deploy-server.sh` был прерван (стенд НЕ поднят). Перед повтором: `docker rm -f gate-build-pg`, убедиться, что CI не идёт.
+- Диск: ~15 ГБ свободно (из 40), RAM 19 ГБ (≈13 доступно). После сборки — `docker image prune -f`; build-cache чистить `docker builder prune -f` (без `-a` для чужого).
+
+**API-модель (проверено с сервера, из песочницы агента провайдер отвечает «временно недоступен»):** `https://api.reformboss.com/v1`, OpenAI-совместимый, tool calling работает у `deepseek-v4-flash` (≈1,7 с, по умолчанию), `qwen3.8-flash`, `kimi-k2.6`. Список моделей: glm-5.3, glm-5.3-flash, glm-5.3-prime, deepseek-v4.1-flash, deepseek-v4-pro, deepseek-v4-flash, kimi-k3, kimi-k2.7-code, qwen3.8-max, qwen3.8-flash, qwen3.7-max, qwen3.7-plus, grok-4.7, kimi-k2.6 и др. Ассистент уже умеет и локально (ollama), и по API — переключение только переменными `LLM_*` (docs/LLM.md). Требование пользователя: оба режима должны работать.
+
+**Шаги:**
+1. Смержить `feat/DEPLOY-01-stand` (серверный CI → squash).
+2. `ssh srv 'cd /opt/gate && git fetch -q origin && git checkout -q -f origin/main && (setsid nohup proxodnaya/scripts/deploy-server.sh > /opt/gate/deploy.log 2>&1 < /dev/null &)'`, следить `tail -f /opt/gate/deploy.log` (gradle ~5–10 мин, образы ещё ~5–10).
+3. `proxodnaya/scripts/smoke.sh https://proxodnaya.digital-hustle.ru`; открыть `/admin` → вход по коду (код из `docker logs proxodnaya-people-1 | grep -i код`), завести объект/зону/проходную/сотрудника руками.
+4. Если Keycloak/ссылки уходят на http — проверить `X-Forwarded-Proto` от edge и `KC_PROXY_HEADERS`/`KC_HOSTNAME` в compose.
+5. Описать в `docs/DEPLOY.md` раздел «Стенд за edge» (переменные выше, deploy-server.sh), обновить MEMORY.
+6. SMTP: попросить у пользователя креды (`SMTP_HOST/USER/PASSWORD`) → выключить `STAFF_LOG_CODES`.
+7. Дальше — задачи §5 по порядку, после каждого merge передеплой (`deploy-server.sh`) и проверка на домене.
