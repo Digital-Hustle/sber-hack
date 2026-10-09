@@ -3,7 +3,6 @@ package ru.documents.review.api.controller.impl;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import ru.documents.common.exception.DomainException;
 import ru.documents.review.api.controller.StreamController;
 import ru.documents.review.api.dto.response.TicketRs;
 import ru.documents.review.features.workplace.application.service.StreamHub;
@@ -31,8 +30,7 @@ public class StreamControllerImpl implements StreamController {
 
     @Override
     public SseEmitter stream(String ticket) {
-        tickets.consume(ticket).orElseThrow(() -> new DomainException("TICKET_INVALID", 401,
-                "Билет недействителен или истёк", "Получите новый билет"));
+        // Билет уже погашен TicketFilter до входа в контроллер.
         return hub.subscribe();
     }
 }
