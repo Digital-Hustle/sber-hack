@@ -40,7 +40,7 @@ class PassRecorderTest {
     private final JournalService journal = mock(JournalService.class);
     private final PresenceService presence = mock(PresenceService.class);
     private final Outbox outbox = mock(Outbox.class);
-    private final PassRecorder recorder = new PassRecorder(qrUses, journal, presence, outbox, TestProps.defaults());
+    private final PassRecorder recorder = new PassRecorder(qrUses, journal, presence, outbox, TestProps.tuning());
 
     @Test
     void finish_allowInWhilePresenceSaysInside_alreadyInsideWithoutPresenceChange() {

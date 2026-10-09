@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import ru.proxodnaya.access.config.properties.AccessProperties;
+import ru.proxodnaya.access.features.settings.api.PassTuning;
 import ru.proxodnaya.access.features.pass.model.Presence;
 import ru.proxodnaya.access.shared.Direction;
 import ru.proxodnaya.access.features.pass.query.repository.PassReadRepository;
@@ -19,11 +19,11 @@ import ru.proxodnaya.access.features.pass.query.repository.PassReadRepository;
 public class PassQueryService {
 
     private final PassReadRepository repository;
-    private final AccessProperties props;
+    private final PassTuning tuning;
 
-    public PassQueryService(PassReadRepository repository, AccessProperties props) {
+    public PassQueryService(PassReadRepository repository, PassTuning tuning) {
         this.repository = repository;
-        this.props = props;
+        this.tuning = tuning;
     }
 
     /**
@@ -34,7 +34,7 @@ public class PassQueryService {
      * @return IN или OUT
      */
     public Direction direction(String workerId, Instant now) {
-        return presence(workerId).nextDirection(now, props.presenceTtl());
+        return presence(workerId).nextDirection(now, tuning.presenceTtl());
     }
 
     /**
@@ -76,5 +76,27 @@ public class PassQueryService {
      */
     public int faceFailuresSince(String workerId, Instant since) {
         return repository.faceFailuresSince(workerId, since);
+    }
+
+    /**
+     * Временная блокировка после серии неудачных сверок лица (FR-16).
+     *
+     * @param workerId рабочий
+     * @param now      текущий момент
+     * @return true — заблокирован
+     */
+    public boolean tempLocked(String workerId, Instant now) {
+        return faceFailuresSince(workerId, now.minus(tuning.tempLockWindow())) >= tuning.tempLockFailures();
+    }
+
+    /**
+     * Был ли успешный проход в пределах паузы повторного скана.
+     *
+     * @param workerId рабочий
+     * @param now      текущий момент
+     * @return true — повторный скан
+     */
+    public boolean recentlyAllowed(String workerId, Instant now) {
+        return lastAllowAt(workerId).filter(last -> last.isAfter(now.minus(tuning.repeatScanCooldown()))).isPresent();
     }
 }

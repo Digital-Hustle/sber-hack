@@ -64,8 +64,8 @@ class PassServiceTest {
     private final ShiftGateway shift = mock(ShiftGateway.class);
     private final PassRecorder recorder = mock(PassRecorder.class);
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-    private final PassService service = new PassService(qrCheck, query, challenges, face, people, shift, new DecisionEngine(),
-            recorder, TestProps.defaults(), Clock.fixed(NOW, ZoneOffset.UTC), executor);
+    private final PassService service = new PassService(qrCheck, query, challenges, face, people, shift,
+            new DecisionEngine(TestProps.tuning()), recorder, TestProps.defaults(), Clock.fixed(NOW, ZoneOffset.UTC), executor);
 
     @AfterEach
     void close() {
@@ -125,7 +125,7 @@ class PassServiceTest {
         // given
         validQr();
         when(query.direction("w1", NOW)).thenReturn(Direction.IN);
-        when(query.lastAllowAt("w1")).thenReturn(Optional.of(NOW.minusSeconds(10)));
+        when(query.recentlyAllowed(eq("w1"), any())).thenReturn(true);
         echoRecorder();
 
         // when
@@ -141,7 +141,7 @@ class PassServiceTest {
         // given
         validQr();
         when(query.direction("w1", NOW)).thenReturn(Direction.IN);
-        when(query.faceFailuresSince(eq("w1"), any())).thenReturn(5);
+        when(query.tempLocked(eq("w1"), any())).thenReturn(true);
         echoRecorder();
 
         // when / then

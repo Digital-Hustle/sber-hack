@@ -83,7 +83,8 @@ public class PassService {
 
     public PassService(QrCheck qrCheck, PassQueryService query, ChallengeService challenges, FaceGateway face,
                        PeopleGateway people, ShiftGateway shift, DecisionEngine engine, PassRecorder recorder,
-                       AccessProperties props, Clock clock, @Qualifier("depsExecutor") ExecutorService executor) {
+                       AccessProperties props, Clock clock,
+                       @Qualifier("depsExecutor") ExecutorService executor) {
         this.qrCheck = qrCheck;
         this.query = query;
         this.challenges = challenges;
@@ -202,9 +203,9 @@ public class PassService {
         ReasonCode code = ReasonCode.OK;
         if (query.isBlocked(workerId)) {
             code = ReasonCode.WORKER_BLOCKED;
-        } else if (query.faceFailuresSince(workerId, now.minus(props.tempLockWindow())) >= props.tempLockFailures()) {
+        } else if (query.tempLocked(workerId, now)) {
             code = ReasonCode.TEMP_LOCKED;
-        } else if (query.lastAllowAt(workerId).filter(last -> last.isAfter(now.minus(props.repeatScanCooldown()))).isPresent()) {
+        } else if (query.recentlyAllowed(workerId, now)) {
             code = ReasonCode.REPEAT_SCAN;
         }
         return code;
