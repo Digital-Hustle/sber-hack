@@ -5,7 +5,7 @@
 ## 1. Текущее состояние
 - OCR-01..05, 07 готовы: FastAPI `/v1/extract`, `/v1/render`, `/health`, `/metrics`; основа — ocr кейса documents без MRZ.
 - Авторизация: JWT realm subsidy, `aud=ocr`, `azp` ∈ `OCR_ALLOWED_CLIENTS` (svc-docproc, svc-package).
-- Нет таблиц (OCR-06): docproc берёт таблицы из текста.
+- OCR-06: `tables.py` — `pages[].tables`: линейки pdfplumber для текстового слоя, иначе строки по вертикальному центру слов + ячейки по промежутку > 1.2 высоты строки; колонки по самой широкой строке.
 
 ## 2. Карта модуля
 | Путь | Что |
@@ -26,3 +26,4 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
 - 2026-10-09 · agent · feat(ocr): сервис ocr (текстовый слой, Tesseract rus+eng, качество, превью)
+- 2026-10-09 · agent · feat(ocr): OCR-06 таблицы страниц (pdfplumber + bbox слов)

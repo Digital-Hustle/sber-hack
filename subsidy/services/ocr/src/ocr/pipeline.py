@@ -16,6 +16,7 @@ from ocr.metrics import PAGE_SECONDS, PAGES
 from ocr.models import ExtractResult, Page
 from ocr.preprocess import prepare, to_gray
 from ocr.quality import measure
+from ocr.tables import from_words
 from ocr.tesseract import best_orientation
 from ocr.textlayer import read_text_layer
 
@@ -49,6 +50,7 @@ def _ocr_page(n: int, img: Image.Image, dpi: int, s: Settings) -> Page:
             textLayer=False,
             text=res.text,
             words=res.words,
+            tables=from_words(res.words),
             quality=q,
             meanConf=res.mean_conf,
             rotation=res.rotation,
@@ -88,6 +90,7 @@ def extract(data: bytes, s: Settings) -> ExtractResult:
                         textLayer=True,
                         text=tp.text,
                         words=tp.words,
+                        tables=tp.tables,
                         meanConf=1.0,
                     )
                 )
