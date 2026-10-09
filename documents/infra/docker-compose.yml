@@ -17,7 +17,7 @@ x-java: &java
     postgres: { condition: service_healthy }
     kafka: { condition: service_healthy }
   healthcheck: &java-health
-    test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/$${SERVER_PORT}"]
+    test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/$$SERVER_PORT"]   # sh в образе — dash, /dev/tcp есть только в bash
     interval: 10s
     timeout: 3s
     retries: 30
