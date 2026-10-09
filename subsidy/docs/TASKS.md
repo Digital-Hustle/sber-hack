@@ -24,7 +24,7 @@
 | PLT-05 | FR-60 | Keycloak realm `subsidy`: клиент, роли, TOTP, brute-force, демо-пользователи из `.env` | B1 | todo |
 | PLT-06 | — | Service accounts `svc-package/docproc/rules/assistant`, `aud` на каждый сервис | B1 | todo |
 | PLT-07 | NFR-17 | Outbox relay + IdempotentConsumer + конверт события в `libs/common` | B1 | done |
-| PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | todo |
+| PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | partial #PR: README, smoke со сквозным прогоном синтетики, фикс сборки #72; прогон на чистом стенде — когда освободится сервер |
 | PLT-09 | FR-28 | `eval/`: `run.py` через публичный API, разметка, отчёт; синтетика `eval/synthetic/` (генератор пакетов с корректными реквизитами) + запуск в CI | B2 | done #70 |
 
 ## Совместные
