@@ -183,13 +183,13 @@ public class UploadService {
         return new AcceptedFile(fileId, RECEIVED, null);
     }
 
-    private static String displayName(String name) {
+    static String displayName(String name) {
         String base = name == null ? "" : name.replace('\\', '/');
         base = base.substring(base.lastIndexOf('/') + 1).strip();
         return base.isEmpty() ? "файл" : base;
     }
 
-    private static String sha256(byte[] content) {
+    static String sha256(byte[] content) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
         } catch (NoSuchAlgorithmException impossible) {
