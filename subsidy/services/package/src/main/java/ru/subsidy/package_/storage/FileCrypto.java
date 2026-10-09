@@ -1,8 +1,10 @@
 package ru.subsidy.package_.storage;
 
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.UUID;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -62,6 +64,17 @@ public class FileCrypto {
      */
     public byte[] decrypt(Sealed sealed, byte[] aad) {
         return run(Cipher.DECRYPT_MODE, sealed.content(), sealed.nonce(), aad);
+    }
+
+    /**
+     * AAD для шифротекста версии файла.
+     *
+     * @param fileId файл
+     * @param version версия
+     * @return байты fileId:version
+     */
+    public static byte[] aad(UUID fileId, int version) {
+        return (fileId + ":" + version).getBytes(StandardCharsets.UTF_8);
     }
 
     private byte[] run(int mode, byte[] input, byte[] nonce, byte[] aad) {

@@ -10,7 +10,7 @@
 | PK-04 | FR-02 | Приём: AES-GCM + запись + outbox, `202`, `FileReceived` без имени | B1 | done |
 | PK-05 | FR-03 | `ZipExpander`: лимиты, пути, вложенность; тест zip-бомбы | B1 | done |
 | PK-06 | FR-04 | Дубликаты sha256 | B1 | done |
-| PK-07 | FR-66 | `/internal/package/files/{id}` (svc-docproc), `/files/{id}/content` (роль + аудит) | B1 | todo |
+| PK-07 | FR-66 | `/internal/package/files/{id}` (svc-docproc), `/files/{id}/content` (роль + аудит) | B1 | done |
 | PK-08 | FR-62 | Консьюмеры docproc/rules → стадии и статус пакета, SSE | B1 | todo |
 | PK-09 | FR-05/65 | Версии файла: замена → `FileReplaced` → переразбор | B1 | todo |
 | PK-10 | FR-63 | Превью страниц (ocr `/v1/render`), кэш | B1 | todo |

@@ -65,6 +65,10 @@ realm = {
             "serviceAccountsEnabled": True,
             "standardFlowEnabled": False,
             "secret": env(f"KC_SVC_{s.upper()}_SECRET"),
+            "protocolMappers": [{
+                "name": f"svc-aud-{t}", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+                "config": {"included.custom.audience": t, "access.token.claim": "true", "id.token.claim": "false"},
+            } for t in SERVICES if t != s],
         } for s in SERVICES],
     ],
     "users": [

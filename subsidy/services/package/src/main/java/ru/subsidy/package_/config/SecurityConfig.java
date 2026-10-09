@@ -1,7 +1,9 @@
 package ru.subsidy.package_.config;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +27,11 @@ import ru.subsidy.common.security.CurrentUser;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    /** Полномочие service account svc-docproc. */
+    public static final String SVC_DOCPROC = "SVC_DOCPROC";
     private static final String ROLES_CLAIM = "roles";
+    private static final String CLIENT_CLAIM = "azp";
+    private static final String SERVICE_PREFIX = "svc-";
 
     /**
      * Цепочка фильтров.
@@ -41,6 +47,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/health", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/internal/**").hasAuthority(SVC_DOCPROC)
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(currentUserConverter())))
                 .build();
@@ -52,10 +59,16 @@ public class SecurityConfig {
     }
 
     private static Collection<GrantedAuthority> authorities(Jwt jwt) {
+        List<GrantedAuthority> result = new ArrayList<>();
         List<String> roles = jwt.getClaimAsStringList(ROLES_CLAIM);
-        if (roles == null) {
-            return List.of();
+        if (roles != null) {
+            roles.forEach(role -> result.add(new SimpleGrantedAuthority("ROLE_" + role)));
         }
-        return roles.stream().<GrantedAuthority>map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList();
+        String client = jwt.getClaimAsString(CLIENT_CLAIM);
+        if (client != null && client.startsWith(SERVICE_PREFIX)) {
+            String name = client.substring(SERVICE_PREFIX.length()).toUpperCase(Locale.ROOT);
+            result.add(new SimpleGrantedAuthority("SVC_" + name));
+        }
+        return result;
     }
 }
