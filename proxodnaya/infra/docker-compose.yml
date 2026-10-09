@@ -190,6 +190,8 @@ services:
       KC_SVC_SHIFT_SECRET: ${KC_SVC_SHIFT_SECRET}
       SHIFT_EARLY_ENTRY: ${SHIFT_EARLY_ENTRY:-60m}
       AUTO_CLOSE_AFTER: ${AUTO_CLOSE_AFTER:-2h}
+      LATE_GRACE: ${LATE_GRACE:-5m}
+      OVERTIME_THRESHOLD: ${OVERTIME_THRESHOLD:-15m}
 
   face:
     image: ghcr.io/digital-hustle/gate-face:${IMAGE_TAG:-latest}

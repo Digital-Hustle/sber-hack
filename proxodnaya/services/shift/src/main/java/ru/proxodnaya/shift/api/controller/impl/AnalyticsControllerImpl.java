@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ru.proxodnaya.shift.api.controller.AnalyticsController;
 import ru.proxodnaya.shift.api.dto.response.HoursRs;
+import ru.proxodnaya.shift.api.dto.response.LateOvertimeRs;
 import ru.proxodnaya.shift.api.dto.response.SummaryRs;
 import ru.proxodnaya.shift.api.mapper.ShiftApiMapper;
 import ru.proxodnaya.shift.features.analytics.query.service.AnalyticsQueryService;
@@ -32,5 +33,10 @@ public class AnalyticsControllerImpl implements AnalyticsController {
     @Override
     public HoursRs hours(Instant from, Instant until, String worker, String zone) {
         return mapper.convert(analytics.hours(from, until, worker, zone));
+    }
+
+    @Override
+    public LateOvertimeRs lateOvertime(Instant from, Instant until, String worker) {
+        return mapper.convert(analytics.lateOvertime(from, until, worker));
     }
 }

@@ -15,6 +15,7 @@ public final class PathConstants {
     public static final String ANALYTICS = API + "/analytics";
     public static final String SUMMARY = "/summary";
     public static final String HOURS = "/hours";
+    public static final String LATE_OVERTIME = "/late-overtime";
     public static final String WORKER_STREAM = "/worker";
     public static final String WORKER = API + WORKER_STREAM;
     public static final String ME = "/me";
