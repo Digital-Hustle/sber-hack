@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { FileCheck2, Smartphone, Timer } from "lucide-react";
 import { StartForm, ResumeForm } from "@/features/start-application";
-import { Card, PageHeader, Segmented } from "@/shared/ui";
-import { fadeUp, stagger } from "@/shared/config/motion";
+import { AutoHeight, Segmented } from "@/shared/ui";
+import { fadeUp, spring, stagger, tween } from "@/shared/config/motion";
 
 const STEPS = [
   { icon: FileCheck2, text: "Ответьте на 2–3 вопроса — покажем, какие документы нужны именно вам" },
@@ -16,20 +16,30 @@ export const ApplyStartPage = () => {
   const [tab, setTab] = useState<"new" | "resume">("new");
   return (
     <>
-      <PageHeader kicker="Оформление на работу" title="Документы для оформления" sub="Соберите комплект с телефона за несколько минут — без регистрации и пароля" />
-      <motion.ul variants={stagger()} initial="hidden" animate="show" className="mb-6 flex flex-col gap-2">
-        {STEPS.map(({ icon: Icon, text }) => (
-          <motion.li key={text} variants={fadeUp} className="flex items-start gap-3 rounded-lg bg-card/70 p-3 text-sm">
-            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground"><Icon className="size-5" /></span>
-            <span className="pt-2">{text}</span>
+      <motion.div variants={stagger(0.07)} initial="hidden" animate="show" className="flex flex-col items-center text-center">
+        <motion.p variants={fadeUp} className="text-sm font-medium text-brand">Оформление на работу</motion.p>
+        <motion.h1 variants={fadeUp} className="mt-4 text-balance font-display text-4xl font-semibold leading-none tracking-hero sm:text-5xl">Документы для оформления</motion.h1>
+        <motion.p variants={fadeUp} className="mt-3 max-w-md text-pretty text-base text-foreground/70">Соберите комплект с телефона за несколько минут — без регистрации и пароля</motion.p>
+      </motion.div>
+      <motion.section variants={fadeUp} initial="hidden" animate="show" className="mt-6 overflow-hidden rounded-3xl bg-card/85 p-5 shadow-card backdrop-blur-xl sm:p-8">
+        <Segmented block size="lg" className="mb-5" label="Заявка" value={tab} onChange={setTab}
+          options={[{ value: "new", label: "Новая заявка" }, { value: "resume", label: "У меня есть код" }]} />
+        <AutoHeight>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={tab} initial={{ opacity: 0, x: tab === "new" ? -24 : 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, transition: tween.exit }} transition={{ ...spring.soft, opacity: tween.base }}>
+              {tab === "new" ? <StartForm /> : <ResumeForm />}
+            </motion.div>
+          </AnimatePresence>
+        </AutoHeight>
+      </motion.section>
+      <motion.ul variants={stagger(0.06, 0.15)} initial="hidden" animate="show" className="mt-6 grid gap-2 sm:grid-cols-3">
+        {STEPS.map(({ icon: Icon, text }, i) => (
+          <motion.li key={text} variants={fadeUp} className="flex items-start gap-3 rounded-xl bg-card/70 p-4 text-sm shadow-card backdrop-blur-xl sm:flex-col">
+            <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-md bg-brand-deep text-white"><span aria-hidden className="absolute inset-0 bg-sheen" /><Icon className="relative size-5" /></span>
+            <span className="min-w-0"><span className="block text-xs font-medium text-muted-foreground">Шаг {i + 1}</span><span className="text-pretty">{text}</span></span>
           </motion.li>
         ))}
       </motion.ul>
-      <Card className="p-4 sm:p-6">
-        <Segmented block size="lg" className="mb-5" label="Заявка" value={tab} onChange={setTab}
-          options={[{ value: "new", label: "Новая заявка" }, { value: "resume", label: "У меня есть код" }]} />
-        {tab === "new" ? <StartForm /> : <ResumeForm />}
-      </Card>
     </>
   );
 };

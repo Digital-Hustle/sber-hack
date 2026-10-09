@@ -45,10 +45,19 @@ const REASONS: Record<string, [string, string?]> = {
 
 const fill = (t: string, p: Record<string, unknown>) => t.replace(/\{(\w+)\}/g, (_, k: string) => (p[k] == null ? "" : String(p[k])));
 
+/** Названия видов (справочник B-01) — когда документа такого вида в заявке ещё нет и typeName взять неоткуда. */
+const TYPE_TITLE: Record<string, string> = {
+  PASSPORT_RF: "Паспорт РФ", PASSPORT_FOREIGN: "Иностранный паспорт", MIGRATION_CARD: "Миграционная карта",
+  WORK_PATENT: "Патент на работу", ARRIVAL_NOTICE: "Уведомление о прибытии", SNILS: "СНИЛС", INN: "ИНН",
+  MEDICAL: "Медицинское заключение",
+};
+export const typeTitle = (t?: string | null) => (t ? TYPE_TITLE[t] ?? t : "документ");
+
 export const reasonView = (code?: string | null, params: Record<string, unknown> = {}) => {
   if (!code) return null;
   const [text, hint] = REASONS[code] ?? [code];
-  return { code, text: fill(text, params), hint: hint && fill(hint, params) };
+  const p = typeof params.type === "string" ? { ...params, type: typeTitle(params.type) } : params;
+  return { code, text: fill(text, p), hint: hint && fill(hint, p) };
 };
 
 /** Проверки поля (docproc checks[].code) — короткие подписи для оператора. */

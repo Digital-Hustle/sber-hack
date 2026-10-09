@@ -75,6 +75,18 @@ class IntakeFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void invalidContactRejected() throws Exception {
+        for (String c : new String[]{"{\"phone\":\"123\"}", "{\"email\":\"not-an-email\"}", "{\"email\":\"a@b\"}"}) {
+            mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"consentPd\":true,\"contact\":" + c + "}"))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"consentPd\":true,\"contact\":{\"email\":\"Name@Mail.ru\"}}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void consentIsRequired() throws Exception {
         mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("{\"consentPd\":false}"))
                 .andExpect(status().isBadRequest())

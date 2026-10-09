@@ -8,8 +8,8 @@ import { errorText } from "@/shared/api";
 const PRESETS = ["Переснимите документ: снимок размыт", "Нужен разворот целиком, без обрезанных краёв", "Загрузите действующий документ — срок истёк", "Не хватает страницы"];
 
 /** FE-OP-07 / FR-55: запросить у соискателя документ или пересъёмку — придёт в кабинет по SSE. */
-export const RequestDialog = ({ appId, docs, missing, open, onClose }: {
-  appId: string; docs: DocumentCard[]; missing: { type: string; title: string }[]; open: boolean; onClose: () => void;
+export const RequestDialog = ({ appId, docs, missing, open, onClose, onClosed }: {
+  appId: string; docs: DocumentCard[]; missing: { type: string; title: string }[]; open: boolean; onClose: () => void; onClosed?: () => void;
 }) => {
   const qc = useQueryClient();
   const options = [
@@ -29,7 +29,7 @@ export const RequestDialog = ({ appId, docs, missing, open, onClose }: {
     onError: (e) => toast.error(errorText(e)),
   });
   return (
-    <Dialog open={open} onClose={onClose} title="Запросить у соискателя" description="Текст увидит соискатель — пишите, что сделать"
+    <Dialog open={open} onClose={onClose} onClosed={onClosed} title="Запросить у соискателя" description="Текст увидит соискатель — пишите, что сделать"
       footer={<Button block size="lg" disabled={!target || !reason.trim() || m.isPending} onClick={() => m.mutate()}><Send />{m.isPending ? "Отправляем…" : "Отправить запрос"}</Button>}>
       <div className="flex flex-col gap-4">
         <Field label="Что нужно"><Select value={target} onChange={setTarget} options={options} /></Field>
