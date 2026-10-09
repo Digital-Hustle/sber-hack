@@ -11,6 +11,7 @@ public enum ErrorCode {
     ORGANIZATION_NOT_FOUND,
     PACKAGE_NOT_FOUND,
     PACKAGE_LOCKED,
+    PACKAGE_DECIDED,
     PROGRAM_NOT_FOUND,
 
     // Файлы

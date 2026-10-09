@@ -27,6 +27,9 @@ public abstract class AbstractIntegrationTest {
     protected static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka:3.9.1");
 
     static {
+        byte[] key = new byte[32];
+        new java.security.SecureRandom().nextBytes(key);
+        System.setProperty("FILES_ENCRYPTION_KEY", java.util.Base64.getEncoder().encodeToString(key));
         POSTGRES.start();
         KAFKA.start();
     }
