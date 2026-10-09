@@ -74,3 +74,6 @@ jOOQ codegen требует живую БД во время сборки — т�
 | Остальное фронта (компоненты реестров, иконки, шрифты) | как в `../../proxodnaya/docs/DECISIONS.md` | F2 |
 
 **Запрещено (п. 5.8.4):** PyMuPDF/fitz (AGPL), pdf2image + poppler-utils (GPL), ghostscript (AGPL), iText (AGPL), MinIO (AGPL), ClamAV в составе образа (GPL), Qwen2.5-VL-3B (research), любые веса «non-commercial».
+
+### ADR-017 Вес проверок для полей без проверок — 0.7
+В ADR-011 для поля, к которому нет ни одной детерминированной проверки (ФИО, место рождения), компонент checks = 0.3. На синтетике это отправляло почти каждый документ в NEEDS_REVIEW. Принято: `checksNotApplicable = 0.7` (настройка `app.docproc.confidence.checks-not-applicable`), проверка, которая упала, по-прежнему даёт 0. Значение пересматривается при калибровке (DP-16, EVAL.md).

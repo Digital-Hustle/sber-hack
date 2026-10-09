@@ -1,0 +1,86 @@
+server:
+  port: ${SERVER_PORT:8082}
+spring:
+  application:
+    name: docproc
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:docproc}
+    username: ${DB_USER:docproc}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL:16}
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+    listener:
+      auto-startup: ${KAFKA_LISTENERS_ENABLED:true}
+  jackson:
+    default-property-inclusion: non_null
+  mvc:
+    async:
+      request-timeout: -1
+app:
+  oidc:
+    issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/documents}
+    jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/documents/protocol/openid-connect/certs}
+  outbox:
+    enabled: ${OUTBOX_ENABLED:true}
+  service-account:
+    token-uri: ${KC_TOKEN_URI:http://localhost:8180/auth/realms/documents/protocol/openid-connect/token}
+    client-id: svc-docproc
+    client-secret: ${KC_SVC_DOCPROC_SECRET}
+  docproc:
+    workers-enabled: ${DOCPROC_WORKERS_ENABLED:true}
+    workers: ${DOCPROC_WORKERS:4}
+    lease: ${JOB_LEASE:2m}
+    max-attempts: ${JOB_MAX_ATTEMPTS:5}
+    waiting-model-retry: ${WAITING_MODEL_RETRY:15s}
+    intake-url: ${INTAKE_URL:http://localhost:8081}
+    ocr-url: ${OCR_URL:http://localhost:8000}
+    ocr-timeout: ${OCR_TIMEOUT:120s}
+    classify-min-confidence: ${CLASSIFY_MIN_CONFIDENCE:0.6}
+    field-review-threshold: ${FIELD_REVIEW_THRESHOLD:0.8}
+    ocr-min-confidence: ${OCR_MIN_CONFIDENCE:55}
+    vision-fallback-enabled: ${VISION_FALLBACK_ENABLED:false}
+    min-text-chars: ${MIN_TEXT_CHARS:40}
+    blur-min: ${QUALITY_BLUR_MIN:40}
+    dark-max: ${QUALITY_DARK_MAX:0.22}
+    glare-max: ${QUALITY_GLARE_MAX:0.35}
+    weight-model: ${CONF_WEIGHT_MODEL:0.4}
+    weight-ocr: ${CONF_WEIGHT_OCR:0.3}
+    weight-checks: ${CONF_WEIGHT_CHECKS:0.3}
+    classify-text-chars: ${CLASSIFY_TEXT_CHARS:4000}
+    extract-text-chars: ${EXTRACT_TEXT_CHARS:12000}
+    zone: ${SITE_ZONE:Europe/Moscow}
+  llm:
+    provider: ${LLM_PROVIDER:ollama}
+    base-url: ${LLM_BASE_URL:http://localhost:11434}
+    model: ${LLM_MODEL:qwen3:8b}
+    vision-model: ${LLM_VISION_MODEL:}
+    api-key: ${LLM_API_KEY}
+    timeout: ${LLM_TIMEOUT_SECONDS:60}s
+    max-concurrency: ${LLM_MAX_CONCURRENCY:2}
+    json-mode: ${LLM_JSON_MODE:json_schema}
+    gigachat-auth-key: ${GIGACHAT_AUTH_KEY:}
+    gigachat-scope: ${GIGACHAT_SCOPE:GIGACHAT_API_PERS}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+logging:
+  structured:
+    format:
+      console: ecs
