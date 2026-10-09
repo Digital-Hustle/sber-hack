@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "subsidy/events/package.file.v1/FileReplaced",
+  "$id": "urn:subsidy:events:package.file.v1:FileReplaced",
   "title": "FileReplaced",
   "description": "package: новая версия файла (FR-65). Это схема payload; конверт — envelope.schema.json.",
   "type": "object",

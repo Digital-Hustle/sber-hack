@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "subsidy/events/docproc.document.v1/DocumentParsed",
+  "$id": "urn:subsidy:events:docproc.document.v1:DocumentParsed",
   "title": "DocumentParsed",
   "description": "docproc: документ разобран (вид, поля, проверки); новая версия результата — новое событие. Это схема payload; конверт — envelope.schema.json.",
   "type": "object",
@@ -64,6 +64,12 @@
       ]
     },
     "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reasonCode": {
       "type": [
         "string",
         "null"
