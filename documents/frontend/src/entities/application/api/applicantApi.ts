@@ -26,6 +26,7 @@ export const applicantApi = {
     return api<Uploaded>("intake", `${base(id)}/documents/${docId}/files?mode=${mode}`, { method: "POST", body: fd, headers: { "Idempotency-Key": uid() } });
   },
   remove: (id: string, docId: string) => api<void>("intake", `${base(id)}/documents/${docId}`, { method: "DELETE" }),
+  deleteApplication: (id: string) => api<void>("intake", base(id), { method: "DELETE" }),
   submit: (id: string) => api<{ status?: string; missing?: string[] }>("intake", `${base(id)}/submit`, { method: "POST" }),
 };
 

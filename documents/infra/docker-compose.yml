@@ -207,9 +207,10 @@ services:
     build: { context: .., dockerfile: frontend/Dockerfile }
     image: ${IMAGE_REGISTRY:-documents}/caddy:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    ports: ["80:80", "443:443"]
+    ports: ["${HTTP_BIND:-80}:80", "${HTTPS_BIND:-443}:443"]
     environment:
       PUBLIC_HOST: ${PUBLIC_HOST}
+      CADDY_SCHEME: ${CADDY_SCHEME:-}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddydata:/data

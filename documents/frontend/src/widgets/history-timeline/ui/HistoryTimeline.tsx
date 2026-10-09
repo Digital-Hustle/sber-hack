@@ -15,6 +15,7 @@ const detailsText = (d: unknown): string | null => {
   if (o.type && !("to" in o)) parts.push(String(o.type));
   if (o.comment) parts.push(`«${o.comment}»`);
   if (o.format) parts.push(String(o.format).toUpperCase());
+  if (o.redacted) parts.push("значения удалены по запросу соискателя");
   if (Array.isArray(o.items)) parts.push(o.items.map((i: { reason?: string }) => `«${i.reason ?? ""}»`).join(", "));
   return parts.length ? parts.join(" · ") : null;
 };

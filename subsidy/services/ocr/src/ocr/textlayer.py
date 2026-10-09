@@ -9,7 +9,8 @@ import pdfplumber
 
 from ocr import errors
 from ocr.images import pdf_scale
-from ocr.models import Word
+from ocr.models import Table, Word
+from ocr.tables import from_pdfplumber, from_words
 
 
 @dataclass
@@ -18,6 +19,7 @@ class TextPage:
     height: int
     words: list[Word]
     text: str
+    tables: list[Table]
 
 
 def read_text_layer(data: bytes, dpi: int, max_side: int) -> list[TextPage]:
@@ -49,7 +51,8 @@ def read_text_layer(data: bytes, dpi: int, max_side: int) -> list[TextPage]:
                         )
                     )
                 text = page.extract_text() or ""
-                out.append(TextPage(int(w_pt * k), int(h_pt * k), words, text))
+                tables = from_pdfplumber(page, k) or from_words(words)
+                out.append(TextPage(int(w_pt * k), int(h_pt * k), words, text, tables))
     except Exception as e:  # pdfminer бросает разные исключения на битых файлах
         raise errors.corrupted() from e
     return out

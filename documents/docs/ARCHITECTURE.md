@@ -128,7 +128,7 @@ erDiagram
 Топик `<владелец>.<агрегат>.v<N>`, ключ — id заявки (порядок событий одной заявки). Конверт `{eventId, type, occurredAt, aggregateId, traceparent, payload}`; схемы — `contracts/events/<topic>/<Type>.schema.json`.
 | Топик | Типы | Producer | Payload |
 |---|---|---|---|
-| `intake.application.v1` | `ApplicationCreated / ProfileChanged / Submitted` | intake | applicationId, profile, requiredTypes |
+| `intake.application.v1` | `ApplicationCreated / ProfileChanged / Submitted / ApplicationDeleted` | intake | applicationId, profile, requiredTypes |
 | `intake.document.v1` | `DocumentReceived / FilesChanged / FileReplaced / DocumentRemoved` | intake | documentId, applicationId, fileId, version, slotType? (не в классификатор); у выделенного документа — sourceDocumentId, pages |
 | `docproc.document.v1` | `StageChanged`, `DocumentParsed`, `DocumentUnreadable`, `DocumentFailed` | docproc | documentId, stage, type, typeConfidence, fields[], reasonCode; `split[{type, pages}]` — другие документы файла |
 

@@ -1,8 +1,13 @@
 {
 	admin off
+	# За общим edge-прокси (infra/edge) заголовки X-Forwarded-* приходят из docker-сети.
+	servers {
+		trusted_proxies static private_ranges
+	}
 }
 
-{$PUBLIC_HOST:localhost} {
+# CADDY_SCHEME=http:// — TLS делает общий edge на сервере, этот Caddy слушает только :80 (DEPLOY.md «Общий сервер»).
+{$CADDY_SCHEME}{$PUBLIC_HOST:localhost} {
 	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000"

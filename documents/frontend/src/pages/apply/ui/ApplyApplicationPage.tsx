@@ -7,6 +7,7 @@ import { applicantApi, applicantKeys, AppStatusBadge, dateTimeRu } from "@/entit
 import { ProfileForm } from "@/features/fill-profile";
 import { ResumeForm } from "@/features/start-application";
 import { SubmitButton } from "@/features/submit-application";
+import { DeleteApplication } from "@/features/delete-application";
 import { DocumentChecklist } from "@/widgets/document-checklist";
 import { Button, Card, EmptyState, PageHeader, RowsSkeleton, toast } from "@/shared/ui";
 import { ApiError, errorText, setAuth, useEventStream } from "@/shared/api";
@@ -120,7 +121,8 @@ export const ApplyApplicationPage = () => {
           {!decided && <div className="mt-4 flex justify-center"><Button variant="quiet" onClick={() => setEditProfile(true)}><Pencil />Изменить ответы анкеты</Button></div>}
         </>
       )}
-      <p className="mt-8 text-center text-xs text-muted-foreground">Другая заявка? <Link to={routes.apply} className="underline">Начать заново</Link></p>
+      <div className="mt-8 flex justify-center"><DeleteApplication applicationId={id} /></div>
+      <p className="mt-2 text-center text-xs text-muted-foreground">Другая заявка? <Link to={routes.apply} className="underline">Начать заново</Link></p>
     </>
   );
 };

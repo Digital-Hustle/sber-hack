@@ -14,6 +14,7 @@
 - `POST /applicant/applications/{id}/documents` multipart `file`, `slotType?` → **202** `{documentId, fileId, stage: RECEIVED, duplicateOf?, warnings[]}` (`Idempotency-Key` обязателен)
 - `POST /applicant/applications/{id}/documents/{docId}/files` — дозагрузка страницы/замена (`mode: add|replace`) → 202
 - `DELETE /applicant/applications/{id}/documents/{docId}` → 204 (до решения оператора)
+- `DELETE /applicant/applications/{id}` → 204 — удалить заявку / отозвать согласие (NFR-10), в любом статусе: файлы всех версий, анкета, контакты, запросы оператора стираются, ключ и код перестают работать; событие `ApplicationDeleted` → docproc удаляет текст и результаты, review — кэш, правки и ФИО, в истории значения заменяются на `redacted`, остаётся запись `APPLICATION_DELETED`
 - `GET /applicant/applications/{id}` → `{status, profile, requiredDocuments, documents: [{id, slotType, detectedType, stage, reasonCode?, message?, hint?, updatedAt}], missing: [type], operatorRequests: [...]}` — **без извлечённых значений полей** (минимум ПДн в публичной зоне)
 - `GET /applicant/applications/{id}/stream` (SSE, ticket) — `document.stage`, `application.request`, `application.decision`
 - `POST /applicant/applications/{id}/submit` → `{status: SUBMITTED, missing[]}`
@@ -83,6 +84,7 @@
 | NOT_PARSED_YET | 409 | Документ ещё не разобран | Дождитесь окончания разбора |
 | NOT_SUBMITTED | 409 | Соискатель ещё не отправил заявку | Заявка появится в очереди после отправки |
 | APPLICATION_DECIDED | 409 | По заявке уже принято решение | Изменения после решения не принимаются |
+| APPLICATION_DELETED | 409 | Соискатель удалил заявку | Данные заявки стёрты по его запросу |
 | DOCUMENTS_IN_PROGRESS | 409 | Не все документы разобраны | Дождитесь окончания разбора |
 | COMMENT_REQUIRED | 400 | Укажите причину возврата | Соискатель увидит этот текст |
 | DECISION_UNKNOWN | 400 | Решение — ACCEPTED или RETURNED | — |

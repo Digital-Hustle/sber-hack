@@ -416,6 +416,24 @@
       }
     },
     "/api/v1/applicant/applications/{id}" : {
+      "delete" : {
+        "operationId" : "deleteApplication",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "applicant" ]
+      },
       "get" : {
         "operationId" : "get",
         "parameters" : [ {

@@ -171,6 +171,25 @@ class PipelineIntegrationTest {
     }
 
     @Test
+    void removedDocumentLosesTextAndResults() throws Exception {
+        UUID doc = received();
+        drain();
+        assertThat(stage(doc)).isEqualTo("PARSED");
+        consumer.handle(UUID.randomUUID().toString(), "DocumentRemoved", om.createObjectNode()
+                .put("documentId", doc.toString()).put("applicationId", UUID.randomUUID().toString()));
+        assertThat(jdbc.sql("select status from jobs where document_id = :d").param("d", doc).query(String.class)
+                .single()).isEqualTo("CANCELLED");
+        assertThat(jdbc.sql("""
+                select (select count(*) from stage_outputs where document_id = :d)
+                     + (select count(*) from parse_results where document_id = :d)""").param("d", doc)
+                .query(Long.class).single()).isZero();
+        mvc.perform(get("/api/v1/documents/" + doc + "/result")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_OPERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.fields").isEmpty())
+                .andExpect(jsonPath("$.type").doesNotExist());
+    }
+
+    @Test
     void multiDocumentFileIsSplitByPages() throws Exception {
         JsonNode two = ocrPage(SNILS_TEXT, 0.92, 300.0);
         ObjectNode second = ((ObjectNode) two.path("pages").get(0)).deepCopy().put("n", 2)

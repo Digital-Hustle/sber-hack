@@ -347,6 +347,10 @@ public class ActionService {
     }
 
     private static void ensureOpen(AppRow a) {
+        if ("DELETED".equals(a.status())) {
+            throw DomainException.conflict("APPLICATION_DELETED", "Соискатель удалил заявку",
+                    "Данные заявки стёрты по его запросу");
+        }
         if (a.decided()) {
             throw DomainException.conflict("APPLICATION_DECIDED", "По заявке уже принято решение",
                     "Изменения после решения не принимаются");

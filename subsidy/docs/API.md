@@ -69,7 +69,8 @@ OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `su
 | TOO_MANY_FILES | 422 | В пакете уже {max} файлов | Удалите лишние |
 | INN_INVALID | 400 | ИНН не прошёл проверку контрольной суммы | Проверьте цифры ИНН |
 | PACKAGE_DECIDED | 409 | По пакету уже принято решение | Создайте новый пакет |
-| RATE_LIMITED | 429 | Слишком много загрузок подряд | Подождите минуту |
+| RATE_LIMITED | 429 | Слишком много загрузок подряд (помощник: «вопросов подряд») | Подождите минуту; заголовок `Retry-After` — сколько секунд. Лимиты gateway: `RATE_UPLOADS_PER_MINUTE`=30, `RATE_QUESTIONS_PER_MINUTE`=20 на пользователя |
+| PAYLOAD_TOO_LARGE | 413 | Запрос больше {max} | Загрузка ≤ `GATEWAY_UPLOAD_MAX_MB` (512), прочие запросы ≤ `GATEWAY_BODY_MAX_KB` (1024); лимит на файл — `FILE_TOO_LARGE` в package |
 
 ## Причины непригодности и замечания (в результате, не HTTP)
 | reasonCode | Текст |
@@ -87,6 +88,6 @@ OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `su
 
 ## Внутренние API (только service accounts, `aud=<сервис>`)
 - package: `GET /internal/package/files/{fileId}?version=` → поток (только `svc-docproc`)
-- ocr: `POST /v1/extract` multipart `file` → `{mime, pages: [{n, width, height, textLayer, text, words: [{t, bbox, conf, line}], quality: {blur, brightness, glare, cutOff, dpi}, meanConf, rotation, error?}], durationMs}` (таблицы — OCR-06); `POST /v1/render?page=` multipart `file` → PNG. Токен service account `svc-docproc|svc-package` с `aud=ocr`
+- ocr: `POST /v1/extract` multipart `file` → `{mime, pages: [{n, width, height, textLayer, text, words: [{t, bbox, conf, line}], tables: [{rows: [[ячейка]], bbox, source: text_layer|words}], quality: {blur, brightness, glare, cutOff, dpi}, meanConf, rotation, error?}], durationMs}` (таблицы OCR-06: линейки pdfplumber для текстового слоя, иначе строки/колонки по bbox слов; ≥ 3 строк × ≥ 3 ячеек); `POST /v1/render?page=` multipart `file` → PNG. Токен service account `svc-docproc|svc-package` с `aud=ocr`
 - docproc: `GET /internal/docproc/packages/{id}/documents` → все результаты пакета (для rules)
 - rules: `GET /internal/rules/packages/{id}/facts` → протокол + поля (для assistant, только чтение)

@@ -7,6 +7,7 @@ const STATUS: Record<string, { label: string; tone: Tone }> = {
   NEEDS_CHANGES: { label: "Ждём документы", tone: "warning" },
   ACCEPTED: { label: "Принята", tone: "success" },
   RETURNED: { label: "Возвращена", tone: "danger" },
+  DELETED: { label: "Удалена соискателем", tone: "neutral" },
 };
 export const statusView = (s?: string | null) => STATUS[s ?? ""] ?? { label: s ?? "—", tone: "neutral" as Tone };
 
@@ -22,6 +23,7 @@ export const slotView = (s?: string | null) => SLOT[s ?? ""] ?? SLOT.MISSING;
 const ACTIONS: Record<string, string> = {
   DOCUMENT_UPLOADED: "Загружен документ",
   DOCUMENT_REMOVED: "Документ удалён",
+  APPLICATION_DELETED: "Заявка удалена соискателем, данные стёрты",
   FILES_CHANGED: "Файлы документа изменены",
   DOCUMENT_PARSED: "Документ разобран",
   SUBMITTED: "Заявка отправлена",

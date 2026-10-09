@@ -49,7 +49,7 @@ public class ApplicationRepository {
     /** Сменить статус. */
     public void setStatus(UUID id, String status, String comment, Instant now) {
         jdbc.sql("update applications set status = ?, decision_comment = coalesce(?, decision_comment), updated_at = ?"
-                        + " where id = ?").params(status, comment, ts(now), id).update();
+                        + " where id = ? and status <> 'DELETED'").params(status, comment, ts(now), id).update();
     }
 
     /** Отметить изменение заявки. */
@@ -172,6 +172,29 @@ public class ApplicationRepository {
         jdbc.sql("update documents set deleted = true, updated_at = ? where id = ?").params(ts(now), docId).update();
         jdbc.sql("update document_files set active = false, content_enc = ''::bytea where document_id = ?")
                 .param(docId).update();
+    }
+
+    /** Неудалённые документы заявки (вместе с выделенными). */
+    public List<UUID> liveDocuments(UUID appId) {
+        return jdbc.sql("select id from documents where application_id = ? and not deleted order by created_at, id")
+                .param(appId).query(UUID.class).list();
+    }
+
+    /**
+     * Стереть ПДн заявки (NFR-10): анкета, контакты, комментарий, запросы оператора, содержимое всех версий файлов.
+     * Ключ и код заменяются — старая ссылка больше не открывает заявку. Остаётся строка со статусом DELETED.
+     */
+    public void erase(UUID appId, String deadKeyHash, Instant now) {
+        jdbc.sql("""
+                update applications set status = 'DELETED', profile = '{}'::jsonb, contact_phone = null,
+                    contact_email = null, decision_comment = null, access_key_hash = ?, resume_code_hash = '',
+                    updated_at = ? where id = ?""").params(deadKeyHash, ts(now), appId).update();
+        jdbc.sql("update documents set reason_params = '{}'::jsonb where application_id = ?").param(appId).update();
+        jdbc.sql("update document_files set active = false, content_enc = ''::bytea where application_id = ?")
+                .param(appId).update();
+        jdbc.sql("delete from operator_requests where application_id = ?").param(appId).update();
+        jdbc.sql("delete from upload_requests where application_id = ?").param(appId).update();
+        jdbc.sql("delete from stream_tickets where application_id = ?").param(appId).update();
     }
 
     /** Ответ на запрос с тем же Idempotency-Key. */
