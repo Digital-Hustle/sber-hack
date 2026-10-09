@@ -7,6 +7,13 @@ spring:
         jwt:
           issuer-uri: ""
           jwk-set-uri: http://localhost:0/jwks
+      client:
+        registration:
+          svc:
+            client-secret: test-secret
+        provider:
+          keycloak:
+            token-uri: http://localhost:0/token
 management:
   tracing:
     enabled: false

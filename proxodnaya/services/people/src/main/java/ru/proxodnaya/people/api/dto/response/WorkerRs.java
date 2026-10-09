@@ -15,10 +15,11 @@ import java.util.List;
  * @param zoneIds     зоны допуска
  * @param permits     допуски со сроком
  * @param permitUntil ближайший срок окончания допусков ({@code null} — допусков нет)
+ * @param faceEnrolledAt когда заведён эталон лица ({@code null} — нет)
  * @param createdAt   создан
  * @param updatedAt   изменён
  */
 public record WorkerRs(String id, String fullName, String position, String contractor, String status,
-                       List<String> zoneIds, List<PermitRs> permits, LocalDate permitUntil,
+                       List<String> zoneIds, List<PermitRs> permits, LocalDate permitUntil, Instant faceEnrolledAt,
                        Instant createdAt, Instant updatedAt) {
 }

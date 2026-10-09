@@ -1,5 +1,6 @@
 package ru.proxodnaya.people.features.worker.query.repository;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -92,6 +93,20 @@ public class WorkerReadRepository {
         dsl.select(Tables.WORKER_ZONES.WORKER_ID, Tables.WORKER_ZONES.ZONE_ID).from(Tables.WORKER_ZONES)
                 .where(Tables.WORKER_ZONES.WORKER_ID.in(workerIds))
                 .forEach(row -> result.computeIfAbsent(row.value1(), key -> new HashSet<>()).add(row.value2()));
+        return result;
+    }
+
+    /**
+     * Когда заведены эталоны лица.
+     *
+     * @param workerIds рабочие
+     * @return рабочий → момент заведения (нет ключа — эталона нет)
+     */
+    public Map<UUID, Instant> facesOf(Collection<UUID> workerIds) {
+        Map<UUID, Instant> result = new HashMap<>();
+        dsl.select(Tables.WORKER_FACES.WORKER_ID, Tables.WORKER_FACES.ENROLLED_AT).from(Tables.WORKER_FACES)
+                .where(Tables.WORKER_FACES.WORKER_ID.in(workerIds))
+                .forEach(row -> result.put(row.value1(), row.value2().toInstant()));
         return result;
     }
 

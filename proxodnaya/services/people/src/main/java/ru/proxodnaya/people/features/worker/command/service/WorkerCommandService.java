@@ -115,7 +115,7 @@ public class WorkerCommandService {
     }
 
     /**
-     * Удаляет рабочего (мягко). Каскад в face — PPL-10.
+     * Удаляет рабочего (мягко) и уводит в {@code WorkerDeleted}. Эталоны в face удаляет вызывающий до этого (PPL-10).
      *
      * @param id рабочий
      */

@@ -1,5 +1,6 @@
 package ru.proxodnaya.people.api.controller;
 
+import java.security.Principal;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -18,8 +19,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import ru.proxodnaya.people.api.constants.PathConstants;
+import ru.proxodnaya.people.api.dto.request.CheckFaceRq;
 import ru.proxodnaya.people.api.dto.request.CreateWorkerRq;
+import ru.proxodnaya.people.api.dto.request.EnrollFaceRq;
 import ru.proxodnaya.people.api.dto.request.UpdateWorkerRq;
+import ru.proxodnaya.people.api.dto.response.FaceCheckRs;
+import ru.proxodnaya.people.api.dto.response.FaceEnrollRs;
 import ru.proxodnaya.people.api.dto.response.WorkerPageRs;
 import ru.proxodnaya.people.api.dto.response.WorkerRs;
 
@@ -112,4 +117,39 @@ public interface WorkerController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
     void delete(@PathVariable UUID id);
+
+    /**
+     * Завести или переснять эталон лица: снимки уходят в face, плохой снимок — 422 с причиной.
+     *
+     * @param id      рабочий
+     * @param request снимки
+     * @param actor   кто заводит (subject токена)
+     * @return итог
+     */
+    @Operation(summary = "Завести эталон лица")
+    @PostMapping(PathConstants.FACE)
+    @PreAuthorize("hasRole('ADMIN')")
+    FaceEnrollRs enrollFace(@PathVariable UUID id, @Valid @RequestBody EnrollFaceRq request, Principal actor);
+
+    /**
+     * Удалить эталон лица (проход по лицу станет невозможен).
+     *
+     * @param id рабочий
+     */
+    @Operation(summary = "Удалить эталон лица")
+    @DeleteMapping(PathConstants.FACE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    void deleteFace(@PathVariable UUID id);
+
+    /**
+     * Проверить снимок до сохранения карточки.
+     *
+     * @param request снимок
+     * @return вердикт с подсказкой
+     */
+    @Operation(summary = "Проверить снимок лица")
+    @PostMapping(PathConstants.FACE_CHECK)
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SECURITY_OFFICER')")
+    FaceCheckRs checkFace(@Valid @RequestBody CheckFaceRq request);
 }

@@ -32,12 +32,26 @@ spring:
         jwt:
           issuer-uri: ${OIDC_ISSUER_URI}
           audiences: people
+      # токен сервиса для /internal/face/** (client credentials, роль SVC_PEOPLE)
+      client:
+        registration:
+          svc:
+            provider: keycloak
+            client-id: ${KC_SVC_PEOPLE_CLIENT_ID:svc-people}
+            client-secret: ${KC_SVC_PEOPLE_SECRET}
+            authorization-grant-type: client_credentials
+        provider:
+          keycloak:
+            token-uri: ${OIDC_ISSUER_URI}/protocol/openid-connect/token
 
 people:
   invite:
     ttl: ${INVITE_TTL:72h}
     pepper: ${INVITE_PEPPER}
     link-base: ${PUBLIC_URL}
+  face:
+    url: ${FACE_URL:http://face:8090}
+    timeout: ${FACE_TIMEOUT:5s}
 
 server:
   port: 8081
