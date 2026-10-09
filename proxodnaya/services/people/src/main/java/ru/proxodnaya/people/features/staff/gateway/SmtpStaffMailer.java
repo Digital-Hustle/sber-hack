@@ -39,8 +39,12 @@ public class SmtpStaffMailer implements StaffMailer {
         String text = "Код для входа в кабинет «Проходная»: " + code + "\n\n"
                 + "Код действует " + minutes + " мин. Никому его не сообщайте — сотрудники «Проходной» его не спрашивают.\n"
                 + "Если вы не запрашивали вход, просто проигнорируйте письмо.";
-        if (!send(email, "Код входа: " + code, text) && props.logCodes()) {
-            LOG.warn("SMTP не настроен, код входа для {}: {}", email, code);
+        if (!send(email, "Код входа в кабинет", text)) {
+            if (props.logCodes()) {
+                LOG.warn("SMTP не настроен, код входа для {}: {}", email, code);
+            } else {
+                throw new DomainException(ErrorCode.SERVICE_UNAVAILABLE, "Почта ещё не подключена — обратитесь к администратору");
+            }
         }
     }
 
