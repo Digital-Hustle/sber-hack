@@ -19,6 +19,7 @@ tika = "3.2.3"
 pdfbox = "3.0.8"
 twelvemonkeys = "3.12.0"
 poi = "5.5.1"
+commons-compress = "1.28.0"
 
 [libraries]
 tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
@@ -26,6 +27,7 @@ pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 imageio-jpeg = { module = "com.twelvemonkeys.imageio:imageio-jpeg", version.ref = "twelvemonkeys" }
 imageio-tiff = { module = "com.twelvemonkeys.imageio:imageio-tiff", version.ref = "twelvemonkeys" }
 poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
 dependency-management-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "spring-dependency-management" }
 jooq-gradle-plugin = { module = "nu.studer:gradle-jooq-plugin", version.ref = "jooq-gradle" }
