@@ -4,6 +4,7 @@
 
 ## 1. Текущее состояние
 - Есть каркас (PPL-01) и рабочие (PPL-02): CRUD, курсор по UUIDv7, поиск, блок, outbox `people.worker.v1`. Инвайты и активация телефона (PPL-03/04) → `DeviceBound`/`DeviceRevoked` для access. Объекты/зоны/проходные и допуски (PPL-06/08), `/internal/people/**` под ролью `SVC_ACCESS`. Эталон лица (PPL-12) и каскад удаления в face (PPL-10): `FaceGateway` с токеном `svc-people`, вызов face вне транзакции. Дальше: сервисные токены (PLT-06) — без них access получит 401; PPL-05 device-токен; PPL-07 сопряжение киоска.
+- Персонал входит по коду из письма (PPL-13, ADR-041): `features/staff`, SMTP `SMTP_*`, первый админ — `STAFF_BOOTSTRAP_ADMIN_EMAIL`.
 - people — второй издатель JWT (ES256, ADR-040): device-токен телефона по подписи challenge (PPL-05), JWKS `/internal/people/jwks`; ключ — env `DEVICE_TOKEN_SIGNING_KEY`.
 
 ## 2. Карта сервиса
@@ -19,6 +20,7 @@
 | `features/site/` | объекты, зоны, проходные; `api/ZoneDirectory` для проверки зон рабочего |
 | `features/token/` | `TokenIssuer` / `JwtTokenIssuer` — выпуск ES256, открытая часть ключа выводится из закрытого |
 | `features/device/command/service/DeviceAuthService` | challenge → device-токен (PPL-05), `ChallengeRepository` |
+| `features/staff/` | персонал: `StaffLoginService` (код → сессия, refresh), `StaffCommandService` (invite/role/disable, LAST_ADMIN), `AccessJournal`, `gateway/SmtpStaffMailer` |
 | `api/controller/InternalController` | `/internal/people/**` для access (`SVC_ACCESS`) |
 | `shared/` | `WorkerStatus`, `Cursor`, `Limits` |
 
@@ -34,6 +36,8 @@
 | 2026-10-08 | Проходная ведёт в одну зону (`zone_id`), вместо `zone_from/zone_to` | вход в зону = IN, выход = OUT; хватает для MVP | PPL-06 |
 | 2026-10-09 | Открытый ключ выводим `d·G`, а не берём из PKCS#8 | Java не кладёт точку в PKCS#8, openssl — кладёт; так работают оба | PPL-05 |
 | 2026-10-09 | Challenge выдаётся и для неизвестного устройства | ответ не раскрывает, привязан ли id | PPL-05 |
+| 2026-10-09 | Персонал в people, не в Keycloak | вход по коду из письма, фронт уже под него; Keycloak — только сервисы | ADR-041 |
+| 2026-10-09 | Письмо с кодом шлётся внутри транзакции | SMTP упал → код не сохранён, можно сразу повторить; таймауты 5 с | PPL-13 |
 | 2026-10-08 | Outbox скопирован из access, не в `libs/common` | jOOQ-классы у сервисов свои | PLT-07 |
 
 ## 4. Известные баги и ограничения
@@ -50,3 +54,4 @@
 - 2026-10-09 · miroslavrov (агент) · chore: JWKS и token-uri из внутренней сети (`OIDC_JWKS_URI`, `OIDC_TOKEN_URI`), iss — публичный (ADR-039, #53)
 - 2026-10-09 · miroslavrov (агент) · feat: ACC-17 `zoneCapacity` в `/internal/people/checkpoints/{id}` для access (#90)
 - 2026-10-09 · miroslavrov (агент) · feat: PPL-05 device-токен ES256, JWKS, два издателя в сервисах и gateway (ADR-040, #91)
+- 2026-10-09 · miroslavrov (агент) · feat: PPL-13 вход персонала по коду из письма, `/staff`, журнал доступа (ADR-041, #96)

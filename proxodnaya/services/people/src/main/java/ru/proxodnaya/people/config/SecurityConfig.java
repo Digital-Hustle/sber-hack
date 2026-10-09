@@ -42,6 +42,10 @@ public class SecurityConfig {
                         // device-токен: телефон подтверждает себя подписью challenge (PPL-05)
                         .requestMatchers(HttpMethod.POST, PathConstants.AUTH + PathConstants.DEVICE_CHALLENGE,
                                 PathConstants.AUTH + PathConstants.DEVICE_TOKEN).permitAll()
+                        // вход персонала: подтверждает код из письма (PPL-13), продление — refresh-токен
+                        .requestMatchers(HttpMethod.POST, PathConstants.AUTH + PathConstants.STAFF_CODE,
+                                PathConstants.AUTH + PathConstants.STAFF_VERIFY,
+                                PathConstants.AUTH + PathConstants.STAFF_REFRESH).permitAll()
                         // открытые ключи токенов people — для gateway и сервисов во внутренней сети
                         .requestMatchers(HttpMethod.GET, PathConstants.INTERNAL + PathConstants.JWKS).permitAll()
                         .anyRequest().authenticated())

@@ -1,4 +1,6 @@
 spring:
+  mail:
+    password: ""
   liquibase:
     contexts: test
   security:
@@ -23,6 +25,10 @@ people:
     link-base: https://gate.test/
   tokens:
     issuer: https://gate.test/people
+  staff:
+    pepper: test-pepper-test-pepper-test-pepper-0001
+    login-url: https://gate.test/admin/login
+    bootstrap-email: root@gate.test
 proxodnaya:
   security:
     people-issuer: ""

@@ -12,7 +12,8 @@
 | PPL-06 | FR-22 | Зоны, проходные, вместимость | B1 | done (#7) |
 | PPL-07 | FR-64 | Код сопряжения киоска → ключ киоска, `/auth/kiosk/pair` | B1 | todo |
 | PPL-08 | FR-07 | Допуски: инструктаж/медосмотр со сроком, допуски в зоны; `/internal/.../access-profile` | B1 | done (#7): допуски и зоны в карточке, access-profile, internal checkpoint |
-| PPL-09 | FR-60 | Provisioning персонала в Keycloak (`POST /staff`) | B1 | todo |
+| PPL-09 | FR-60 | Provisioning персонала в Keycloak (`POST /staff`) | B1 | done #96: заменено PPL-13 — персонал в people (ADR-041) |
 | PPL-10 | NFR-10 | Удаление рабочего: каскад в face, `WorkerDeleted` | B1 | review #44 |
 | PPL-11 | FR-65 | `EndpointSecurityMatrixTest`, IDOR-тесты | B1 | todo |
+| PPL-13 | FR-60/61 | Вход персонала по коду из письма, сессии, `/staff` CRUD, роли, LAST_ADMIN, журнал доступа, SMTP | B1 | review #96: ADR-041 |
 | PPL-12 | FR-13 | Эталон лица из кабинета: `POST/DELETE /workers/{id}/face`, `POST /workers/face/check` → face, `faceEnrolledAt` в карточке | B1 | review #44 |
