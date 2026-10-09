@@ -16,7 +16,7 @@
 ## Платформа (B1)
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| PLT-00 | — | Получить текст кейса: сверить С1–С22, разд. 5.3/5.5 с REQUIREMENTS, DOC-TYPES, DEMO; поправить гипотезы | B1 + все | blocked: текста кейса в репозитории нет — гипотезы зафиксированы в REQUIREMENTS/QUESTIONS |
+| PLT-00 | — | Получить текст кейса: сверить С1–С22, разд. 5.3/5.5 с REQUIREMENTS, DOC-TYPES, DEMO; поправить гипотезы | B1 + все | blocked: положение (23.09) сверено — Д1–Д12, блоки баллов, 8 бонусов и основания снятия совпадают с DEFENSE.md; текста сценариев С1–С22 в нём нет — гипотезы в REQUIREMENTS/QUESTIONS |
 | PLT-01 | NFR-15 | `init-backend.sh services` (кейс documents), `libs/common` — перенести из `proxodnaya/services/libs/common` (sed `proxodnaya` → `documents`), `libs/llm` — каркас библиотеки | B1 | done (до #27): services/, libs/common, libs/llm |
 | PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис, volume), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy, ollama + ollama-pull (профиль `llm-local`) | B1 | done (до #27): compose — postgres, kafka, keycloak, jaeger, caddy, ollama (профиль llm-local); healthcheck Java-сервисов исправлен в #35 |
 | PLT-03 | NFR-13 | CI `documents-ci.yml` уже есть — проверить на первом коде; включить деплой (`DOCS_DEPLOY_ENABLED`) | B1 | done #40 — CI проверен на коде, smoke на PR с инфраструктурой; CD переписан (compose build → GHCR → SSH, smoke, откат), включается DOCS_DEPLOY_ENABLED, когда будет сервер |
@@ -36,3 +36,4 @@
 | X-04 | FR-42 | Замер моделей на открытом наборе → таблица в LLM.md, выбор локальной модели | B2 + B3 | todo |
 | X-05 | — | «Злоумышленник» по чек-листу I (каждые 2 часа, по очереди) | все | done #40 — scripts/attack.sh (чек-лист I + T1–T10) в smoke CI |
 | X-06 | NFR-12 | Слайды, матмодель (уверенность, очередь), репетиции | F2 + B2 + B1 | done #40 — MATH.md (уверенность, порог, контрольные суммы, M/M/c), 10 слайдов pptx; репетиции — за командой |
+| X-07 | FR-20/42 | Разбор реальной моделью на стенде: найти причину `FAILED` у всех документов в бенче X-04 (5 повторов зависимости ≈ 60 с — вероятно OCR или intake, не модель); в attack.sh требовать стадию дальше `EXTRACTING_TEXT` (WAITING_MODEL без модели) | B1 + B2 | todo |
