@@ -63,7 +63,7 @@ jooq {
                         isDeprecated = false; isRecords = true; isJavaTimeTypes = true; isFluentSetters = false
                     }
                     target = org.jooq.meta.jaxb.Target().apply {
-                        packageName = "ru.subsidy.${project.name}.jooq"
+                        packageName = "ru.subsidy.${if (project.name == "package") "package_" else project.name}.jooq"
                         directory = "build/generated-src/jooq/main"
                     }
                 }

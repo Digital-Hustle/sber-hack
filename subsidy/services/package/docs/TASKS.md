@@ -4,7 +4,7 @@
 
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| PK-01 | NFR-15 | `new-service.sh package 8081 B1`, Liquibase: organizations, packages, files, file_versions, outbox | B1 | todo |
+| PK-01 | NFR-15 | `new-service.sh package 8081 B1`, Liquibase: organizations, packages, files, file_versions, outbox | B1 | done |
 | PK-02 | FR-01 | Организация по ИНН (контрольная сумма), пакет на программу, роли + IDOR-тест | B1 | todo |
 | PK-03 | FR-03/06 | `FileInspector` + проверки — TDD на битых файлах | B1 | todo |
 | PK-04 | FR-02 | Приём: AES-GCM + запись + outbox, `202`, `FileReceived` без имени | B1 | todo |

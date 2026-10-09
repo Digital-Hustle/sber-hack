@@ -118,6 +118,35 @@ services:
     entrypoint: ["/bin/sh", "-c", "ollama pull ${LLM_MODEL:-qwen3:8b} && ollama pull ${LLM_VISION_MODEL:-qwen2.5vl:7b}"]
     restart: "no"
 
+  package:
+    <<: *restart
+    build:
+      context: ../services
+      dockerfile: Dockerfile.src
+      args:
+        SERVICE: package
+    environment:
+      DB_HOST: postgres
+      PACKAGE_DB_PASSWORD: ${PACKAGE_DB_PASSWORD:?}
+      LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-prod}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:?}
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
+      FILES_ENCRYPTION_KEY: ${FILES_ENCRYPTION_KEY:?}
+      UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-30}
+      UPLOAD_MAX_PAGES: ${UPLOAD_MAX_PAGES:-60}
+      UPLOAD_MAX_FILES: ${UPLOAD_MAX_FILES:-60}
+      ZIP_MAX_UNPACKED_MB: ${ZIP_MAX_UNPACKED_MB:-300}
+      ZIP_MAX_ENTRIES: ${ZIP_MAX_ENTRIES:-100}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:?}
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka-topics: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8081 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
   gateway:
     <<: *restart
     build:
