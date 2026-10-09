@@ -20,7 +20,6 @@
 | `features/report` | табель: `TimesheetService` (интервалы → дни площадки, коды Т/Н), `TimesheetXlsxWriter` (POI) |
 | `features/analytics` | SQL сводки и часов, `LateOvertimeCalculator` (смена против интервалов), `method` в ответе |
 | `features/analytics` | SQL сводки и часов, `PassStatsQueryService` (отказы по причинам, нагрузка день × час по `pass_events`), `method` в ответе |
-| `features/worker` | статус рабочего (`/worker/me`) |
 | `features/stream` | `TicketService` (одноразовые тикеты), `SseHub` (подписчики, буфер, Last-Event-ID, пульс), `StreamEventsListener` (события после коммита → SSE) |
 | `messaging/consumer/PassEventsConsumer` | `access.pass.v1` → `pass_events` + интервалы, идемпотентно |
 | `messaging/consumer/PeopleEventsConsumer` | `people.worker.v1` → `workers` (ФИО, должность, подрядчик, статус), старое событие не перетирает новое |
