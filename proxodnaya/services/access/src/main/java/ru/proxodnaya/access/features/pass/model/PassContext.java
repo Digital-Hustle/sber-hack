@@ -15,6 +15,7 @@ import ru.proxodnaya.access.shared.Direction;
  * @param shift            активная смена (пусто — смены нет)
  * @param failedDependency имя упавшей зависимости (face | people | shift) или пусто
  * @param today            текущая дата на объекте
+ * @param inside           рабочий внутри объекта (anti-passback, FR-08)
  */
 public record PassContext(
         Direction direction,
@@ -24,6 +25,7 @@ public record PassContext(
         FaceResult face,
         ActiveShift shift,
         String failedDependency,
-        LocalDate today
+        LocalDate today,
+        boolean inside
 ) {
 }

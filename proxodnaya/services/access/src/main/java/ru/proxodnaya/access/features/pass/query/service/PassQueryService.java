@@ -1,6 +1,7 @@
 package ru.proxodnaya.access.features.pass.query.service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import ru.proxodnaya.access.config.properties.AccessProperties;
 import ru.proxodnaya.access.features.pass.model.Presence;
 import ru.proxodnaya.access.shared.Direction;
 import ru.proxodnaya.access.features.pass.query.repository.PassReadRepository;
+import ru.proxodnaya.access.jooq.tables.records.PassAttemptsRecord;
 
 /**
  * Чтение для проверок до челленджа: статус, присутствие, повторный скан, блокировка за неудачи.
@@ -79,5 +81,35 @@ public class PassQueryService {
      */
     public int faceFailuresSince(String workerId, Instant since) {
         return repository.faceFailuresSince(workerId, since);
+    }
+
+    /**
+     * Журнал проходов по фильтру (FR-10/31).
+     *
+     * @param workerId   фильтр по рабочему (null — все)
+     * @param checkpoint фильтр по проходной (null — все)
+     * @param decision   фильтр по решению (null — все)
+     * @param code       фильтр по коду причины (null — все)
+     * @param source     фильтр по источнику (null — все)
+     * @param from       от (включительно, null — без ограничения снизу)
+     * @param to         до (включительно, null — без ограничения сверху)
+     * @param cursor     курсор последней записи предыдущей страницы (null — первая страница)
+     * @param limit      размер страницы
+     * @return список записей журнала
+     */
+    public List<PassAttemptsRecord> findAttempts(
+            String workerId, String checkpoint, String decision, String code, String source,
+            Instant from, Instant to, String cursor, int limit) {
+        Instant cursorTs = cursor != null && !cursor.isBlank() ? Instant.parse(cursor) : null;
+        return repository.findAttempts(workerId, checkpoint, decision, code, source, from, to, cursorTs, limit);
+    }
+
+    /**
+     * Количество попыток по фильтру.
+     */
+    public long countAttempts(
+            String workerId, String checkpoint, String decision, String code, String source,
+            Instant from, Instant to) {
+        return repository.countAttempts(workerId, checkpoint, decision, code, source, from, to);
     }
 }

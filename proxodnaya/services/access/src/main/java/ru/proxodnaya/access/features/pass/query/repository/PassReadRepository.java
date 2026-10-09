@@ -6,10 +6,15 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Record;
+import org.jooq.SortOrder;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import ru.proxodnaya.access.features.pass.model.Presence;
+import ru.proxodnaya.access.jooq.tables.records.PassAttemptsRecord;
 import ru.proxodnaya.access.jooq.Tables;
 
 /**
@@ -83,5 +88,85 @@ public class PassReadRepository {
         return dsl.fetchCount(PASS_ATTEMPTS, PASS_ATTEMPTS.CLAIMED_WORKER_ID.eq(workerId)
                 .and(PASS_ATTEMPTS.TS.gt(since.atOffset(ZoneOffset.UTC)))
                 .and(PASS_ATTEMPTS.REASON_CODE.in(FACE_FAILURES)));
+    }
+
+    /**
+     * Список попыток по фильтру (журнал, FR-10/31). Курсорная пагинация по {@code ts desc, id desc}.
+     *
+     * @param workerId   фильтр по рабочему (null — все)
+     * @param checkpoint фильтр по проходной (null — все)
+     * @param decision   фильтр по решению (null — все)
+     * @param code       фильтр по коду причины (null — все)
+     * @param source     фильтр по источнику (null — все)
+     * @param from       от (включительно, null — без ограничения снизу)
+     * @param to         до (включительно, null — без ограничения сверху)
+     * @param cursorTs   курсор: ts предыдущей страницы (null — первая страница)
+     * @param limit      размер страницы
+     * @return список записей
+     */
+    public List<PassAttemptsRecord> findAttempts(
+            String workerId, String checkpoint, String decision, String code, String source,
+            Instant from, Instant to, Instant cursorTs, int limit) {
+        Condition c = DSL.noCondition();
+        if (workerId != null && !workerId.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.CLAIMED_WORKER_ID.eq(workerId));
+        }
+        if (checkpoint != null && !checkpoint.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.CHECKPOINT_ID.eq(checkpoint));
+        }
+        if (decision != null && !decision.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.DECISION.eq(decision));
+        }
+        if (code != null && !code.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.REASON_CODE.eq(code));
+        }
+        if (source != null && !source.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.SOURCE.eq(source));
+        }
+        if (from != null) {
+            c = c.and(PASS_ATTEMPTS.TS.greaterOrEqual(from.atOffset(ZoneOffset.UTC)));
+        }
+        if (to != null) {
+            c = c.and(PASS_ATTEMPTS.TS.lessOrEqual(to.atOffset(ZoneOffset.UTC)));
+        }
+        if (cursorTs != null) {
+            c = c.and(PASS_ATTEMPTS.TS.lessThan(cursorTs.atOffset(ZoneOffset.UTC)));
+        }
+        return dsl.selectFrom(PASS_ATTEMPTS)
+                .where(c)
+                .orderBy(PASS_ATTEMPTS.TS.sort(SortOrder.DESC), PASS_ATTEMPTS.ID.sort(SortOrder.DESC))
+                .limit(Math.min(limit, 500))
+                .fetchInto(PassAttemptsRecord.class);
+    }
+
+    /**
+     * Считает количество попыток по фильтру (для total в ответе).
+     */
+    public long countAttempts(
+            String workerId, String checkpoint, String decision, String code, String source,
+            Instant from, Instant to) {
+        Condition c = DSL.noCondition();
+        if (workerId != null && !workerId.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.CLAIMED_WORKER_ID.eq(workerId));
+        }
+        if (checkpoint != null && !checkpoint.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.CHECKPOINT_ID.eq(checkpoint));
+        }
+        if (decision != null && !decision.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.DECISION.eq(decision));
+        }
+        if (code != null && !code.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.REASON_CODE.eq(code));
+        }
+        if (source != null && !source.isBlank()) {
+            c = c.and(PASS_ATTEMPTS.SOURCE.eq(source));
+        }
+        if (from != null) {
+            c = c.and(PASS_ATTEMPTS.TS.greaterOrEqual(from.atOffset(ZoneOffset.UTC)));
+        }
+        if (to != null) {
+            c = c.and(PASS_ATTEMPTS.TS.lessOrEqual(to.atOffset(ZoneOffset.UTC)));
+        }
+        return dsl.fetchCount(PASS_ATTEMPTS, c);
     }
 }

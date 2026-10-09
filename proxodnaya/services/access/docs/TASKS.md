@@ -12,11 +12,11 @@
 | ACC-06 | FR-09/NFR-16 | Клиенты face/people/shift: параллельно, таймаут 1,5 с, CB, fail-closed + `FailClosedIntegrationTest` | B2 | review #3, #8 (параллельно + таймаут + fail-closed + service-токен client-credentials; без circuit breaker) |
 | ACC-07 | FR-01/07 | `DecisionEngine` по порядку проверок, все коды из API.md + `DecisionEngineTest` | B2 | done #3 |
 | ACC-08 | FR-10/67 | Журнал: hash-chain, append-only тест, `POST /security/journal/verify` | B2 | done #3 |
-| ACC-09 | FR-08 | Anti-passback и вместимость зоны | B2 | todo |
+| ACC-09 | FR-08 | Anti-passback и вместимость зоны | B2 | done feat/ACC-09-11-13 |
 | ACC-10 | FR-11 | TEMP_LOCKED: 5 неудачных сверок за 10 мин + алерт | B2 | review #3 (блокировка есть, алерта нет) |
-| ACC-11 | FR-10/31 | `GET /attempts` (фильтры, курсоры), `/worker/attempts`, миниатюры только ADMIN | B2 | todo |
+| ACC-11 | FR-10/31 | `GET /attempts` (фильтры, курсоры), `/worker/attempts`, миниатюры только ADMIN | B2 | done feat/ACC-09-11-13 |
 | ACC-12 | FR-64 | Проверка подписи запросов киоска (`X-Kiosk-*`, nonce, окно) | B2 | todo |
-| ACC-13 | FR-14 | Ручной проход GUARD с причиной, `source=MANUAL` | B2 | todo |
+| ACC-13 | FR-14 | Ручной проход GUARD с причиной, `source=MANUAL` | B2 | done feat/ACC-09-11-13 |
 | ACC-14 | FR-34 | Симулятор проходов `source=SIMULATOR` через тот же движок, флаг | B2 | todo |
 | ACC-15 | FR-70 | Офлайн-снимок (подпись, TTL 12 ч) и приём `offline-attempts` с конфликтами | B2 | todo |
 | ACC-16 | FR-42 | `/internal/access/stats` для assistant | B2 | todo |

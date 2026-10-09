@@ -168,7 +168,7 @@ public class PassService {
         Optional<ActiveShift> activeShift = Optional.ofNullable(join(shiftF, SHIFT, failed)).flatMap(opt -> opt);
         PassContext ctx = new PassContext(pending.direction(), pending.deviceId(), pending.zoneId(), profile.orElse(null), faceResult,
                 activeShift.orElse(null), failed.isEmpty() ? null : String.join(",", failed),
-                LocalDate.ofInstant(now, props.siteZone()));
+                LocalDate.ofInstant(now, props.siteZone()), query.presence(pending.workerId()).inside());
         DecisionResult decision = engine.decide(ctx);
         Map<String, Object> details = new LinkedHashMap<>();
         if (!failed.isEmpty()) {
@@ -243,5 +243,41 @@ public class PassService {
 
     private Instant now() {
         return clock.instant().truncatedTo(ChronoUnit.MICROS);
+    }
+
+    /**
+     * Ручной проход охранника (FR-14, source=MANUAL).
+     * Решение — MANUAL, код — MANUAL_GUARD. Гашение QR не требуется (нет QR).
+     * Запись в журнал + присутствие + outbox — в одной транзакции.
+     *
+     * @param workerId    рабочий
+     * @param direction    IN | OUT
+     * @param checkpointId проходная
+     * @param reason       причина (обязательная)
+     * @param now          время
+     * @return итог
+     */
+    public PassOutcome manualPass(String workerId, Direction direction, String checkpointId, String reason, Instant now) {
+        UUID id = UuidCreator.getTimeOrderedEpoch();
+        Optional<WorkerProfile> profile;
+        String zoneId = null;
+        try {
+            var zoneF = async(() -> people.checkpointZone(checkpointId));
+            var profileF = async(() -> people.accessProfile(workerId));
+            zoneId = zoneF.join().orElse(null);
+            profile = profileF.join();
+        } catch (CompletionException error) {
+            profile = Optional.empty();
+        }
+        Optional<WorkerPreview> preview = profile.map(WorkerPreview::of);
+        PassRecord rec = new PassRecord(
+                id, now, checkpointId, zoneId, direction, workerId, null, null,
+                null, null, null, Decision.MANUAL, ReasonCode.OK,
+                latency(now), AttemptSource.MANUAL,
+                Map.of("reason", reason)
+        );
+        PassRecord saved = recorder.finish(rec);
+        return new PassOutcome(saved.id(), saved.decision(), saved.code(), preview.orElse(null),
+                saved.direction(), saved.faceScore(), saved.ts());
     }
 }

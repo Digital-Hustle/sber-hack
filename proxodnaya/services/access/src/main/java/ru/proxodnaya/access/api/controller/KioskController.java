@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import ru.proxodnaya.access.api.constants.PathConstants;
 import ru.proxodnaya.access.api.dto.request.FramesRq;
+import ru.proxodnaya.access.api.dto.request.ManualPassRq;
 import ru.proxodnaya.access.api.dto.request.ScanRq;
 import ru.proxodnaya.access.api.dto.response.DecisionRs;
 import ru.proxodnaya.access.api.dto.response.ScanRs;
@@ -50,4 +51,16 @@ public interface KioskController {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasRole('GUARD')")
     DecisionRs submitFrames(@PathVariable UUID token, @Valid @RequestBody FramesRq request);
+
+    /**
+     * Ручной проход охранника (FR-14): решение GUARD с причиной.
+     *
+     * @param request данные прохода (workerId, direction, checkpointId, reason)
+     * @return решение MANUAL
+     */
+    @Operation(summary = "Ручной проход охранника (override)")
+    @PostMapping(PathConstants.MANUAL)
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasRole('GUARD')")
+    DecisionRs manualPass(@Valid @RequestBody ManualPassRq request);
 }
