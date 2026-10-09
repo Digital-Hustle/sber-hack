@@ -1,0 +1,101 @@
+{
+  "realm": "documents",
+  "enabled": true,
+  "displayName": "Документы",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 3600,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["ru"],
+  "defaultLocale": "ru",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "roles": {
+    "realm": [
+      { "name": "OPERATOR", "description": "Оператор приёма" },
+      { "name": "SENIOR_OPERATOR", "description": "Старший оператор: решения, переразбор, отчёты" },
+      { "name": "AUDITOR", "description": "Аудитор: история и метрики, ПДн скрыты" },
+      { "name": "SERVICE_DOCPROC", "description": "Service account docproc" },
+      { "name": "SERVICE_REVIEW", "description": "Service account review" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "documents-operator",
+      "name": "Рабочее место оператора",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["https://${PUBLIC_HOST}/operator/*", "https://${PUBLIC_HOST}/operator"],
+      "webOrigins": ["https://${PUBLIC_HOST}"],
+      "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "https://${PUBLIC_HOST}/*" },
+      "protocolMappers": [
+        {
+          "name": "aud-documents-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": { "included.custom.audience": "documents-api", "access.token.claim": "true", "id.token.claim": "false" }
+        }
+      ]
+    },
+    {
+      "clientId": "svc-docproc",
+      "publicClient": false,
+      "secret": "${KC_SVC_DOCPROC_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "svc-review",
+      "publicClient": false,
+      "secret": "${KC_SVC_REVIEW_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "operator",
+      "firstName": "Ольга",
+      "lastName": "Операторова",
+      "email": "operator@documents.local",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KC_DEMO_OPERATOR_PASSWORD}", "temporary": false }],
+      "realmRoles": ["OPERATOR"]
+    },
+    {
+      "username": "senior",
+      "firstName": "Сергей",
+      "lastName": "Старший",
+      "email": "senior@documents.local",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KC_DEMO_SENIOR_PASSWORD}", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "realmRoles": ["OPERATOR", "SENIOR_OPERATOR"]
+    },
+    {
+      "username": "auditor",
+      "firstName": "Анна",
+      "lastName": "Аудитова",
+      "email": "auditor@documents.local",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KC_DEMO_AUDITOR_PASSWORD}", "temporary": false }],
+      "realmRoles": ["AUDITOR"]
+    },
+    { "username": "service-account-svc-docproc", "enabled": true, "serviceAccountClientId": "svc-docproc", "realmRoles": ["SERVICE_DOCPROC"] },
+    { "username": "service-account-svc-review", "enabled": true, "serviceAccountClientId": "svc-review", "realmRoles": ["SERVICE_REVIEW"] }
+  ]
+}

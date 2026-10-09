@@ -2,7 +2,7 @@
 # Быстрый смоук стенда «Документы». Использование: scripts/smoke.sh https://host
 # Actuator сервисов живёт на management-порту внутри сети — снаружи проверяем маршруты gateway.
 set -euo pipefail
-H="${1:-https://localhost}"; K="${KEYCLOAK_URL:-${H/\/\//\/\/auth.}}"
+H="${1:-https://localhost}"; K="${KEYCLOAK_URL:-$H/auth}"
 GW_HEALTH="${GATEWAY_HEALTH_URL:-$H/actuator/health}"
 ok() { echo "✔ $1"; } ; bad() { echo "✖ $1"; exit 1; }
 code_of() { curl -sk -o /dev/null -w '%{http_code}' "$@"; }
