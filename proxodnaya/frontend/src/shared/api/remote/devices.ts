@@ -11,13 +11,18 @@ import { createKey, loadKey, publicJwk, saveKey } from "../../lib/deviceKey";
 type KioskMeRs = { kiosk: KioskRs; checkpoint?: Parameters<typeof toCheckpoint>[0] | null; settings?: Partial<Settings> | null };
 
 /** Первый запуск: ключ терминала (неизвлекаемый) → регистрация → код сопряжения на экране. */
-const registerKiosk = async () => {
+const KIOSK_REQUEST_TIMEOUT_MS = 12000;
+let registering: Promise<string> | null = null;
+const registerKiosk = () => {
+  registering ??= (async () => {
   const key = await createKey(KIOSK_SLOT, "pending", "kiosk");
-  const r = await http<{ kioskId: string; pairCode: string }>("access", "/kiosk/register", { auth: "none", body: { publicKeyJwk: await publicJwk(key.publicKey) } });
+  const r = await http<{ kioskId: string; pairCode: string }>("access", "/kiosk/register", { auth: "none", body: { publicKeyJwk: await publicJwk(key.publicKey) }, signal: AbortSignal.timeout(KIOSK_REQUEST_TIMEOUT_MS) });
   const saved = { ...key, deviceId: r.kioskId };
   await saveKey(KIOSK_SLOT, saved);
   setKioskKey(saved);
   return r.kioskId;
+  })().finally(() => { registering = null; });
+  return registering;
 };
 
 /** id терминала (= id его ключа). Нет ключа — регистрируемся. */
@@ -31,10 +36,10 @@ export const kioskIdentity = async () => {
 export const kioskStatus = async () => {
   let r: KioskMeRs;
   try {
-    r = await http<KioskMeRs>("access", "/kiosk/me", { auth: "kiosk" });
+    r = await http<KioskMeRs>("access", "/kiosk/me", { auth: "kiosk", signal: AbortSignal.timeout(KIOSK_REQUEST_TIMEOUT_MS) });
   } catch (e) {
     // Сервер не знает ключ (база пересоздана, терминал удалён) — регистрируемся заново.
-    if (e instanceof ApiError && (e.status === 401 || e.code === "KIOSK_UNKNOWN")) { await registerKiosk(); r = await http<KioskMeRs>("access", "/kiosk/me", { auth: "kiosk" }); }
+    if (e instanceof ApiError && (e.status === 401 || e.code === "KIOSK_UNKNOWN")) { await registerKiosk(); r = await http<KioskMeRs>("access", "/kiosk/me", { auth: "kiosk", signal: AbortSignal.timeout(KIOSK_REQUEST_TIMEOUT_MS) }); }
     else throw e;
   }
   const kiosk: Kiosk = toKiosk(r.kiosk);
