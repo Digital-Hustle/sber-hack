@@ -110,7 +110,7 @@ Package-скрипт (добавить при скаффолдинге): `"gen:t
 
 - Сетка 4 px. Для `p-* m-* gap-* space-* inset-*` разрешены шаги: `0` (0 px), `0.5` (2 px), `1` (4 px), `1.5` (6 px), `2` (8 px), `2.5` (10 px), `3` (12 px), `3.5` (14 px), `4` (16 px), `5` (20 px), `6` (24 px), `7` (28 px), `8` (32 px), `10` (40 px), `12` (48 px), `14` (56 px), `16` (64 px), `20` (80 px), `24` (96 px).
 - Высота контролов: `h-control-xs` 32, `h-control-sm` 36, `h-control-md` 44, `h-control-lg` 52, `h-control-xl` 64 px.
-- Радиусы: `rounded-xs` 10, `rounded-sm` 14, `rounded-md` 18, `rounded-lg` 26, `rounded-xl` 34, `rounded-2xl` 44, `rounded-3xl` 56 px, `rounded-full`.
+- Радиусы: `rounded-2xs` 6, `rounded-xs` 10, `rounded-sm` 14, `rounded-md` 18, `rounded-lg` 26, `rounded-xl` 34, `rounded-2xl` 44, `rounded-3xl` 56 px, `rounded-full`.
 - Тени: `shadow-xs`, `shadow-card`, `shadow-float`, `shadow-pop`, `shadow-glow`, `shadow-scrim` (свои значения в тёмной теме).
 - Safe-area телефона: `pt-safe`, `pb-safe`.
 - Слои: `z-base` 0, `z-raised` 1, `z-sticky` 10, `z-nav` 20, `z-overlay` 50, `z-modal` 60, `z-dropdown` 65, `z-toast` 70, `z-kiosk` 80.
@@ -123,6 +123,8 @@ Package-скрипт (добавить при скаффолдинге): `"gen:t
 | duration.fast | 0.2 с | `duration-fast` |
 | duration.base | 0.3 с | `duration-base` |
 | duration.slow | 0.45 с | `duration-slow` |
+| duration.draw | 0.42 с | `duration-draw` |
+| duration.zoom | 0.63 с | `duration-zoom` |
 | duration.loop | 2.4 с | `duration-loop` |
 | ease.out | `cubic-bezier(0.22, 1, 0.36, 1)` | `ease-out` |
 | ease.in | `cubic-bezier(0.4, 0, 1, 1)` | `ease-in` |
@@ -135,6 +137,8 @@ Package-скрипт (добавить при скаффолдинге): `"gen:t
 | spring.sheet | bounce 0.16, visualDuration 0.42 | — |
 | spring.page | bounce 0.18, visualDuration 0.45 | — |
 | spring.bar | bounce 0.3, visualDuration 0.7 | — |
+| spring.hover | bounce 0, visualDuration 0.35 | — |
+| spring.glide | bounce 0.12, visualDuration 0.4 | — |
 | spring.counter | stiffness 110, damping 13, mass 0.9 | — |
 | swipe | offset 96, velocity 500 | — |
 | toast | durationMs 3600, errorDurationMs 6000 | — |

@@ -140,7 +140,7 @@ export const PackagePage = () => {
         actions={<div className="flex flex-wrap gap-2">{checked && <ExportButtons packageId={id} />}{c.status === "CHECKED" && can(roles, "decide") && <DecideButton packageId={id} />}{c.status !== "DECIDED" && c.files.length > 0 && can(roles, "reprocess") && <RebuildButton packageId={id} />}</div>} />
       {c.decision && (
         <Card className="mb-4"><CardContent className="flex flex-wrap items-center gap-2 text-sm">
-          <Status tone={c.decision.decision === "APPROVE" ? "success" : c.decision.decision === "REJECT" ? "danger" : "warning"} dot>{DECISION[c.decision.decision]}</Status>
+          <Status tone={c.decision.decision === "APPROVE" ? "success" : c.decision.decision === "REJECT" ? "danger" : "warning"}>{DECISION[c.decision.decision]}</Status>
           <span className="text-muted-foreground">{c.decision.decidedBy} · {new Date(c.decision.decidedAt).toLocaleString("ru-RU")}</span>
           {c.decision.comment && <p className="basis-full whitespace-pre-wrap">{c.decision.comment}</p>}
         </CardContent></Card>
