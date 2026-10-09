@@ -74,6 +74,10 @@ people:
     audiences: [people, access, shift, assistant]
     device-ttl: ${DEVICE_TOKEN_TTL:10m}
     challenge-ttl: 60s
+  staff-cookie:
+    name: gate_staff_rt
+    path: /people/api/v1/auth/staff
+    secure: ${STAFF_COOKIE_SECURE:true}
   staff:
     # вход персонала по коду из письма (PPL-13, ADR-041)
     pepper: ${INVITE_PEPPER}

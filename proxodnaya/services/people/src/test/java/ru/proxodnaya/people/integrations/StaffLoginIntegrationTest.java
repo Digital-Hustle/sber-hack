@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import jakarta.servlet.http.Cookie;
 import ru.proxodnaya.people.config.AbstractIntegrationTest;
 import ru.proxodnaya.people.jooq.Tables;
 
@@ -73,6 +74,49 @@ class StaffLoginIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("SESSION_EXPIRED"));
         mockMvc.perform(as("ADMIN", get(STAFF + "/access-log"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].action").value("LOGOUT"));
+    }
+
+    @Test
+    void refreshCookie_isSecure_rotates_withoutBody_andLogoutClearsIt() throws Exception {
+        // given
+        requestCode(ROOT);
+        var verified = mockMvc.perform(json(post(VERIFY), Map.of("email", ROOT, "code", mailedCode(ROOT))))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        Cookie cookie = verified.getCookie("gate_staff_rt");
+        assertThat(cookie).isNotNull();
+        assertThat(cookie.isHttpOnly()).isTrue();
+        assertThat(cookie.getSecure()).isTrue();
+        assertThat(cookie.getPath()).isEqualTo("/people/api/v1/auth/staff");
+        assertThat(cookie.getMaxAge()).isPositive();
+        assertThat(verified.getHeader("Set-Cookie")).contains("SameSite=Strict");
+
+        // when
+        var refreshed = mockMvc.perform(post(REFRESH).cookie(cookie))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        Cookie rotated = refreshed.getCookie("gate_staff_rt");
+
+        // then
+        assertThat(rotated).isNotNull();
+        assertThat(rotated.getValue()).isNotEqualTo(cookie.getValue());
+        var stale = mockMvc.perform(post(REFRESH).cookie(cookie).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("SESSION_EXPIRED"))
+                .andReturn().getResponse();
+        assertThat(stale.getCookie("gate_staff_rt").getMaxAge()).isZero();
+        JsonNode session = body(refreshed.getContentAsString());
+        var loggedOut = mockMvc.perform(withSession(post("/api/v1/auth/staff/logout"), session).cookie(rotated))
+                .andExpect(status().isNoContent()).andReturn().getResponse();
+        assertThat(loggedOut.getCookie("gate_staff_rt").getMaxAge()).isZero();
+        mockMvc.perform(post(REFRESH).cookie(rotated)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refreshWithoutCookie_returnsSessionExpired_notValidationError() throws Exception {
+        // when / then
+        var response = mockMvc.perform(post(REFRESH).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("SESSION_EXPIRED"))
+                .andReturn().getResponse();
+        assertThat(response.getCookie("gate_staff_rt").getMaxAge()).isZero();
+        mockMvc.perform(post(REFRESH)).andExpect(status().isUnauthorized());
     }
 
     @Test
