@@ -117,21 +117,40 @@ public class UploadService {
     }
 
     private void admit(UUID packageId, IncomingFile file, InspectionResult result, String userId, Batch batch) {
-        RejectReason reason = result.reason();
-        if (reason == null && FileInspector.ZIP.equals(result.mime())) {
-            reason = RejectReason.ZIP_UNSAFE;
-        }
-        if (reason == null && batch.count() >= maxFiles) {
-            reason = RejectReason.TOO_MANY_FILES;
-        }
+        String sha = sha256(file.content());
+        RejectReason reason = reasonFor(packageId, sha, result, batch);
         if (reason == null) {
-            batch.accept(transactions.execute(state -> store(packageId, file, result, userId)));
+            batch.accept(transactions.execute(state -> store(packageId, file, result, sha, userId)));
         } else {
             batch.reject(file.name(), reason, reason.detail());
         }
     }
 
-    private AcceptedFile store(UUID packageId, IncomingFile file, InspectionResult result, String userId) {
+    private RejectReason reasonFor(UUID packageId, String sha, InspectionResult result, Batch batch) {
+        RejectReason reason = result.reason();
+        if (reason == null && FileInspector.ZIP.equals(result.mime())) {
+            reason = RejectReason.ZIP_UNSAFE;
+        }
+        if (reason == null && isDuplicate(packageId, sha)) {
+            reason = RejectReason.DUPLICATE_FILE;
+        }
+        if (reason == null && batch.count() >= maxFiles) {
+            reason = RejectReason.TOO_MANY_FILES;
+        }
+        return reason;
+    }
+
+    private boolean isDuplicate(UUID packageId, String sha) {
+        return dsl.fetchExists(dsl.selectOne().from(Tables.FILE_VERSIONS)
+                .join(Tables.FILES).on(Tables.FILES.ID.eq(Tables.FILE_VERSIONS.FILE_ID)
+                        .and(Tables.FILES.CURRENT_VERSION.eq(Tables.FILE_VERSIONS.VERSION)))
+                .where(Tables.FILES.PACKAGE_ID.eq(packageId))
+                .and(Tables.FILES.DELETED_AT.isNull())
+                .and(Tables.FILE_VERSIONS.SHA256.eq(sha)));
+    }
+
+    private AcceptedFile store(UUID packageId, IncomingFile file, InspectionResult result, String sha,
+                               String userId) {
         UUID fileId = UuidCreator.getTimeOrderedEpoch();
         int version = 1;
         OffsetDateTime now = OffsetDateTime.now(clock);
@@ -149,7 +168,7 @@ public class UploadService {
                 .set(Tables.FILE_VERSIONS.VERSION, version)
                 .set(Tables.FILE_VERSIONS.CONTENT_ENC, sealed.content())
                 .set(Tables.FILE_VERSIONS.NONCE, sealed.nonce())
-                .set(Tables.FILE_VERSIONS.SHA256, sha256(file.content()))
+                .set(Tables.FILE_VERSIONS.SHA256, sha)
                 .set(Tables.FILE_VERSIONS.MIME, result.mime())
                 .set(Tables.FILE_VERSIONS.SIZE_BYTES, (long) file.content().length)
                 .set(Tables.FILE_VERSIONS.PAGES, result.pages())
