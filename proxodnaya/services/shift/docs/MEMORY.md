@@ -55,4 +55,4 @@
 - 2026-10-09 · miroslavrov (агент) · feat: SH-10 опоздания и переработки (`/analytics/late-overtime`, `LATE_GRACE`, `OVERTIME_THRESHOLD`) (#60)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-12 отказы по причинам и нагрузка по часам (`/analytics/refusals`, `/analytics/load-by-hour`) (#62)
 - 2026-10-09 · miroslavrov (агент) · feat: SH-11 heartbeat и оповещения LEFT_SITE/NO_SIGNAL/ZONE_CROWDED (`/worker/heartbeat`, `/alerts`, SSE `alert.created`, `shift.alert.v1`) (#65)
-- 2026-10-09 · miroslavrov (агент) · feat: SH-13 напоминание о невыходе (SSE worker `reminder.exit`, `EXIT_REMINDER_AFTER`) (#PR)
+- 2026-10-09 · miroslavrov (агент) · feat: SH-13 напоминание о невыходе (SSE worker `reminder.exit`, `EXIT_REMINDER_AFTER`) (#69)
