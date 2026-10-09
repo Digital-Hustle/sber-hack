@@ -255,9 +255,9 @@ services:
       GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}
       SHIFT_URL: http://shift:8083
 
-  # SPA (образ собирает CD из frontend/); без него Caddy отдаёт 502 на страницы, API работает
+  # SPA (образ собирает CD из frontend/; локально и в e2e — build). Отдаёт /admin, /kiosk, /worker одним index.html
   frontend:
-    profiles: [ frontend ]
+    build: { context: ../frontend }
     image: ghcr.io/digital-hustle/gate-frontend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     mem_limit: 100m

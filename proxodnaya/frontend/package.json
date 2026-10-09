@@ -1,0 +1,47 @@
+{
+  "name": "proxodnaya-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "gen:tokens": "node --experimental-strip-types --no-warnings scripts/gen-tokens.mjs src/shared/config/tokens.ts --css src/app/styles/theme.css --md docs/DESIGN.md",
+    "lint": "eslint src --max-warnings 0",
+    "gen:api": "node -e \"console.log('gen:api: контракты proxodnaya описаны в docs/BACKEND-CONTRACT.md, типы — в src/shared/api/remote/map.ts')\"",
+    "fsd-check": "node ../../.agents/skills/frontend-fsd/scripts/fsd-check.mjs src"
+  },
+  "dependencies": {
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.53.0",
+    "motion": "^14.0.0",
+    "ogl": "^1.0.11",
+    "qrcode-generator": "^1.5.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router": "^7.18.4",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.7.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.4"
+  }
+}
