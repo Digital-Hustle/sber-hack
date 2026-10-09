@@ -226,4 +226,44 @@ class IntakeFlowIntegrationTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString());
         assertThat(after.get("documents")).isEmpty();
     }
+
+    @Test
+    void deletingApplicationErasesFilesProfileAndKey() throws Exception {
+        JsonNode app = create();
+        String id = app.get("applicationId").asText();
+        mvc.perform(put(BASE + "/" + id + "/profile").header(AUTH, auth(app))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"answers\":{\"citizenship\":\"RF\",\"medicalRequired\":false}}"))
+                .andExpect(status().isOk());
+        JsonNode up = upload(app, TestFiles.image("png", 900, 700, "ПАСПОРТ"), "passport.png");
+        mvc.perform(post(BASE + "/" + id + "/submit").header(AUTH, auth(app))).andExpect(status().isOk());
+
+        mvc.perform(delete(BASE + "/" + id).header(AUTH, auth(app))).andExpect(status().isNoContent());
+
+        mvc.perform(get(BASE + "/" + id).header(AUTH, auth(app))).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/applicant/resume").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phoneOrEmail\":\"+79990000000\",\"resumeCode\":\""
+                                + app.get("resumeCode").asText() + "\"}"))
+                .andExpect(status().isBadRequest());
+        UUID appId = UUID.fromString(id);
+        assertThat(jdbc.sql("""
+                select status || '|' || profile::text || '|' || coalesce(contact_phone, '-') from applications
+                where id = ?""").param(appId).query(String.class).single()).isEqualTo("DELETED|{}|-");
+        assertThat(jdbc.sql("select count(*) from document_files where application_id = ? and length(content_enc) > 0")
+                .param(appId).query(Integer.class).single()).isZero();
+        assertThat(jdbc.sql("select bool_and(deleted) from documents where application_id = ?")
+                .param(appId).query(Boolean.class).single()).isTrue();
+        String removed = jdbc.sql("""
+                select payload->'payload'->>'documentId' from outbox
+                where payload->>'type' = 'DocumentRemoved' and msg_key = ?""").param(id).query(String.class).single();
+        assertThat(removed).isEqualTo(up.get("documentId").asText());
+        assertThat(jdbc.sql("select count(*) from outbox where payload->>'type' = 'ApplicationDeleted' and msg_key = ?")
+                .param(id).query(Integer.class).single()).isEqualTo(1);
+
+        // решение оператора по удалённой заявке статус не возвращает
+        JsonNode decided = om.readTree("{\"applicationId\":\"" + id + "\",\"decision\":\"ACCEPTED\"}");
+        assertThat(events.review(UUID.randomUUID().toString(), "ApplicationDecided", decided)).isEmpty();
+        assertThat(jdbc.sql("select status from applications where id = ?").param(appId).query(String.class).single())
+                .isEqualTo("DELETED");
+    }
 }

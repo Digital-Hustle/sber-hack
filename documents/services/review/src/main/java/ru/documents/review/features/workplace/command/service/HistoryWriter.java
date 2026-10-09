@@ -48,4 +48,14 @@ public class HistoryWriter {
         repo.add(UuidCreator.getTimeOrderedEpoch(), app, doc, actor, source, action, rows.write(details),
                 clock.instant());
     }
+
+    /**
+     * Обезличить историю заявки (NFR-10).
+     *
+     * @param app заявка
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void redact(UUID app) {
+        repo.redact(app);
+    }
 }

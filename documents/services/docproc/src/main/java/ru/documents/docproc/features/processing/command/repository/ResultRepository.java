@@ -24,6 +24,11 @@ public class ResultRepository {
         jdbc.sql("update parse_results set current = false where document_id = :d and current").param("d", doc).update();
     }
 
+    /** Удалить все результаты документа вместе с полями (NFR-10: документ или заявка удалены). */
+    public void deleteAll(UUID doc) {
+        jdbc.sql("delete from parse_results where document_id = :d").param("d", doc).update();
+    }
+
     /** Новый текущий результат. */
     public void insert(UUID id, UUID doc, UUID app, String stage, String type, Double typeConf, String evidence,
                        String reasons, String quality, String mrz, String pages, String model, String prompt,

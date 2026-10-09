@@ -55,6 +55,9 @@ public class DocumentEventsService {
         }
         UUID source = UUID.fromString(p.path(DOC).asText());
         UUID app = UUID.fromString(p.path(APP).asText());
+        if (repo.status(app).filter(s -> !"DELETED".equals(s)).isEmpty()) {
+            return Optional.empty();
+        }
         Instant now = clock.instant();
         boolean created = false;
         for (JsonNode part : p.path("split")) {
@@ -134,6 +137,9 @@ public class DocumentEventsService {
         }
         UUID app = UUID.fromString(p.get(APP).asText());
         Instant now = clock.instant();
+        if (repo.status(app).filter(s -> !"DELETED".equals(s)).isEmpty()) {
+            return Optional.empty();
+        }
         switch (type) {
             case "ApplicationAssigned" -> repo.setStatus(app, "IN_REVIEW", null, now);
             case "ResubmitRequested" -> {

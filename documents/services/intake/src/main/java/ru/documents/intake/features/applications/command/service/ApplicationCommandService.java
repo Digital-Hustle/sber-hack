@@ -35,6 +35,7 @@ public class ApplicationCommandService {
     private static final Duration TICKET_TTL = Duration.ofSeconds(30);
     private static final Duration RESUME_WINDOW = Duration.ofMinutes(15);
     private static final String APP_ID = "applicationId";
+    private static final String DELETED = "DELETED";
 
     private final ApplicationRepository repo;
     private final ApplicationQueryService query;
@@ -128,6 +129,28 @@ public class ApplicationCommandService {
     }
 
     /**
+     * Удалить заявку или отозвать согласие (NFR-10, 152-ФЗ) — в любом статусе. Файлы всех версий стёрты, анкета и
+     * контакты очищены, ключ и код больше не подходят; docproc и review по событиям удаляют результаты и поля,
+     * в журнале review остаётся обезличенная запись.
+     *
+     * @param id заявка
+     */
+    @Transactional
+    public void delete(UUID id) {
+        if (DELETED.equals(repo.status(id).orElseThrow(DomainException::notFound))) {
+            return;
+        }
+        Instant now = clock.instant();
+        for (UUID doc : repo.liveDocuments(id)) {
+            repo.deleteDocument(doc, now);
+            outbox.add(Topics.INTAKE_DOCUMENT_V1, "DocumentRemoved", id.toString(),
+                    Map.of("documentId", doc.toString(), APP_ID, id.toString()));
+        }
+        repo.erase(id, Secrets.hash(props.pepper(), "deleted:" + Secrets.accessKey()), now);
+        outbox.add(Topics.INTAKE_APPLICATION_V1, "ApplicationDeleted", id.toString(), Map.of(APP_ID, id.toString()));
+    }
+
+    /**
      * Продолжить с другого устройства: контакт + код → новый ключ (5 попыток, затем 429).
      *
      * @param contact телефон или почта
@@ -188,6 +211,9 @@ public class ApplicationCommandService {
     }
 
     static void ensureEditable(String status) {
+        if (DELETED.equals(status)) {
+            throw DomainException.notFound();
+        }
         if ("IN_REVIEW".equals(status) || "ACCEPTED".equals(status)) {
             throw DomainException.conflict("APPLICATION_LOCKED", "Заявка уже на проверке у оператора",
                     "Дождитесь ответа оператора");

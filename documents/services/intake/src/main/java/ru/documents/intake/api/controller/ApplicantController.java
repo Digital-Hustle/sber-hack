@@ -78,6 +78,10 @@ public interface ApplicantController {
     ResponseEntity<Void> delete(@AuthenticationPrincipal ApplicantPrincipal me, @PathVariable UUID id,
                                 @PathVariable UUID docId);
 
+    /** Удалить заявку целиком или отозвать согласие (NFR-10): файлы, анкета и результаты стираются. */
+    @DeleteMapping("/applications/{id}")
+    ResponseEntity<Void> deleteApplication(@AuthenticationPrincipal ApplicantPrincipal me, @PathVariable UUID id);
+
     /** Отправить комплект. */
     @PostMapping("/applications/{id}/submit")
     SubmitRs submit(@AuthenticationPrincipal ApplicantPrincipal me, @PathVariable UUID id);

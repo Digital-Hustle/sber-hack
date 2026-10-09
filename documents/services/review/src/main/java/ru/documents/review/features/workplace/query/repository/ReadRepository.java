@@ -258,7 +258,7 @@ public class ReadRepository {
         List<String> cond = new ArrayList<>();
         List<Object> params = new ArrayList<>();
         if (f.statuses().isEmpty()) {
-            cond.add("a.status <> 'DRAFT'");
+            cond.add("a.status not in ('DRAFT', 'DELETED')");
         } else {
             cond.add("a.status in (" + String.join(",", f.statuses().stream().map(s -> "?").toList()) + ")");
             params.addAll(f.statuses());

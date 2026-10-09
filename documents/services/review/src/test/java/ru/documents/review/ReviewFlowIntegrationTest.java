@@ -238,6 +238,43 @@ class ReviewFlowIntegrationTest extends AbstractIntegrationTest {
         assertThat(c.toString()).doesNotContain("AB1234567");
     }
 
+    @Test
+    void deletedApplicationIsErasedAndHistoryRedacted() throws Exception {
+        submitWithTwoParsedDocuments();
+        mvc.perform(post("/api/v1/applications/" + app + "/assign").with(op("op1")))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/applications/" + app).with(op("op1"))).andExpect(status().isOk());
+        mvc.perform(patch("/api/v1/documents/" + passport + "/fields").with(op("op1")).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"fields\":[{\"name\":\"givenNames\",\"value\":\"IVAN AKMAL\"}]}"))
+                .andExpect(status().isNoContent());
+
+        event("ApplicationDeleted", Map.of(APP, app.toString()));
+        event("DocumentRemoved", Map.of(APP, app.toString(), DOC, passport.toString()));
+
+        assertThat(jdbc.sql("select status || '|' || coalesce(applicant_name, '-') from applications where id = ?")
+                .param(app).query(String.class).single()).isEqualTo("DELETED|-");
+        assertThat(jdbc.sql("select count(*) from documents where application_id = ? and (result is not null or not removed)")
+                .param(app).query(Long.class).single()).isZero();
+        assertThat(jdbc.sql("select count(*) from field_overrides where document_id = ?").param(passport)
+                .query(Long.class).single()).isZero();
+        String corrected = jdbc.sql("""
+                select details::text from application_history where application_id = ? and action = 'FIELD_CORRECTED'""")
+                .param(app).query(String.class).single();
+        assertThat(corrected).contains("redacted").contains("givenNames").doesNotContain("AKMAL").doesNotContain("IVAN");
+        assertThat(jdbc.sql("select action from application_history where application_id = ?").param(app)
+                .query(String.class).list()).contains("APPLICATION_DELETED", "ASSIGNED");
+        assertThatThrownBy(() -> jdbc.sql("update application_history set details = '{}' where application_id = ?")
+                .param(app).update()).hasMessageContaining("append-only");
+
+        mvc.perform(get("/api/v1/applications").with(op("op1"))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[?(@.id=='" + app + "')]").isEmpty());
+        mvc.perform(patch("/api/v1/documents/" + patent + "/fields").with(op("op1")).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"fields\":[{\"name\":\"fullName\",\"value\":\"x\"}]}"))
+                .andExpect(status().is4xxClientError());
+        mvc.perform(post("/api/v1/applications/" + app + "/assign").with(op("op2")))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("APPLICATION_DELETED"));
+    }
+
     private void submitWithTwoParsedDocuments() {
         event("ApplicationCreated", Map.of(APP, app.toString(), "source", "WEB"));
         event("ProfileChanged", Map.of(APP, app.toString(), "requiredTypes",
