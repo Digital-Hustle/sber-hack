@@ -50,7 +50,7 @@ public class InternalControllerImpl implements InternalController {
     @Override
     public InternalCheckpointRs checkpoint(UUID id) {
         Checkpoint checkpoint = sites.checkpoint(id);
-        CheckpointRs rs = siteMapper.toRs(checkpoint);
-        return new InternalCheckpointRs(rs.id(), rs.zoneId(), rs.siteId(), rs.name(), sites.zoneCapacity(checkpoint.zoneId()));
+        CheckpointRs view = siteMapper.toRs(checkpoint);
+        return new InternalCheckpointRs(view.id(), view.zoneId(), view.siteId(), view.name(), sites.zoneCapacity(checkpoint.zoneId()));
     }
 }

@@ -118,7 +118,7 @@ class KioskFlowIntegrationTest extends AbstractIntegrationTest {
         // given: в зоне на одно место уже стоит другой человек
         String zone = "zone-" + workerId;
         when(people.checkpointZone(any())).thenReturn(Optional.of(zone));
-        when(people.zoneCapacity(any())).thenReturn(1);
+        when(people.zoneCapacity(any())).thenReturn(Optional.of(1));
         when(people.accessProfile(workerId)).thenReturn(Optional.of(new WorkerProfile(workerId, "ACTIVE", "Пётр Иванов",
                 "Монтажник", "СтройМонтаж", Set.of(deviceId), LocalDate.now().plusYears(1), Set.of(zone))));
         jdbc.update("insert into worker_state (worker_id, inside, zone_id, last_in_at, updated_at) values (?, true, ?, now(), now())",

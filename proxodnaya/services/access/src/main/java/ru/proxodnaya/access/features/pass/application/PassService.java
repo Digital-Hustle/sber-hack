@@ -164,14 +164,14 @@ public class PassService {
         CompletableFuture<Optional<ActiveShift>> shiftF = entry
                 ? async(() -> shift.activeShift(pending.workerId(), now))
                 : CompletableFuture.completedFuture(Optional.empty());
-        CompletableFuture<Integer> capacityF = entry
+        CompletableFuture<Optional<Integer>> capacityF = entry
                 ? async(() -> people.zoneCapacity(pending.checkpointId()))
-                : CompletableFuture.completedFuture(null);
+                : CompletableFuture.completedFuture(Optional.empty());
         List<String> failed = new ArrayList<>();
         FaceResult faceResult = join(faceF, FACE, failed);
         Optional<WorkerProfile> profile = Optional.ofNullable(join(profileF, PEOPLE, failed)).flatMap(opt -> opt);
         Optional<ActiveShift> activeShift = Optional.ofNullable(join(shiftF, SHIFT, failed)).flatMap(opt -> opt);
-        Integer capacity = join(capacityF, PEOPLE, failed);
+        Integer capacity = Optional.ofNullable(join(capacityF, PEOPLE, failed)).flatMap(opt -> opt).orElse(null);
         PassContext ctx = new PassContext(pending.direction(), pending.deviceId(), pending.zoneId(), profile.orElse(null), faceResult,
                 activeShift.orElse(null), failed.isEmpty() ? null : String.join(",", failed),
                 LocalDate.ofInstant(now, props.siteZone()));

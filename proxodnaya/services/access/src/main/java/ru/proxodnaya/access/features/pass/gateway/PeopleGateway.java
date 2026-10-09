@@ -75,10 +75,10 @@ public class PeopleGateway {
      * Вместимость зоны, куда ведёт проходная (FR-08, ACC-17).
      *
      * @param checkpointId проходная
-     * @return вместимость или {@code null} — без ограничения (или проходной нет: её отсекает скан)
+     * @return вместимость или пусто — без ограничения (или проходной нет: её отсекает скан)
      */
-    public Integer zoneCapacity(String checkpointId) {
-        return checkpoint(checkpointId).map(CheckpointRs::zoneCapacity).orElse(null);
+    public Optional<Integer> zoneCapacity(String checkpointId) {
+        return checkpoint(checkpointId).map(CheckpointRs::zoneCapacity);
     }
 
     private Optional<CheckpointRs> checkpoint(String checkpointId) {
