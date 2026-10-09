@@ -66,4 +66,12 @@ class RulesTest {
         assertThat(NumberKeys.normalize("АБ 12-34 56")).isEqualTo("АБ123456");
         assertThat(NumberKeys.normalize("12 34")).isNull();
     }
+
+    @Test
+    void unknownTypeDoesNotBreakNameAndChecks() {
+        // документ, вид которого модель ещё не определила (type = null), не должен ронять пересчёт карточки
+        DocFacts unknown = new DocFacts(UUID.randomUUID(), null, null, Map.of("fullName", "Петров Пётр"));
+        assertThat(CrossChecker.applicantName(List.of(unknown))).isEqualTo("Петров Пётр");
+        assertThat(CrossChecker.check(List.of(unknown), List.of("PASSPORT_RF"))).isNotEmpty();
+    }
 }

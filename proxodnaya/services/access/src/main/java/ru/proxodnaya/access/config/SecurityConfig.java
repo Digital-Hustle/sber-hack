@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,9 +19,11 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
 
 import ru.proxodnaya.common.security.CurrentUser;
+import ru.proxodnaya.common.security.TrustedIssuers;
 
 /**
- * Resource server: JWT Keycloak, роли из {@code realm_access.roles} → {@code ROLE_*} (docs/SECURITY.md).
+ * Resource server: JWT двух издателей — Keycloak и people (ADR-040), роли из {@code realm_access.roles} → {@code ROLE_*}
+ * (docs/SECURITY.md).
  */
 @Configuration
 @EnableWebSecurity
@@ -28,14 +31,14 @@ import ru.proxodnaya.common.security.CurrentUser;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, Environment env) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(csrf -> csrf.disable())
-                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(realmRoles())));
+                .oauth2ResourceServer(oauth -> oauth.authenticationManagerResolver(TrustedIssuers.resolver(env, realmRoles())));
         return http.build();
     }
 

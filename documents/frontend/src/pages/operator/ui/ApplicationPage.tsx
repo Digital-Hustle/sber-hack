@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { AlertTriangle, ArrowLeft, Gavel, MessageSquarePlus, UserCheck, FileWarning, Timer, History, ListChecks } from "lucide-react";
 import { AppStatusBadge, dateRuFull, dateTimeRu, reviewApi, reviewKeys, waitingRu, type FieldCard } from "@/entities/application";
-import { StageBadge, confidenceTone, percent, reasonView } from "@/entities/document";
+import { StageBadge, confidenceTone, percent, reasonView, typeTitle } from "@/entities/document";
 import { can, useSession } from "@/entities/session";
 import { DecisionDialog } from "@/features/decide-application";
 import { RequestDialog } from "@/features/request-resubmit";
@@ -14,11 +14,11 @@ import { useTakeNext } from "@/features/take-next";
 import { DocumentViewer } from "@/widgets/document-viewer";
 import { FieldsPanel } from "@/widgets/fields-panel";
 import { HistoryTimeline } from "@/widgets/history-timeline";
-import { AnimatedNumber, Button, Card, EmptyState, RowsSkeleton, Segmented, Status } from "@/shared/ui";
+import { AnimatedNumber, Button, Card, EmptyState, CardSkeleton, HeaderSkeleton, Skeleton, TilesSkeleton, Segmented, Status } from "@/shared/ui";
 import { ApiError, errorText, useEventStream } from "@/shared/api";
 import { cn } from "@/shared/lib";
 import { routes } from "@/shared/const/router";
-import { fadeUp } from "@/shared/config/motion";
+import { fadeUp, popIn, stagger } from "@/shared/config/motion";
 
 /** Сколько минут ручного ввода экономит одно поле, заполненное моделью (оценка для счётчика FE-OP-06, см. EVAL.md). */
 const SECONDS_PER_FIELD = 20;
@@ -33,7 +33,8 @@ export const ApplicationPage = () => {
   const [field, setField] = useState<FieldCard | null>(null);
   const [tab, setTab] = useState<"fields" | "history">("fields");
   const [decide, setDecide] = useState(false);
-  const [ask, setAsk] = useState(false);
+  const [ask, setAsk] = useState(false); // смонтирован (форма сбрасывается при каждом открытии)
+  const [askOpen, setAskOpen] = useState(false);
   const assign = useAssign(id);
   const confirm = useConfirmDocument(id);
   const next = useTakeNext();
@@ -56,7 +57,13 @@ export const ApplicationPage = () => {
     return () => removeEventListener("keydown", on);
   }, [canAct, doc, confirm, next]);
 
-  if (q.isPending) return <RowsSkeleton rows={8} />;
+  if (q.isPending) return (
+    <div aria-busy="true" aria-label="Загрузка заявки">
+      <HeaderSkeleton />
+      <TilesSkeleton count={4} className="mb-4" />
+      <div className="grid gap-4 lg:grid-cols-2"><Skeleton className="h-96 rounded-xl lg:h-svh" /><div className="flex flex-col gap-3"><CardSkeleton lines={3} /><CardSkeleton lines={6} /></div></div>
+    </div>
+  );
   if (q.isError || !card) {
     const nf = q.error instanceof ApiError && q.error.status === 404;
     return <EmptyState title={nf ? "Заявка не найдена" : "Карточка не загрузилась"} text={nf ? undefined : errorText(q.error)}
@@ -67,8 +74,8 @@ export const ApplicationPage = () => {
   const mine = app.assignee === s.login;
   const decided = app.status === "ACCEPTED" || app.status === "RETURNED";
   const findings = card.findings ?? [];
-  const typeTitle = (t: string) => docs.find((d) => d.type === t)?.typeName ?? t;
-  const missing = (app.missing ?? []).map((t) => ({ type: t, title: typeTitle(t) }));
+  const titleOf = (t: string) => docs.find((d) => d.type === t)?.typeName ?? typeTitle(t);
+  const missing = (app.missing ?? []).map((t) => ({ type: t, title: titleOf(t) }));
   const saved = Math.round((((c.fieldsTotal ?? 0) - (c.fieldsCorrected ?? 0)) * SECONDS_PER_FIELD) / 60);
   const reason = doc ? reasonView(doc.reasonCode) : null;
 
@@ -89,25 +96,26 @@ export const ApplicationPage = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           {canAct && !mine && !decided && <Button variant="secondary" disabled={assign.isPending} onClick={() => assign.mutate(!!app.assignee)}><UserCheck />{app.assignee ? "Забрать себе" : "Взять в работу"}</Button>}
-          {canAct && !decided && <Button variant="secondary" onClick={() => setAsk(true)}><MessageSquarePlus />Запросить</Button>}
+          {canAct && !decided && <Button variant="secondary" onClick={() => { setAsk(true); setAskOpen(true); }}><MessageSquarePlus />Запросить</Button>}
           {can(s.roles, "export") && <ExportCardButtons appId={id} />}
           {can(s.roles, "decide") && !decided && <Button onClick={() => setDecide(true)}><Gavel />Решение</Button>}
         </div>
       </motion.div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <motion.dl variants={stagger(0.05)} initial="hidden" animate="show" className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Документы подтверждены", value: c.documentsConfirmed ?? 0, of: c.documentsTotal ?? 0 },
           { label: "Поля на перепроверку", value: c.fieldsAttention ?? 0, tone: (c.fieldsAttention ?? 0) > 0 },
           { label: "Исправлено оператором", value: c.fieldsCorrected ?? 0, of: c.fieldsTotal ?? 0 },
-          { label: "Сэкономлено, мин", value: saved, hint: `≈ ${SECONDS_PER_FIELD} с ручного ввода на поле` },
+          { label: "Сэкономлено, мин", value: saved, hint: `≈ ${SECONDS_PER_FIELD} с ручного ввода на поле`, brand: true },
         ].map((k) => (
-          <Card key={k.label} className="p-3" title={k.hint}>
-            <div className="text-xs text-muted-foreground">{k.label}</div>
-            <div className={cn("mt-0.5 font-display text-2xl font-semibold tabular-nums", k.tone && "text-warning")}><AnimatedNumber value={k.value} />{k.of !== undefined && <span className="text-base text-muted-foreground"> / {k.of}</span>}</div>
-          </Card>
+          <motion.div key={k.label} variants={popIn} title={k.hint} className={cn("relative flex min-w-0 flex-col gap-0.5 overflow-hidden rounded-xl px-4 py-3 shadow-card sm:px-5 sm:py-4", k.brand ? "bg-brand-deep text-white" : "bg-card")}>
+            {k.brand && <span aria-hidden className="absolute inset-0 bg-sheen" />}
+            <dt className={cn("relative truncate text-xs", k.brand ? "text-white/85" : "text-muted-foreground")}>{k.label}</dt>
+            <dd className={cn("relative font-display text-3xl font-semibold tabular-nums tracking-hero", k.tone && "text-warning")}><AnimatedNumber value={k.value} />{k.of !== undefined && <span className="text-base text-muted-foreground"> / {k.of}</span>}</dd>
+          </motion.div>
         ))}
-      </div>
+      </motion.dl>
 
       {(findings.length > 0 || card.decision) && (
         <Card className="mb-4 p-4">
@@ -132,7 +140,7 @@ export const ApplicationPage = () => {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="lg:sticky lg:top-20 lg:h-svh lg:self-start lg:pb-24">
-            <Card className="h-96 overflow-hidden sm:h-svh lg:h-full">{doc && <DocumentViewer doc={doc} highlight={field ? { page: field.page, bbox: field.bbox as number[] | null } : null} />}</Card>
+            <Card className="h-96 overflow-hidden sm:h-svh lg:h-full">{doc && <DocumentViewer doc={doc} assigned={mine || can(s.roles, "decide")} highlight={field ? { page: field.page, bbox: field.bbox as number[] | null } : null} />}</Card>
           </div>
           <div className="flex min-w-0 flex-col gap-3">
             <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Документы">
@@ -150,7 +158,7 @@ export const ApplicationPage = () => {
                   <StageBadge stage={doc.stage} />
                   {doc.expiresOn && <Status tone="neutral"><Timer />до {dateRuFull(doc.expiresOn)}</Status>}
                 </div>
-                {doc.slotType && doc.type && doc.slotType !== doc.type && <p className="mt-1 text-xs text-muted-foreground">Соискатель загрузил в пункт «{typeTitle(doc.slotType)}»</p>}
+                {doc.slotType && doc.type && doc.slotType !== doc.type && <p className="mt-1 text-xs text-muted-foreground">Соискатель загрузил в пункт «{titleOf(doc.slotType)}»</p>}
                 {reason && <p className="mt-2 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning-soft-foreground"><b className="font-medium">{reason.text}</b>{reason.hint ? ` — ${reason.hint}` : ""}</p>}
                 {doc.model && <p className="mt-1 text-xs text-muted-foreground">Модель {doc.model}{doc.promptVersion ? ` · промпт ${doc.promptVersion}` : ""}{doc.confirmedBy ? ` · подтвердил ${doc.confirmedBy} ${dateTimeRu(doc.confirmedAt)}` : ""}</p>}
                 <div className="mt-3"><DocumentActions appId={id} doc={doc} canAct={canAct && !decided} canReprocess={can(s.roles, "reprocess") && !decided} /></div>
@@ -160,14 +168,14 @@ export const ApplicationPage = () => {
             {tab === "fields" && doc ? (
               <>
                 <FieldsPanel appId={id} doc={doc} canAct={canAct && !decided} active={field?.name ?? null} onActive={setField} />
-                <p className="text-xs text-muted-foreground">Клавиши: J/K — поле, E — править, Enter — подтвердить документ, N — следующая заявка. Ждёт {waitingRu(app.submittedAt ? (Date.now() - Date.parse(app.submittedAt)) / 1000 : null)}</p>
+                <p className="hidden text-xs text-muted-foreground lg:block">Клавиши: J/K — поле, E — править, Enter — подтвердить документ, N — следующая заявка. Ждёт {waitingRu(app.submittedAt ? (Date.now() - Date.parse(app.submittedAt)) / 1000 : null)}</p>
               </>
             ) : <Card className="p-4"><HistoryTimeline appId={id} /></Card>}
           </div>
         </div>
       )}
       <DecisionDialog appId={id} open={decide} onClose={() => setDecide(false)} />
-      {ask && <RequestDialog appId={id} docs={docs} missing={missing} open={ask} onClose={() => setAsk(false)} />}
+      {ask && <RequestDialog appId={id} docs={docs} missing={missing} open={askOpen} onClose={() => setAskOpen(false)} onClosed={() => setAsk(false)} />}
     </>
   );
 };

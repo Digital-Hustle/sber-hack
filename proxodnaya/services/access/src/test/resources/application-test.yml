@@ -17,3 +17,7 @@ spring:
 management:
   tracing:
     enabled: false
+proxodnaya:
+  security:
+    people-issuer: ""
+    people-jwks-uri: ""

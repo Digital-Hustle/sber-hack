@@ -9,7 +9,7 @@ import { ResumeForm } from "@/features/start-application";
 import { SubmitButton } from "@/features/submit-application";
 import { DeleteApplication } from "@/features/delete-application";
 import { DocumentChecklist } from "@/widgets/document-checklist";
-import { Button, Card, EmptyState, PageHeader, RowsSkeleton, toast } from "@/shared/ui";
+import { Button, Card, CardSkeleton, EmptyState, HeaderSkeleton, PageHeader, RowsSkeleton, toast } from "@/shared/ui";
 import { ApiError, errorText, setAuth, useEventStream } from "@/shared/api";
 import { applicationKey, applicationLink } from "@/shared/lib";
 import { routes } from "@/shared/const/router";
@@ -74,7 +74,7 @@ export const ApplyApplicationPage = () => {
       </Card>
     );
   }
-  if (q.isPending) return <RowsSkeleton rows={5} />;
+  if (q.isPending) return <div aria-busy="true" aria-label="Загрузка"><HeaderSkeleton /><CardSkeleton lines={2} className="mb-4" /><Card className="overflow-hidden"><RowsSkeleton rows={5} /></Card></div>;
   if (q.isError || !app) return <EmptyState title="Не удалось загрузить заявку" text={errorText(q.error)} action={<Button variant="secondary" onClick={() => q.refetch()}>Повторить</Button>} />;
 
   const hasProfile = app.profile && Object.keys(app.profile).length > 0;

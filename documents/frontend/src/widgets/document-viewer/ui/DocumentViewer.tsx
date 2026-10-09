@@ -26,7 +26,8 @@ const locate = (files: DocFile[], n: number) => {
  * FE-OP-03: оригинал документа. Страницы — только через intake /files/{id}/content (blob с токеном, без публичных URL),
  * URL.revokeObjectURL при уходе. Зум, поворот, слой bbox поля в системе координат страницы результата.
  */
-export const DocumentViewer = ({ doc, highlight }: { doc: DocumentCard; highlight: Highlight }) => {
+/** assigned — заявка у этого оператора: «скан закрыт» тогда временный (назначение ещё доходит до intake), повторяем. */
+export const DocumentViewer = ({ doc, highlight, assigned = false }: { doc: DocumentCard; highlight: Highlight; assigned?: boolean }) => {
   const files = useMemo(() => ((doc.files as DocFile[] | undefined) ?? []).filter((f) => f.active !== false), [doc.files]);
   const sizes = (doc.pages as PageSize[] | undefined) ?? [];
   const total = Math.max(1, files.reduce((s, f) => s + (f.pages ?? 1), 0));
@@ -44,7 +45,7 @@ export const DocumentViewer = ({ doc, highlight }: { doc: DocumentCard; highligh
     staleTime: Infinity,
     gcTime: 60_000,
     // B-07: назначение доходит до intake событием — пару секунд после «Взять в работу» скан ещё закрыт
-    retry: (n, e) => (e instanceof ApiError && e.code === "FILE_NOT_ASSIGNED" ? n < 3 : false),
+    retry: (n, e) => (assigned && e instanceof ApiError && e.code === "FILE_NOT_ASSIGNED" ? n < 3 : false),
     retryDelay: 1500,
   });
   const notAssigned = q.error instanceof ApiError && q.error.code === "FILE_NOT_ASSIGNED";

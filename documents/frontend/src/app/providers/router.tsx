@@ -13,6 +13,13 @@ const apply = () => import("@/pages/apply");
 const operator = () => import("@/pages/operator");
 const operatorShell = () => import("@/widgets/operator-shell");
 
+/** Подгрузка чанков в простое: соискателю — только кабинет, сотруднику — его зону (переходы без спиннера). */
+export const prefetchRoutes = (pathname: string) => {
+  const list = pathname.startsWith("/operator") ? [operator, operatorShell] : [apply];
+  const run = () => list.forEach((f) => { f().catch(() => {}); });
+  if ("requestIdleCallback" in window) requestIdleCallback(run); else setTimeout(run, 1);
+};
+
 const Frozen = () => {
   const outlet = useOutlet();
   const present = useIsPresent();

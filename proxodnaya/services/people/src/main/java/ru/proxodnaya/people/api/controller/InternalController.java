@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import ru.proxodnaya.people.api.constants.PathConstants;
 import ru.proxodnaya.people.api.dto.response.AccessProfileRs;
 import ru.proxodnaya.people.api.dto.response.InternalCheckpointRs;
+import ru.proxodnaya.people.api.dto.response.JwksRs;
 
 /**
  * Внутренний API для access (PPL-08). Gateway наружу {@code /internal/**} не пускает; нужна роль сервиса.
@@ -41,4 +42,14 @@ public interface InternalController {
     @GetMapping(PathConstants.INTERNAL_CHECKPOINT)
     @PreAuthorize("hasRole('SVC_ACCESS')")
     InternalCheckpointRs checkpoint(@PathVariable UUID id);
+
+    /**
+     * Публичные ключи токенов people (ADR-040): по ним gateway и сервисы проверяют device-токены и сессии персонала.
+     * Без роли — это открытые ключи; наружу gateway {@code /internal/**} всё равно не пускает.
+     *
+     * @return JWKS
+     */
+    @Operation(summary = "JWKS токенов people")
+    @GetMapping(PathConstants.JWKS)
+    JwksRs jwks();
 }

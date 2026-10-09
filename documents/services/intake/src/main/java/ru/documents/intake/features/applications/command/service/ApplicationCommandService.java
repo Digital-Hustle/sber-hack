@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +32,12 @@ import ru.documents.intake.shared.Secrets;
  */
 @Service
 public class ApplicationCommandService {
+
+    /** Международный номер: «+» и 10–15 цифр (E.164). */
+    private static final Pattern VALID_PHONE = Pattern.compile("^\\+\\d{10,15}$");
+    private static final Pattern VALID_EMAIL =
+            Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$");
+    private static final int MAX_EMAIL = 120;
 
     private static final Duration TICKET_TTL = Duration.ofSeconds(30);
     private static final Duration RESUME_WINDOW = Duration.ofMinutes(15);
@@ -74,6 +81,13 @@ public class ApplicationCommandService {
         }
         String p = normalizePhone(phone);
         String e = email == null || email.isBlank() ? null : email.trim().toLowerCase();
+        if (p != null && !VALID_PHONE.matcher(p).matches()) {
+            throw new DomainException("VALIDATION_ERROR", 400, "Неверный номер телефона",
+                    "Укажите номер полностью, например +7 900 000-00-00");
+        }
+        if (e != null && (e.length() > MAX_EMAIL || !VALID_EMAIL.matcher(e).matches())) {
+            throw new DomainException("VALIDATION_ERROR", 400, "Неверный адрес почты", "Например, name@mail.ru");
+        }
         UUID id = UuidCreator.getTimeOrderedEpoch();
         String key = Secrets.accessKey();
         String code = Secrets.resumeCode();

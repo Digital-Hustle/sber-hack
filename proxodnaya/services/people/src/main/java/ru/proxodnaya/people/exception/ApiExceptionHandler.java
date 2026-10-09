@@ -79,7 +79,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             case INVITE_EXPIRED -> HttpStatus.GONE;
             case FACE_LOW_QUALITY, FACE_MULTIPLE -> HttpStatus.UNPROCESSABLE_ENTITY;
             case SERVICE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
-            case FORBIDDEN, WORKER_BLOCKED, DEVICE_UNKNOWN, DEVICE_REVOKED -> HttpStatus.FORBIDDEN;
+            case FORBIDDEN, WORKER_BLOCKED, DEVICE_UNKNOWN, DEVICE_REVOKED, DEVICE_MISMATCH -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };
     }

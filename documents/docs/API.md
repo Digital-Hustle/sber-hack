@@ -9,7 +9,7 @@
 
 ## Соискатель (intake: `/intake/api/v1/applicant/...`)
 - `GET /applicant/questionnaire` → вопросы анкеты `{questions: [{id, text, kind: single|multi|bool, options}]}`
-- `POST /applicant/applications` `{consentPd: true, contact: {phone?, email?}}` → 201 `{applicationId, accessKey, resumeCode, link}`; без согласия → 400 `CONSENT_REQUIRED`
+- `POST /applicant/applications` `{consentPd: true, contact: {phone?, email?}}` → 201 `{applicationId, accessKey, resumeCode, link}`; без согласия → 400 `CONSENT_REQUIRED`; телефон не из 10–15 цифр или почта не вида `x@y.zz` → 400 `VALIDATION_ERROR` (FE-UI-01)
 - `PUT /applicant/applications/{id}/profile` `{answers}` → `{requiredDocuments: [{type, title, hint, required, condition}]}` — набор считает сервер по `doc_requirements` (FR-10)
 - `POST /applicant/applications/{id}/documents` multipart `file`, `slotType?` → **202** `{documentId, fileId, stage: RECEIVED, duplicateOf?, warnings[]}` (`Idempotency-Key` обязателен)
 - `POST /applicant/applications/{id}/documents/{docId}/files` — дозагрузка страницы/замена (`mode: add|replace`) → 202

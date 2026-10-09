@@ -54,6 +54,13 @@ people:
   face:
     url: ${FACE_URL:http://face:8090}
     timeout: ${FACE_TIMEOUT:5s}
+  tokens:
+    # токены people (ADR-040): device-токен телефона, сессия персонала; ключ ES256 — scripts/gen-env.sh
+    issuer: ${PEOPLE_TOKEN_ISSUER}
+    signing-key: ${DEVICE_TOKEN_SIGNING_KEY}
+    audiences: [people, access, shift, assistant]
+    device-ttl: ${DEVICE_TOKEN_TTL:10m}
+    challenge-ttl: 60s
 
 server:
   port: 8081
@@ -80,3 +87,9 @@ management:
 springdoc:
   api-docs:
     path: /v3/api-docs
+
+proxodnaya:
+  security:
+    # издатель токенов people: телефоны рабочих и персонал по коду из письма (ADR-040); ключи — из внутренней сети
+    people-issuer: ${PEOPLE_TOKEN_ISSUER}
+    people-jwks-uri: ${PEOPLE_JWKS_URI}

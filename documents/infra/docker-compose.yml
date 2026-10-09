@@ -96,6 +96,7 @@ services:
       JAVA_OPTS_KC_HEAP: "-Xms256m -Xmx512m"
     volumes:
       - ./keycloak/realm-documents.json:/opt/keycloak/data/import/realm-documents.json:ro
+      - ./keycloak/themes/documents:/opt/keycloak/themes/documents:ro
     depends_on:
       postgres: { condition: service_healthy }
     healthcheck:

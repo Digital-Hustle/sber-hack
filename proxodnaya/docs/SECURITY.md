@@ -12,6 +12,11 @@
 
 Почему у рабочих нет Keycloak-пароля: на стройке пароли забывают и передают друзьям. Ключ устройства нельзя скопировать, а лицо и живость на проходной дают второй и третий фактор. Backend принимает JWT двух издателей: Keycloak (персонал) и внутренний `gate-device` (рабочие, короткоживущие ES256-токены после challenge-подписи ключом устройства). В Spring для этого есть `JwtIssuerAuthenticationManagerResolver`.
 
+### Токены people (ADR-040)
+- people — второй издатель JWT: ES256, ключ `DEVICE_TOKEN_SIGNING_KEY` (P-256, `scripts/gen-env.sh`), `iss = https://<host>/people`, JWKS — `http://people:8081/internal/people/jwks` (наружу gateway `/internal/**` не пускает).
+- Device-токен телефона (PPL-05): `POST /auth/device/challenge` → одноразовый challenge 60 с → подпись ключом устройства над `auth|<deviceId>|<challenge>` → токен 10 мин (роль WORKER, `did`). Challenge гасится одним UPDATE (повтор и гонка → `CHALLENGE_INVALID`), отвязанный телефон и заблокированный рабочий токен не получают.
+- Gateway и сервисы выбирают проверку по `iss`: Keycloak — RS256, people — ES256; у обоих проверяются подпись, `iss`, `exp`, `aud` сервиса. Смена ключа = перелогин всех телефонов.
+
 ## 2. Keycloak
 - Realm `proxodnaya` импортируется при старте из `infra/keycloak/realm-proxodnaya.json`. Все секреты в нём — плейсхолдеры `${ENV}` (Keycloak подставляет переменные окружения при импорте). В git нет ни одного реального секрета.
 - Клиенты:

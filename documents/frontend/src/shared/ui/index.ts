@@ -26,3 +26,7 @@ export * from "./DatePicker";
 export * from "./LoadMore";
 export { CountdownBar } from "./CountdownBar";
 export { CodeInput, type CodeState } from "./CodeInput";
+export { Chip } from "./Chip";
+export * from "./DrawnCheck";
+export * from "./AutoHeight";
+export * from "./StyledQr";

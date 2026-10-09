@@ -39,7 +39,7 @@ public final class CrossChecker {
                 out.add(new Finding("MISSING_DOCUMENT", null, List.of(), Map.of("type", t)));
             }
         }
-        Optional<DocFacts> ref = docs.stream().filter(d -> REFERENCE.contains(d.type()) && d.fullName() != null).findFirst()
+        Optional<DocFacts> ref = docs.stream().filter(d -> isReference(d) && d.fullName() != null).findFirst()
                 .or(() -> docs.stream().filter(d -> d.fullName() != null).findFirst());
         if (ref.isEmpty()) {
             return out;
@@ -89,9 +89,14 @@ public final class CrossChecker {
      * @return ФИО или null
      */
     public static String applicantName(List<DocFacts> docs) {
-        return docs.stream().filter(d -> REFERENCE.contains(d.type()) && d.fullName() != null).map(DocFacts::fullName)
+        return docs.stream().filter(d -> isReference(d) && d.fullName() != null).map(DocFacts::fullName)
                 .findFirst()
                 .orElseGet(() -> docs.stream().map(DocFacts::fullName).filter(n -> n != null).findFirst().orElse(null));
+    }
+
+    /** Паспорт — эталон ФИО; вид может быть ещё не определён (null), а List.of(...).contains(null) бросает NPE. */
+    private static boolean isReference(DocFacts d) {
+        return d.type() != null && REFERENCE.contains(d.type());
     }
 
     private static void names(DocFacts a, DocFacts b, List<Finding> out) {

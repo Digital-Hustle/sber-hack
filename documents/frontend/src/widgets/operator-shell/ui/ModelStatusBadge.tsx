@@ -11,7 +11,7 @@ export const ModelStatusBadge = ({ className }: { className?: string }) => {
   if (!q.data) return null;
   const ok = q.data.reachable;
   return (
-    <Status tone={ok ? "success" : "danger"} dot className={className} title={q.data.error ?? `${q.data.provider ?? ""} ${q.data.model ?? ""}`}>
+    <Status tone={ok ? "success" : "danger"} className={className} title={q.data.error ?? `${q.data.provider ?? ""} ${q.data.model ?? ""}`}>
       <Cpu />{ok ? `Модель: ${q.data.model ?? "на связи"}` : "Модель недоступна"}
     </Status>
   );

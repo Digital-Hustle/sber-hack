@@ -3,6 +3,7 @@ package ru.proxodnaya.people.features.device.command.repository;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.jooq.DSLContext;
@@ -74,5 +75,17 @@ public class DeviceRepository {
                 .set(DEVICES.STATUS, Device.ACTIVE)
                 .set(DEVICES.BOUND_AT, moment.atOffset(ZoneOffset.UTC))
                 .execute();
+    }
+
+    /**
+     * Устройство по id (для device-токена).
+     *
+     * @param deviceId устройство
+     * @return устройство или пусто
+     */
+    public Optional<Device> find(String deviceId) {
+        return dsl.selectFrom(DEVICES).where(DEVICES.DEVICE_ID.eq(deviceId))
+                .fetchOptional(row -> new Device(row.getDeviceId(), row.getWorkerId(), row.getPublicKeyJwk().data(),
+                        row.getStatus(), row.getBoundAt().toInstant(), null));
     }
 }
