@@ -115,6 +115,41 @@ class GatewayIntegrationTest {
     }
 
     @Test
+    void staffRefresh_onlyRefreshCookie_reachesUpstream() {
+        // given / when / then
+        String refresh = "a".repeat(43);
+        client.post().uri("/people/api/v1/auth/staff/refresh")
+                .header("X-Forwarded-For", "198.51.100.20")
+                .header(HttpHeaders.COOKIE, "unrelated=value; gate_staff_rt=" + refresh + "; keycloak_session=secret")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("{}")
+                .exchange().expectStatus().isOk()
+                .expectBody().jsonPath("$.cookie").isEqualTo("gate_staff_rt=" + refresh);
+    }
+
+    @Test
+    void businessRoute_andOtherAuthRoutes_stripAllCookies() throws Exception {
+        // when / then
+        String cookie = "gate_staff_rt=" + "a".repeat(43);
+        client.get().uri(WORKERS).header(HttpHeaders.COOKIE, cookie)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token(ISSUER, KEYS, 300))
+                .exchange().expectStatus().isOk().expectBody().jsonPath("$.cookie").isEqualTo("");
+        client.post().uri("/people/api/v1/auth/staff/code").header(HttpHeaders.COOKIE, cookie)
+                .header("X-Forwarded-For", "198.51.100.21")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("{}")
+                .exchange().expectStatus().isOk().expectBody().jsonPath("$.cookie").isEqualTo("");
+    }
+
+    @Test
+    void malformedRefreshCookie_isNotForwarded() {
+        // when / then
+        client.post().uri("/people/api/v1/auth/staff/refresh")
+                .header("X-Forwarded-For", "198.51.100.22")
+                .header(HttpHeaders.COOKIE, "gate_staff_rt=invalid; unrelated=value")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("{}")
+                .exchange().expectStatus().isOk().expectBody().jsonPath("$.cookie").isEqualTo("");
+    }
+
+    @Test
     void deviceIssuer_accepted() {
         client.get().uri("/access/api/v1/worker/attempts")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token(DEVICE_ISSUER, KEYS, 300))
@@ -239,7 +274,8 @@ class GatewayIntegrationTest {
                 "path", request.uri(),
                 "auth", String.valueOf(request.requestHeaders().get(HttpHeaders.AUTHORIZATION, "")),
                 "requestId", String.valueOf(request.requestHeaders().get("X-Request-Id", "")),
-                "userId", String.valueOf(request.requestHeaders().get("X-User-Id", "")));
+                "userId", String.valueOf(request.requestHeaders().get("X-User-Id", "")),
+                "cookie", String.valueOf(request.requestHeaders().get(HttpHeaders.COOKIE, "")));
         try {
             return JSON.writeValueAsString(echo);
         } catch (com.fasterxml.jackson.core.JsonProcessingException error) {

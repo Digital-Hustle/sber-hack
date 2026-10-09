@@ -12,3 +12,4 @@
 | GW-06 | B-02 | SSE без буферизации и таймаута, лимит тела 5 МБ на киоск | B1 | review #49 |
 | GW-07 | NFR-18 | `traceparent`, `X-Request-Id`, JSON-логи, метрики маршрутов | B1 | review #49 |
 | GW-08 | FR-65 | Матричный тест «путь × без токена/чужой issuer/просроченный» | B1 | review #49 |
+| GW-09 | FR-60/61 | Только staff refresh-cookie проходит через gateway; остальные cookies срезаются | B1 | done #114 |

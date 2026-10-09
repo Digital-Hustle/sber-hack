@@ -3,6 +3,7 @@
 Память сервиса между сессиями и агентами. §1 — перезаписываемое текущее состояние (≤ 10 строк). §2 — карта, обновлять при новых пакетах/файлах. §3–4 — добавлять строки, неактуальное ~~зачёркивать~~. §5 — **только дописывать в конец** (`merge=union`). Решения для всей системы — ADR в `../../../docs/DECISIONS.md`.
 
 ## 1. Текущее состояние
+- GW-09: `StaffRefreshCookieFilter` пропускает только `gate_staff_rt` в POST `/people/api/v1/auth/staff/refresh`; остальные cookies не доходят до сервисов.
 - GW-01..08 сделаны: маршруты `/<svc>/api/v1/** → /api/v1/**`, JWT нескольких издателей (JWKS), `/internal/**` и actuator сервисов → 404, CORS только `CORS_ORIGINS`, rate-limit (окно в памяти, ADR-038), лимит тела `MAX_BODY`, SSE без таймаута, `X-Request-Id`, problem+json, 503 при недоступном upstream.
 - Management (health/prometheus) — порт 8079, наружу не публикуется.
 - Второй издатель — токены people (ADR-040): `gateway.issuers[1]` из env `PEOPLE_TOKEN_ISSUER`/`PEOPLE_JWKS_URI`, ES256; публичны `/people/api/v1/auth/device/{challenge,token}` (#91).
@@ -36,3 +37,4 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-08 · miroslavrov · docs: документы сервиса (ADR-034)
 - 2026-10-09 · miroslavrov · feat: GW-01..08 — маршруты, multi-issuer JWT, блок /internal, CORS, rate-limit, лимит тела, SSE, X-Request-Id, problem+json (#49)
+- 2026-10-10 · miroslavrov (агент) · fix: GW-09 cookie allowlist вместо глобального RemoveRequestHeader; три HTTP-интеграционных теста (#114)
