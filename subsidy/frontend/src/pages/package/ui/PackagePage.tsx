@@ -1,8 +1,8 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, History } from "lucide-react";
-import { packageApi, packageKeys, PackageStatusBadge, reasonText, StageBadge, type DocumentResult, type PackageCard } from "@/entities/package";
+import { arrangeFiles, neighbourDoc, packageApi, packageKeys, PackageStatusBadge, reasonText, StageBadge, type DocumentResult, type FileCard, type PackageCard } from "@/entities/package";
 import { protocolKeys } from "@/entities/protocol";
 import { can, useSession } from "@/entities/session";
 import { AssistantChat } from "@/features/ask-assistant";
@@ -13,7 +13,7 @@ import { UploadDropzone } from "@/features/upload-files";
 import { DocumentViewer } from "@/widgets/document-viewer";
 import { ProtocolPanel } from "@/widgets/protocol-panel";
 import { errorText, useEventStream } from "@/shared/api";
-import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, PageHeader, RowsSkeleton, Segmented, Status } from "@/shared/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, PageHeader, RowsSkeleton, Segmented, Select, Status, Switch } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
 import { cn } from "@/shared/lib";
 
@@ -21,17 +21,36 @@ type Tab = "protocol" | "documents" | "assistant";
 const EVENTS = ["file.stage", "document.parsed", "package.checked"];
 const DECISION = { APPROVE: "Одобрено", REJECT: "Отказано", RETURN: "Возвращено на доработку" } as const;
 const PERCENT = 100;
+const TABS: Tab[] = ["protocol", "documents", "assistant"];
+const DIGIT = /^Digit([1-3])$/;
 
-const Files = ({ card, docs, typeName, selected, onSelect, canEdit, canReprocess }: {
-  card: PackageCard; docs: Map<string, DocumentResult>; typeName: (t: string | null) => string; selected: string | null;
-  onSelect: (id: string) => void; canEdit: boolean; canReprocess: boolean;
+/** Горячие клавиши не перехватывают ввод в полях, селектах и диалогах. */
+const typing = (e: KeyboardEvent) => {
+  const t = e.target as HTMLElement | null;
+  return e.ctrlKey || e.metaKey || e.altKey || !!t?.closest("input, textarea, select, [contenteditable=true], [role=combobox], [role=dialog]");
+};
+
+const Files = ({ card, files, docs, typeName, types, type, onType, doubtFirst, onDoubtFirst, selected, onSelect, canEdit, canReprocess }: {
+  card: PackageCard; files: FileCard[]; docs: Map<string, DocumentResult>; typeName: (t: string | null) => string;
+  types: { value: string; label: string }[]; type: string; onType: (v: string) => void; doubtFirst: boolean; onDoubtFirst: (v: boolean) => void;
+  selected: string | null; onSelect: (id: string) => void; canEdit: boolean; canReprocess: boolean;
 }) => (
   <Card>
     <CardHeader><CardTitle>Файлы · {card.files.length}</CardTitle></CardHeader>
     <CardContent className="flex flex-col gap-3">
       {!card.files.length && <p className="text-sm text-muted-foreground">Загрузите сканы, PDF или ZIP с документами организации</p>}
+      {card.files.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <Select size="sm" aria-label="Вид документа" value={type} onChange={onType} options={types} />
+          <label className="flex cursor-pointer items-center justify-between gap-2 text-sm">
+            <span>Сомнительные сверху</span><Switch checked={doubtFirst} onChange={onDoubtFirst} label="Сомнительные сверху" />
+          </label>
+          <p className="text-xs text-muted-foreground">J / K — следующий / предыдущий документ, 1–3 — разделы</p>
+        </div>
+      )}
+      {card.files.length > 0 && !files.length && <p className="text-sm text-muted-foreground">Документов этого вида нет</p>}
       <ul className="flex flex-col gap-3">
-        {card.files.map((f) => (
+        {files.map((f) => (
           <li key={f.fileId} className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <FileText className="size-4 shrink-0 text-muted-foreground" />
@@ -57,7 +76,7 @@ const Files = ({ card, docs, typeName, selected, onSelect, canEdit, canReprocess
   </Card>
 );
 
-/** FE-PK-03..07, FE-SP-03..06, FE-SP-10: карточка пакета — файлы и документы по SSE, протокол, поля, решение, помощник. */
+/** FE-PK-03..08, FE-SP-03..06, FE-SP-10: карточка пакета — файлы и документы по SSE, протокол, поля, решение, помощник. */
 export const PackagePage = () => {
   const { id = "" } = useParams();
   const [sp, setSp] = useSearchParams();
@@ -70,6 +89,26 @@ export const PackagePage = () => {
   const card = useQuery({ queryKey: packageKeys.card(id), queryFn: () => packageApi.card(id) });
   const documents = useQuery({ queryKey: packageKeys.documents(id), queryFn: () => packageApi.documents(id) });
   const types = useQuery({ queryKey: packageKeys.types, queryFn: packageApi.types, staleTime: Infinity });
+  const [doubtFirst, setDoubtFirst] = useState(true);
+  const [type, setType] = useState("");
+  const docs = useMemo(() => new Map((documents.data?.items ?? []).map((d) => [d.documentId, d])), [documents.data]);
+  const files = useMemo(() => arrangeFiles(card.data?.files ?? [], docs, { doubtFirst, type }), [card.data, docs, doubtFirst, type]);
+  const openDoc = useCallback((documentId: string) => setSp((p) => { const n = new URLSearchParams(p); n.set("doc", documentId); n.set("tab", "documents"); return n; }, { replace: true }), [setSp]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (typing(e)) return;
+      if (e.code === "KeyJ" || e.code === "KeyK") {
+        const next = neighbourDoc(files, selected, e.code === "KeyJ" ? 1 : -1);
+        if (next) { e.preventDefault(); openDoc(next); }
+      } else {
+        const m = DIGIT.exec(e.code);
+        if (m) { e.preventDefault(); setParam("tab", TABS[Number(m[1]) - 1]); }
+      }
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, [files, selected, openDoc, setParam]);
 
   useEventStream("package", "/stream/ticket", `/stream?packageId=${id}`, EVENTS, (name) => {
     void qc.invalidateQueries({ queryKey: packageKeys.card(id) });
@@ -83,13 +122,13 @@ export const PackagePage = () => {
   if (card.isPending) return <RowsSkeleton rows={6} />;
   if (card.isError) return <EmptyState title="Пакет не загрузился" text={errorText(card.error)} action={<Button variant="secondary" onClick={() => card.refetch()}>Повторить</Button>} />;
   const c = card.data;
-  const docs = new Map((documents.data?.items ?? []).map((d) => [d.documentId, d]));
   const names = new Map((types.data?.items ?? []).map((t) => [t.code, t.name]));
   const typeName = (t: string | null) => (t ? names.get(t) ?? t : "Вид не определён");
   const doc = selected ? docs.get(selected) : undefined;
   const checked = c.status === "CHECKED" || c.status === "DECIDED";
   const canEdit = can(roles, "work") && c.status !== "DECIDED";
-  const openDoc = (documentId: string) => setSp((p) => { const n = new URLSearchParams(p); n.set("doc", documentId); n.set("tab", "documents"); return n; }, { replace: true });
+  const typeOptions = [{ value: "", label: "Все виды" }, ...[...new Set(c.files.flatMap((f) => f.documents.map((d) => docs.get(d.documentId)?.type ?? d.type ?? "")))]
+    .filter(Boolean).map((t) => ({ value: t, label: typeName(t) }))];
 
   return (
     <>
@@ -108,7 +147,8 @@ export const PackagePage = () => {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="flex flex-col gap-4">
           {canEdit && <UploadDropzone packageId={id} />}
-          <Files card={c} docs={docs} typeName={typeName} selected={selected} onSelect={openDoc} canEdit={canEdit} canReprocess={can(roles, "reprocess")} />
+          <Files card={c} files={files} docs={docs} typeName={typeName} types={typeOptions} type={type} onType={setType}
+            doubtFirst={doubtFirst} onDoubtFirst={setDoubtFirst} selected={selected} onSelect={openDoc} canEdit={canEdit} canReprocess={can(roles, "reprocess")} />
         </div>
         <div className="flex flex-col gap-4 lg:col-span-2">
           <Segmented label="Раздел" value={tab} onChange={(v) => setParam("tab", v)}
