@@ -86,6 +86,6 @@ OIDC через Keycloak (`https://auth.<host>/realms/subsidy`, клиент `su
 
 ## Внутренние API (только service accounts, `aud=<сервис>`)
 - package: `GET /internal/package/files/{fileId}?version=` → поток (только `svc-docproc`)
-- ocr: `POST /v1/extract` multipart `file` → `{mime, pages: [{n, width, height, textLayer, text, words: [{t, bbox, conf, line}], quality: {blur, brightness, glare, cutOff, dpi}, meanConf, rotation, error?}], durationMs}` (таблицы — OCR-06); `POST /v1/render?page=` multipart `file` → PNG. Токен service account `svc-docproc|svc-package` с `aud=ocr`
+- ocr: `POST /v1/extract` multipart `file` → `{mime, pages: [{n, width, height, textLayer, text, words: [{t, bbox, conf, line}], tables: [{rows: [[ячейка]], bbox, source: text_layer|words}], quality: {blur, brightness, glare, cutOff, dpi}, meanConf, rotation, error?}], durationMs}` (таблицы OCR-06: линейки pdfplumber для текстового слоя, иначе строки/колонки по bbox слов; ≥ 3 строк × ≥ 3 ячеек); `POST /v1/render?page=` multipart `file` → PNG. Токен service account `svc-docproc|svc-package` с `aud=ocr`
 - docproc: `GET /internal/docproc/packages/{id}/documents` → все результаты пакета (для rules)
 - rules: `GET /internal/rules/packages/{id}/facts` → протокол + поля (для assistant, только чтение)

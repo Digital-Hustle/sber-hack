@@ -20,6 +20,12 @@ class Quality(BaseModel):
     dpi: int
 
 
+class Table(BaseModel):
+    rows: list[list[str]] = Field(description="Строки × колонки, пустая ячейка — пустая строка")
+    bbox: list[int] = Field(description="[x0, y0, x1, y1] в пикселях страницы")
+    source: str = Field(description="text_layer (линейки pdfplumber) | words (по bbox слов)")
+
+
 class Page(BaseModel):
     n: int
     width: int
@@ -27,6 +33,7 @@ class Page(BaseModel):
     textLayer: bool  # noqa: N815
     text: str
     words: list[Word]
+    tables: list[Table] = Field(default_factory=list)
     quality: Quality | None = None
     meanConf: float = 0.0  # noqa: N815
     rotation: int = 0

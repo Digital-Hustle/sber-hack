@@ -9,5 +9,5 @@
 | OCR-03 | FR-21 | Предобработка: EXIF, deskew, CLAHE, OSD | B2 | done #48 |
 | OCR-04 | FR-21 | Tesseract `rus+eng`: слова + bbox + conf | B2 | done #48 |
 | OCR-05 | FR-26 | Метрики качества | B2 | done #48 |
-| OCR-06 | FR-32 | Таблицы: pdfplumber + строки/колонки по bbox для сканов | B2 | todo |
+| OCR-06 | FR-32 | Таблицы: pdfplumber + строки/колонки по bbox для сканов | B2 | done #PR |
 | OCR-07 | FR-63 | `/v1/render` превью страниц | B2 | done #48 |
