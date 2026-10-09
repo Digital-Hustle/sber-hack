@@ -21,3 +21,9 @@ people:
   invite:
     pepper: test-pepper-test-pepper-test-pepper-0001
     link-base: https://gate.test/
+  tokens:
+    issuer: https://gate.test/people
+proxodnaya:
+  security:
+    people-issuer: ""
+    people-jwks-uri: ""

@@ -14,6 +14,7 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
@@ -38,7 +39,8 @@ import ru.proxodnaya.gateway.exception.Problems;
 public class SecurityConfig {
 
     /** Пути без токена — явный список (RULES gateway). */
-    static final String[] PUBLIC_POST = {"/people/api/v1/auth/worker/activate"};
+    static final String[] PUBLIC_POST = {"/people/api/v1/auth/worker/activate", "/people/api/v1/auth/device/challenge",
+        "/people/api/v1/auth/device/token"};
     // Actuator gateway (/actuator/**) — только на management-порту (наружу не публикуется); на основном порту маршрута нет → 404
     static final String[] PUBLIC_GET = {"/actuator/health", "/actuator/health/**", "/actuator/prometheus", "/actuator/info",
         "/shift/api/v1/stream/situation", "/shift/api/v1/stream/worker"};
@@ -84,7 +86,9 @@ public class SecurityConfig {
     @Bean
     Function<GatewayProperties.Issuer, ReactiveJwtDecoder> jwtDecoders() {
         return issuer -> {
-            NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withJwkSetUri(issuer.jwkSetUri()).build();
+            NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withJwkSetUri(issuer.jwkSetUri())
+                    // Keycloak подписывает RS256, people (телефоны и персонал, ADR-040) — ES256
+                    .jwsAlgorithm(SignatureAlgorithm.RS256).jwsAlgorithm(SignatureAlgorithm.ES256).build();
             decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefaultWithIssuer(issuer.issuer())));
             return decoder;
         };

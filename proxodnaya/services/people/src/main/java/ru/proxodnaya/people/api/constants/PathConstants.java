@@ -23,6 +23,9 @@ public final class PathConstants {
     public static final String ACCESS_PROFILE = "/workers/{id}/access-profile";
     public static final String INTERNAL_CHECKPOINT = "/checkpoints/{id}";
     public static final String ACTIVATE = "/worker/activate";
+    public static final String DEVICE_CHALLENGE = "/device/challenge";
+    public static final String DEVICE_TOKEN = "/device/token";
+    public static final String JWKS = "/jwks";
 
     private PathConstants() {
     }
