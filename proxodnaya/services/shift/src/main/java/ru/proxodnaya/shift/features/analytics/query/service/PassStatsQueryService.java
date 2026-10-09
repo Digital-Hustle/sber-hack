@@ -47,15 +47,16 @@ public class PassStatsQueryService {
      * @param from       начало или {@code null} — 7 дней до конца
      * @param until      конец, не включая, или {@code null} — сейчас
      * @param checkpoint проходная или {@code null}
+     * @param simulated  включать демо-историю симулятора
      * @return статистика
      * @throws DomainException VALIDATION_ERROR — период пуст или длиннее 93 дней
      */
-    public RefusalStats refusals(Instant from, Instant until, String checkpoint) {
+    public RefusalStats refusals(Instant from, Instant until, String checkpoint, boolean simulated) {
         Instant end = until == null ? clock.instant() : until;
         Instant start = from == null ? end.minus(REFUSALS_DEFAULT) : from;
         check(start, end);
-        long attempts = repository.attempts(start, end, checkpoint);
-        List<RefusalStats.ReasonCount> reasons = repository.deniedByReason(start, end, checkpoint).stream()
+        long attempts = repository.attempts(start, end, checkpoint, simulated);
+        List<RefusalStats.ReasonCount> reasons = repository.deniedByReason(start, end, checkpoint, simulated).stream()
                 .map(row -> new RefusalStats.ReasonCount(row.reasonCode(), row.count(), SYSTEM_REASONS.contains(row.reasonCode())))
                 .toList();
         long denied = reasons.stream().mapToLong(RefusalStats.ReasonCount::count).sum();
@@ -63,7 +64,7 @@ public class PassStatsQueryService {
         String method = "Решения access из проекции попыток (access.pass.v1), включая отказы до распознавания человека. Системные отказы — "
                 + String.join(", ", SYSTEM_REASONS.stream().sorted().toList())
                 + " (кадр или сбой, человек не виноват); остальные — правомерные (пропуск, допуск, смена, лицо не совпало). "
-                + "Доля — от числа отказов; доля отказов — от всех попыток. Симулятор исключён.";
+                + "Доля — от числа отказов; доля отказов — от всех попыток. " + AnalyticsQueryService.sourceNote(simulated);
         return new RefusalStats(start, end, attempts, denied, system, denied - system, reasons, method);
     }
 
@@ -73,17 +74,18 @@ public class PassStatsQueryService {
      * @param from       начало или {@code null} — 28 дней до конца
      * @param until      конец, не включая, или {@code null} — сейчас
      * @param checkpoint проходная или {@code null}
+     * @param simulated  включать демо-историю симулятора
      * @return клетки
      * @throws DomainException VALIDATION_ERROR — период пуст или длиннее 93 дней
      */
-    public HourlyLoad loadByHour(Instant from, Instant until, String checkpoint) {
+    public HourlyLoad loadByHour(Instant from, Instant until, String checkpoint, boolean simulated) {
         Instant end = until == null ? clock.instant() : until;
         Instant start = from == null ? end.minus(LOAD_DEFAULT) : from;
         check(start, end);
         ZoneId zone = props.siteZone();
         String method = "Все попытки (пропуск, вручную, отказ) по дню недели и часу в поясе площадки (" + zone
-                + "), 0 = понедельник. Пустые клетки не возвращаются. Симулятор исключён.";
-        return new HourlyLoad(start, end, zone, repository.byWeekdayHour(start, end, checkpoint, zone), method);
+                + "), 0 = понедельник. Пустые клетки не возвращаются. " + AnalyticsQueryService.sourceNote(simulated);
+        return new HourlyLoad(start, end, zone, repository.byWeekdayHour(start, end, checkpoint, zone, simulated), method);
     }
 
     private static void check(Instant from, Instant until) {

@@ -34,12 +34,13 @@ public class IntervalRepository {
     /**
      * Открытый интервал рабочего, заблокированный до конца транзакции.
      *
-     * @param workerId рабочий
+     * @param workerId  рабочий
+     * @param simulated цепочка симулятора: у неё свои интервалы, реальные не трогает
      * @return интервал
      */
-    public Optional<Interval> lockOpen(String workerId) {
+    public Optional<Interval> lockOpen(String workerId, boolean simulated) {
         return dsl.selectFrom(INTERVALS)
-                .where(INTERVALS.WORKER_ID.eq(workerId).and(INTERVALS.EXITED_AT.isNull()))
+                .where(INTERVALS.WORKER_ID.eq(workerId).and(INTERVALS.EXITED_AT.isNull()).and(INTERVALS.SIMULATED.eq(simulated)))
                 .forUpdate()
                 .fetchOptional(IntervalRepository::interval);
     }

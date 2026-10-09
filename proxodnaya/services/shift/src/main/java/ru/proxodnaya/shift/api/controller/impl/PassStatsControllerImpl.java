@@ -25,12 +25,12 @@ public class PassStatsControllerImpl implements PassStatsController {
     }
 
     @Override
-    public RefusalsRs refusals(Instant from, Instant until, String checkpoint) {
-        return mapper.convert(stats.refusals(from, until, checkpoint));
+    public RefusalsRs refusals(Instant from, Instant until, String checkpoint, boolean simulated) {
+        return mapper.convert(stats.refusals(from, until, checkpoint, simulated));
     }
 
     @Override
-    public LoadByHourRs loadByHour(Instant from, Instant until, String checkpoint) {
-        return mapper.convert(stats.loadByHour(from, until, checkpoint));
+    public LoadByHourRs loadByHour(Instant from, Instant until, String checkpoint, boolean simulated) {
+        return mapper.convert(stats.loadByHour(from, until, checkpoint, simulated));
     }
 }

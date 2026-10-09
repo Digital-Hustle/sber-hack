@@ -21,7 +21,8 @@ import ru.proxodnaya.shift.features.analytics.query.model.WorkerHours;
 import ru.proxodnaya.shift.jooq.Tables;
 
 /**
- * SQL аналитики по реальным интервалам и проекции попыток. Симулятор исключён.
+ * SQL аналитики по интервалам и проекции попыток. Сводка «сейчас» — без симулятора; часы и присутствие — по флагу
+ * {@code simulated}.
  */
 @Repository
 public class AnalyticsRepository {
@@ -97,9 +98,11 @@ public class AnalyticsRepository {
      * @param freshSince граница свежести открытого интервала
      * @param workerId   рабочий или {@code null}
      * @param zoneId     зона или {@code null}
+     * @param simulated  включать интервалы симулятора
      * @return по рабочим
      */
-    public List<WorkerHours> hours(Instant from, Instant until, Instant now, Instant freshSince, String workerId, String zoneId) {
+    public List<WorkerHours> hours(Instant from, Instant until, Instant now, Instant freshSince, String workerId, String zoneId,
+                                   boolean simulated) {
         Condition fresh = INTERVALS.ENTERED_AT.ge(utc(freshSince));
         Field<OffsetDateTime> end = DSL.coalesce(INTERVALS.EXITED_AT,
                 DSL.when(fresh, DSL.val(utc(now))).otherwise(INTERVALS.ENTERED_AT));
@@ -108,7 +111,7 @@ public class AnalyticsRepository {
         Field<BigDecimal> total = DSL.coalesce(DSL.sum(DSL.greatest(seconds, DSL.inline(0d))), BigDecimal.ZERO);
         Condition incomplete = DSL.condition(UNCONFIRMED, INTERVALS.FLAGS)
                 .or(INTERVALS.EXITED_AT.isNull().and(fresh.not()));
-        Condition where = INTERVALS.SIMULATED.isFalse()
+        Condition where = source(simulated)
                 .and(INTERVALS.ENTERED_AT.lt(utc(until)))
                 .and(INTERVALS.EXITED_AT.isNull().or(INTERVALS.EXITED_AT.gt(utc(from))));
         if (workerId != null) {
@@ -155,9 +158,11 @@ public class AnalyticsRepository {
      * @param until      конец
      * @param now        текущий момент
      * @param freshSince граница свежести открытого интервала
+     * @param simulated  включать интервалы симулятора
      * @return факты присутствия
      */
-    public List<PresenceFact> presence(Collection<String> workerIds, Instant from, Instant until, Instant now, Instant freshSince) {
+    public List<PresenceFact> presence(Collection<String> workerIds, Instant from, Instant until, Instant now, Instant freshSince,
+                                       boolean simulated) {
         Condition fresh = INTERVALS.ENTERED_AT.ge(utc(freshSince));
         Field<OffsetDateTime> end = DSL.coalesce(INTERVALS.EXITED_AT,
                 DSL.when(fresh, DSL.val(utc(now))).otherwise(INTERVALS.ENTERED_AT));
@@ -166,13 +171,17 @@ public class AnalyticsRepository {
                 .or(INTERVALS.EXITED_AT.isNull().and(fresh.not())));
         return dsl.select(INTERVALS.WORKER_ID, INTERVALS.ENTERED_AT, end, open, unconfirmed)
                 .from(INTERVALS)
-                .where(INTERVALS.SIMULATED.isFalse())
+                .where(source(simulated))
                 .and(INTERVALS.WORKER_ID.in(workerIds))
                 .and(INTERVALS.ENTERED_AT.lt(utc(until)))
                 .and(INTERVALS.EXITED_AT.isNull().or(INTERVALS.EXITED_AT.ge(utc(from))))
                 .orderBy(INTERVALS.WORKER_ID, INTERVALS.ENTERED_AT)
                 .fetch(row -> new PresenceFact(row.value1(), row.value2().toInstant(), row.value3().toInstant(),
                         Boolean.TRUE.equals(row.value4()), Boolean.TRUE.equals(row.value5())));
+    }
+
+    private static Condition source(boolean simulated) {
+        return simulated ? DSL.noCondition() : INTERVALS.SIMULATED.isFalse();
     }
 
     private static OffsetDateTime utc(Instant moment) {

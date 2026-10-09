@@ -17,13 +17,14 @@ import ru.proxodnaya.shift.features.analytics.query.model.HourlyLoad;
 import ru.proxodnaya.shift.jooq.Tables;
 
 /**
- * SQL статистики проходов по проекции попыток {@code pass_events}. Симулятор исключён.
+ * SQL статистики проходов по проекции попыток {@code pass_events}; попытки симулятора — только с флагом {@code simulated}.
  */
 @Repository
 public class PassStatsRepository {
 
     private static final ru.proxodnaya.shift.jooq.tables.PassEvents PASS_EVENTS = Tables.PASS_EVENTS;
     private static final String DENY = "DENY";
+    private static final String SIMULATOR = "SIMULATOR";
 
     private final DSLContext dsl;
 
@@ -37,10 +38,11 @@ public class PassStatsRepository {
      * @param from       начало
      * @param until      конец
      * @param checkpoint проходная или {@code null}
+     * @param simulated  включать попытки симулятора
      * @return число
      */
-    public long attempts(Instant from, Instant until, String checkpoint) {
-        return dsl.fetchCount(PASS_EVENTS, where(from, until, checkpoint));
+    public long attempts(Instant from, Instant until, String checkpoint, boolean simulated) {
+        return dsl.fetchCount(PASS_EVENTS, where(from, until, checkpoint, simulated));
     }
 
     /**
@@ -49,13 +51,14 @@ public class PassStatsRepository {
      * @param from       начало
      * @param until      конец
      * @param checkpoint проходная или {@code null}
+     * @param simulated  включать попытки симулятора
      * @return пары «код — число»
      */
-    public List<ReasonRow> deniedByReason(Instant from, Instant until, String checkpoint) {
+    public List<ReasonRow> deniedByReason(Instant from, Instant until, String checkpoint, boolean simulated) {
         Field<Integer> count = DSL.count();
         return dsl.select(PASS_EVENTS.REASON_CODE, count)
                 .from(PASS_EVENTS)
-                .where(where(from, until, checkpoint).and(PASS_EVENTS.DECISION.eq(DENY)))
+                .where(where(from, until, checkpoint, simulated).and(PASS_EVENTS.DECISION.eq(DENY)))
                 .groupBy(PASS_EVENTS.REASON_CODE)
                 .orderBy(count.desc(), PASS_EVENTS.REASON_CODE)
                 .fetch(row -> new ReasonRow(row.value1(), row.value2()));
@@ -68,9 +71,10 @@ public class PassStatsRepository {
      * @param until      конец
      * @param checkpoint проходная или {@code null}
      * @param zone       пояс площадки
+     * @param simulated  включать попытки симулятора
      * @return непустые клетки по дню и часу
      */
-    public List<HourlyLoad.Cell> byWeekdayHour(Instant from, Instant until, String checkpoint, ZoneId zone) {
+    public List<HourlyLoad.Cell> byWeekdayHour(Instant from, Instant until, String checkpoint, ZoneId zone, boolean simulated) {
         // пояс — литералом: с bind-параметром Postgres не сочтёт выражения в select и group by одинаковыми
         Field<OffsetDateTime> local = PASS_EVENTS.TS;
         Field<Integer> weekday = DSL.field("(extract(isodow from {0} at time zone {1})::int - 1)", SQLDataType.INTEGER,
@@ -80,14 +84,17 @@ public class PassStatsRepository {
         Field<Integer> denied = DSL.count().filterWhere(PASS_EVENTS.DECISION.eq(DENY));
         return dsl.select(weekday, hour, DSL.count(), denied)
                 .from(PASS_EVENTS)
-                .where(where(from, until, checkpoint))
+                .where(where(from, until, checkpoint, simulated))
                 .groupBy(weekday, hour)
                 .orderBy(weekday, hour)
                 .fetch(row -> new HourlyLoad.Cell(row.value1(), row.value2(), row.value3(), row.value3() - row.value4(), row.value4()));
     }
 
-    private static Condition where(Instant from, Instant until, String checkpoint) {
-        Condition where = PASS_EVENTS.TS.ge(utc(from)).and(PASS_EVENTS.TS.lt(utc(until))).and(PASS_EVENTS.SOURCE.ne("SIMULATOR"));
+    private static Condition where(Instant from, Instant until, String checkpoint, boolean simulated) {
+        Condition where = PASS_EVENTS.TS.ge(utc(from)).and(PASS_EVENTS.TS.lt(utc(until)));
+        if (!simulated) {
+            where = where.and(PASS_EVENTS.SOURCE.ne(SIMULATOR));
+        }
         return checkpoint == null ? where : where.and(PASS_EVENTS.CHECKPOINT_ID.eq(checkpoint));
     }
 
