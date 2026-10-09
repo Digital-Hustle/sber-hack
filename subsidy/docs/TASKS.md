@@ -25,7 +25,7 @@
 | PLT-06 | — | Service accounts `svc-package/docproc/rules/assistant`, `aud` на каждый сервис | B1 | todo |
 | PLT-07 | NFR-17 | Outbox relay + IdempotentConsumer + конверт события в `libs/common` | B1 | done |
 | PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | todo |
-| PLT-09 | FR-28 | `eval/`: `run.py` через публичный API, разметка, отчёт; синтетика `eval/synthetic/` (генератор пакетов с корректными реквизитами) + запуск в CI | B2 | todo |
+| PLT-09 | FR-28 | `eval/`: `run.py` через публичный API, разметка, отчёт; синтетика `eval/synthetic/` (генератор пакетов с корректными реквизитами) + запуск в CI | B2 | done #PR |
 
 ## Совместные
 | ID | FR | Задача | Роль | Статус |
