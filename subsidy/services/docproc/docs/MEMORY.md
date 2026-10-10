@@ -29,3 +29,4 @@
 - 2026-10-09 · agent · feat(docproc): DP-12 таблицы позиций из ocr в извлечение полей
 - 2026-10-09 · subsidy-agent · DP-14: OcrClient помечает страницу OCR_WEAK при meanConf < VISION_OCR_MIN_CONF (0.6, не для текстового слоя); PageText.needsImage → при VISION_FALLBACK_ENABLED картинка уходит модели вместе с текстом
 - 2026-10-09 · subsidy-agent · DP-16: `pipeline/PipelineMetrics` — таймеры стадий text/segment/fields, уверенность вида по типам (SLO-корзины), исходы документов/файлов, повторы; таблица в ARCHITECTURE
+- 2026-10-10 · subsidy-agent · FR-30: реестр 10 видов по кейсу (`doc-types/registry.json`), ИНН/ОГРН — только FORMAT_INVALID (ADR-025)
