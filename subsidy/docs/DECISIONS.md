@@ -85,7 +85,7 @@ GitHub Actions не стартуют (биллинг аккаунта), поэт
 | opencv-python-headless / numpy / Pillow / pillow-heif | Apache-2.0 / BSD / MIT-CMU / BSD-3 | B2 |
 | Tesseract 5 + tessdata `rus`, `eng` / pytesseract | Apache-2.0 | B2 |
 | networknt json-schema-validator | Apache-2.0 | B2 |
-| Ollama / Qwen3 / Qwen2.5-VL-7B | MIT / Apache-2.0 / Apache-2.0 | B3 |
+| Ollama / Qwen3 (8b, 4b, 1.7b) / Qwen2.5-VL-7B | MIT / Apache-2.0 / Apache-2.0 | B3 |
 | Apache POI / Apache PDFBox / TwelveMonkeys ImageIO | Apache-2.0 / Apache-2.0 / BSD-3 | B3 |
 | React / Tailwind / shadcn / Radix / TanStack / zustand / i18next / motion | MIT | F1/F2 |
 | pdfjs-dist / react-dropzone / recharts | Apache-2.0 / MIT / MIT | F1/F2 |
