@@ -76,7 +76,9 @@ class DecisionIntegrationTest extends AbstractIntegrationTest {
     void approve_onlySeniorAfterProtocol_thenLocked() throws Exception {
         String packageId = createPackage();
         String approve = "{\"decision\":\"APPROVE\"}";
-        mockMvc.perform(decide(packageId, SPECIALIST, approve)).andExpect(status().isForbidden());
+        mockMvc.perform(decide(packageId, SPECIALIST, approve))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
         mockMvc.perform(decide(packageId, SENIOR, approve))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PROTOCOL_NOT_FOUND"));

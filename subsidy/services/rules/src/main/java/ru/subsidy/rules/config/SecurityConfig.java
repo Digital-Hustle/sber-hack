@@ -9,6 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
 import ru.subsidy.common.security.SubsidyJwt;
+import ru.subsidy.common.web.ProblemSecurity;
 
 /**
  * Доступ к rules: JWT Keycloak realm subsidy; /internal/** — только service account assistant.
@@ -33,7 +34,11 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health/**", "/actuator/health", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/internal/**").hasAuthority("SVC_ASSISTANT")
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(SubsidyJwt.converter())))
+                .exceptionHandling(errors -> errors.authenticationEntryPoint(ProblemSecurity.entryPoint())
+                        .accessDeniedHandler(ProblemSecurity.accessDenied()))
+                .oauth2ResourceServer(oauth -> oauth.authenticationEntryPoint(ProblemSecurity.entryPoint())
+                        .accessDeniedHandler(ProblemSecurity.accessDenied())
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(SubsidyJwt.converter())))
                 .build();
     }
 }

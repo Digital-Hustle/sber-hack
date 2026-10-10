@@ -17,12 +17,24 @@ import ru.subsidy.common.inbox.IdempotentConsumer;
 import ru.subsidy.common.outbox.OutboxRelay;
 import ru.subsidy.common.outbox.OutboxWriter;
 import ru.subsidy.common.security.ServiceTokenProvider;
+import ru.subsidy.common.web.ProblemErrorHandler;
 
 /**
  * Общие бины сервисов: часы, inbox, outbox (app.outbox.shared=true), токен service account.
  */
 @AutoConfiguration
 public class CommonAutoConfiguration {
+
+    /**
+     * Ошибки фреймворка в формате problem+json (FR-06).
+     *
+     * @return обработчик
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public ProblemErrorHandler problemErrorHandler() {
+        return new ProblemErrorHandler();
+    }
 
     /**
      * Часы приложения.
