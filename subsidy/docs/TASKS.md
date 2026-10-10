@@ -16,7 +16,7 @@
 ## Платформа (B1)
 | ID | FR | Задача | Роль | Статус |
 |---|---|---|---|---|
-| PLT-00 | — | Получить текст кейса: сверить С1–С21, разд. 5.3/5.5 с REQUIREMENTS, DOC-TYPES, RULES-CATALOG, DEMO; поправить гипотезы | B1 + все | todo |
+| PLT-00 | — | Получить текст кейса: сверить С1–С21, разд. 5.3/5.5 с REQUIREMENTS, DOC-TYPES, RULES-CATALOG, DEMO; поправить гипотезы | B1 + все | частично: Положение (КЕЙС 3 — допуск Д1–Д12, баллы, бонусы, п. 7.4) сверено, DEMO.md — чек-лист допуска; тексты С1–С21 и разд. 5.3/5.5 кейса в Положение не входят — ждём от организаторов |
 | PLT-01 | NFR-15 | `init-backend.sh services` (кейс subsidy), `libs/common` — перенести из «Проходной» (sed `proxodnaya` → `subsidy`), каркас `libs/llm` | B1 | done |
 | PLT-02 | NFR-01/02 | `infra/docker-compose.yml`: postgres (БД+роль на сервис, volume), kafka + `topics.sh`, keycloak (realm из файла), jaeger, caddy, ollama + ollama-pull (профиль `llm-local`) | B1 | done |
 | PLT-03 | NFR-13 | CI `subsidy-ci.yml` уже есть — проверить на первом коде; включить деплой (`SUBS_DEPLOY_ENABLED`) | B1 | done |
