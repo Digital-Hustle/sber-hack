@@ -52,14 +52,15 @@ public final class RangeOp implements DeclarativeOp {
         return check(spec, value.get(), Params.decimal(spec, MIN), Params.decimal(spec, MAX));
     }
 
+    // границы — точно до копейки: допуск 0.01 у сравнения сумм здесь пропустил бы 3 000 000,01 при максимуме 3 000 000
     private static RuleResult check(RuleSpec spec, Operand.Value value, BigDecimal min, BigDecimal max) {
         BigDecimal amount = value.amount();
         String text = value.label() + Texts.SPACE + Money.format(amount);
         RuleResult result = spec.pass(text + " — в допустимых пределах", value.evidence());
-        if (min != null && Money.greater(min, amount)) {
+        if (min != null && amount.compareTo(min) < 0) {
             result = spec.fail(text + " — меньше минимума " + Money.format(min), value.evidence(), Money.plain(min),
                     Money.plain(amount));
-        } else if (max != null && Money.greater(amount, max)) {
+        } else if (max != null && amount.compareTo(max) > 0) {
             result = spec.fail(text + " — больше максимума " + Money.format(max), value.evidence(), Money.plain(max),
                     Money.plain(amount));
         }

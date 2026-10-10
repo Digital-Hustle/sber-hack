@@ -65,12 +65,13 @@ public final class RatioMinOp implements DeclarativeOp {
     }
 
     private static RuleResult ratio(RuleSpec spec, Operand.Value part, Operand.Value whole, BigDecimal min) {
-        BigDecimal ratio = part.amount().divide(whole.amount(), SCALE, RoundingMode.HALF_UP);
+        BigDecimal ratio = part.amount().divide(whole.amount(), SCALE, RoundingMode.DOWN);
         String text = part.label() + Texts.SPACE + Money.format(part.amount()) + " из " + whole.label()
                 + Texts.SPACE + Money.format(whole.amount()) + " = " + Texts.percent(ratio);
         List<Evidence> where = new ArrayList<>(part.evidence());
         where.addAll(whole.evidence());
-        if (ratio.compareTo(min) >= 0) {
+        // сравнение без округления доли: 499 999,99 из 1 000 000 — это меньше 50 %, хотя 0.4999999 округляется до 0.500000
+        if (part.amount().compareTo(whole.amount().multiply(min)) >= 0) {
             return spec.pass(text + " — не меньше " + Texts.percent(min), where);
         }
         return spec.fail(text + " — меньше требуемых " + Texts.percent(min), where, Texts.percent(min),
