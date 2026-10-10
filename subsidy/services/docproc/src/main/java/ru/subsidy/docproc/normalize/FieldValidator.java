@@ -59,14 +59,13 @@ public class FieldValidator {
      */
     public List<FieldValue> normalize(DocType type, JsonNode data, JsonNode confidence, BigDecimal reviewThreshold) {
         List<FieldValue> result = new ArrayList<>();
-        String bik = digits(data.path(BIK));
         for (Map.Entry<String, String> field : type.kinds().entrySet()) {
             JsonNode raw = data.path(field.getKey());
             if (raw.isMissingNode() || raw.isNull() || raw.isTextual() && raw.asText().isBlank()) {
                 continue;
             }
             List<FieldCheck> checks = new ArrayList<>();
-            JsonNode value = value(field.getValue(), raw, bik, checks);
+            JsonNode value = value(field.getValue(), raw, bikFor(field.getKey(), type, data), checks);
             BigDecimal conf = confidence(confidence.path(field.getKey()));
             if (conf.compareTo(reviewThreshold) < 0) {
                 checks.add(new FieldCheck(LOW_CONFIDENCE, FieldCheck.FAILED, "Модель не уверена в значении"));
@@ -75,6 +74,24 @@ public class FieldValidator {
                     List.copyOf(checks)));
         }
         return result;
+    }
+
+    /**
+     * БИК банка того же лица, что и счёт: у платёжного поручения два банка
+     * (payerAccount ↔ payerBik, payeeAccount ↔ payeeBik), у остальных видов — единственный bik.
+     *
+     * @param field имя поля
+     * @param type вид документа
+     * @param data значения от модели
+     * @return БИК или null, если пары нет
+     */
+    private static String bikFor(String field, DocType type, JsonNode data) {
+        int idx = field.indexOf("Account");
+        String own = idx <= 0 ? null : field.substring(0, idx) + "Bik";
+        if (own != null && BIK.equals(type.kinds().get(own))) {
+            return digits(data.path(own));
+        }
+        return digits(data.path(BIK));
     }
 
     private JsonNode value(String kind, JsonNode raw, String bik, List<FieldCheck> checks) {

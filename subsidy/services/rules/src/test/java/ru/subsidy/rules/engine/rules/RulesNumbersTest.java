@@ -114,6 +114,19 @@ class RulesNumbersTest {
     }
 
     @Test
+    void bankKey_payerAndPayeeUseOwnBik() {
+        PackageFacts valid = pkg()
+                .doc(Docs.APPLICATION, "bankAccount", "40702810938000000001", "bik", "044525225")
+                .doc(Docs.PAYMENT, "payerAccount", "40702810938000000001", "payerBik", "044525225",
+                        "payeeAccount", "40702810338000000001", "payeeBik", "045004641").facts();
+        assertThat(status(rule(BankKeyRule.class).evaluate(valid, params()))).isEqualTo(RuleStatus.PASSED);
+        PackageFacts crossed = pkg()
+                .doc(Docs.PAYMENT, "payerAccount", "40702810938000000001", "payerBik", "045004641",
+                        "payeeAccount", "40702810338000000001", "payeeBik", "045004641").facts();
+        assertThat(status(rule(BankKeyRule.class).evaluate(crossed, params()))).isEqualTo(RuleStatus.FAILED);
+    }
+
+    @Test
     void cross_innNameSignerCounterparty() {
         PackageFacts valid = pkg()
                 .doc(Docs.APPLICATION, "inn", "7707083893", "orgName", "ООО «Ромашка»", "signerName", "Иванов И. И.")

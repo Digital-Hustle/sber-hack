@@ -62,5 +62,6 @@ class NormalizersTest {
         assertThat(Requisites.bik("044525225")).isTrue();
         assertThat(Requisites.account("40702810938000000001", "044525225")).isTrue();
         assertThat(Requisites.account("40702810938000000002", "044525225")).isFalse();
+        assertThat(Requisites.account("30101810000000000225", "044525225")).isTrue();
     }
 }
