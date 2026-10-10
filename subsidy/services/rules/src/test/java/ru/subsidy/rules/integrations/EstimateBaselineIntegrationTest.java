@@ -19,7 +19,7 @@ import ru.subsidy.rules.stats.EstimateBaselineRepository;
 class EstimateBaselineIntegrationTest extends AbstractIntegrationTest {
 
     private static final String PROGRAM = "OUTLIER-IT";
-    private static final String ESTIMATE = "COST_ESTIMATE";
+    private static final String ESTIMATE = "COST_JUSTIFICATION";
 
     @Autowired
     private DSLContext dsl;

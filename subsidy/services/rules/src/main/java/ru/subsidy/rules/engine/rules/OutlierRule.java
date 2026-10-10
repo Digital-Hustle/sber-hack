@@ -22,7 +22,7 @@ import ru.subsidy.rules.money.Money;
 import ru.subsidy.rules.program.ProgramParams;
 
 /**
- * ANOMALY_OUTLIER: статья сметы больше «средняя + 3σ» сумм статей смет других пакетов программы.
+ * ANOMALY_OUTLIER: статья обоснования затрат больше «средняя + 3σ» сумм статей обоснований других пакетов программы.
  * Применяется только при выборке не меньше {@link #MIN_PACKAGES} пакетов, иначе NOT_APPLICABLE. Только WARNING.
  */
 @Component
@@ -53,10 +53,10 @@ public class OutlierRule implements Rule {
 
     @Override
     public List<RuleResult> evaluate(PackageFacts facts, ProgramParams params) {
-        Optional<DocFacts> estimate = facts.first(Docs.ESTIMATE);
+        Optional<DocFacts> estimate = facts.first(Docs.COST_JUSTIFICATION);
         List<JsonNode> rows = estimate.map(doc -> doc.rows(Docs.ITEMS)).orElse(List.of());
         if (rows.isEmpty()) {
-            return List.of(RuleResult.missing(CODE, "Нет статей сметы для сравнения с программой"));
+            return List.of(RuleResult.missing(CODE, "Нет статей обоснования затрат для сравнения с программой"));
         }
         Baseline stats = baseline.estimateItems(facts.programCode(), facts.packageId());
         if (stats.packages() < MIN_PACKAGES || stats.mean() == null || stats.stddev() == null) {
@@ -81,9 +81,9 @@ public class OutlierRule implements Rule {
                 + ") по " + stats.packages() + " пакетам программы = " + Money.format(limit);
         List<Evidence> where = List.of(Evidence.of(estimate, Docs.ITEMS));
         if (outliers.isEmpty()) {
-            return RuleResult.passed(CODE, "Статьи сметы в пределах программы: " + basis, where);
+            return RuleResult.passed(CODE, "Статьи обоснования затрат в пределах программы: " + basis, where);
         }
-        return new RuleResult(CODE, RuleStatus.WARNING, "Статьи сметы заметно выше обычных для программы ("
+        return new RuleResult(CODE, RuleStatus.WARNING, "Статьи обоснования затрат заметно выше обычных для программы ("
                 + basis + "): " + String.join("; ", outliers), where, Money.plain(limit), Money.plain(largest));
     }
 

@@ -1,6 +1,6 @@
 # Стенд «Субсидии» (docs/DEPLOY.md). Запуск: ../scripts/gen-env.sh && docker compose up -d --wait
 # Локальная модель: docker compose --profile llm-local up -d
-# Демо-данные (программа DEMO-2026): LIQUIBASE_CONTEXTS=prod,demo в .env.
+# Программы кейса создаются миграцией rules всегда; демо-данные — LIQUIBASE_CONTEXTS=prod,demo в .env.
 name: subsidy
 
 x-restart: &restart

@@ -59,4 +59,21 @@ class FieldValidatorTest {
         assertThat(failed(fields, "payerAccount")).isTrue();
         assertThat(failed(fields, "payeeAccount")).isFalse();
     }
+
+    @Test
+    void innAndOgrnCheckedByFormatOnly() {
+        Map<String, String> kinds = new LinkedHashMap<>();
+        kinds.put("inn", "inn");
+        kinds.put("ogrn", "ogrn");
+        DocType type = new DocType("APPLICATION", "Заявление", "", "4", kinds, null);
+        List<FieldValue> good = validator.normalize(type, json.valueToTree(Map.of("inn", "6103 0507 8261",
+                "ogrn", "316619600257623")), json.createObjectNode(), THRESHOLD);
+        assertThat(failed(good, "inn")).isFalse();
+        assertThat(failed(good, "ogrn")).isFalse();
+        assertThat(good.getFirst().value().asText()).isEqualTo("610305078261");
+        List<FieldValue> bad = validator.normalize(type, json.valueToTree(Map.of("inn", "12345",
+                "ogrn", "12345678901234")), json.createObjectNode(), THRESHOLD);
+        assertThat(failed(bad, "inn")).isTrue();
+        assertThat(failed(bad, "ogrn")).isTrue();
+    }
 }

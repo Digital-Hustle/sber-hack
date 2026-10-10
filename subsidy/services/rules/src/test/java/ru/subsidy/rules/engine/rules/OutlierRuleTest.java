@@ -26,7 +26,7 @@ class OutlierRuleTest {
             rows[idx * 3 + 2] = amounts[idx];
         }
         OutlierRule rule = new OutlierRule((program, exclude) -> stats);
-        List<RuleResult> results = rule.evaluate(Fixture.pkg().doc(Docs.ESTIMATE, Docs.ITEMS, Fixture.items(rows))
+        List<RuleResult> results = rule.evaluate(Fixture.pkg().doc(Docs.COST_JUSTIFICATION, Docs.ITEMS, Fixture.items(rows))
                 .facts(), Fixture.params());
         assertThat(results).hasSize(1);
         return results.get(0);
@@ -63,7 +63,7 @@ class OutlierRuleTest {
     @Test
     void noEstimateItems_dataMissing() {
         OutlierRule rule = new OutlierRule((program, exclude) -> ENOUGH);
-        List<RuleResult> results = rule.evaluate(Fixture.pkg().doc(Docs.INVOICE, Docs.TOTAL, "100.00").facts(),
+        List<RuleResult> results = rule.evaluate(Fixture.pkg().doc(Docs.BANK_STATEMENT, "balance", "100.00").facts(),
                 Fixture.params());
         assertThat(results.get(0).status()).isEqualTo(RuleStatus.DATA_MISSING);
     }

@@ -151,7 +151,7 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.items[0].type").value("APPLICATION"))
                 .andExpect(jsonPath("$.items[0].fromPage").value(1))
-                .andExpect(jsonPath("$.items[1].type").value("INVOICE"))
+                .andExpect(jsonPath("$.items[1].type").value("GUARANTEE_LETTER"))
                 .andExpect(jsonPath("$.items[1].reasonCode").value("FIELDS_TO_CHECK"));
         String body = mockMvc.perform(get("/api/v1/packages/" + ids[1] + "/documents")
                         .with(authentication(user("SPECIALIST"))))
@@ -192,17 +192,17 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
         String documentId = objectMapper.readTree(body).path("items").path(1).path("documentId").asText();
 
         mockMvc.perform(put("/api/v1/documents/" + documentId + "/type").with(authentication(user("AUDITOR")))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"CONTRACT\"}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"BANK_STATEMENT\"}"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(put("/api/v1/documents/" + documentId + "/type").with(authentication(user("SPECIALIST")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"type\":\"CONTRACT\",\"reason\":\"это договор\"}"))
+                        .content("{\"type\":\"BANK_STATEMENT\",\"reason\":\"это справка банка\"}"))
                 .andExpect(status().isAccepted());
         runner.run(claimFor(ids[0]));
 
         mockMvc.perform(get("/api/v1/documents/" + documentId + "/result").with(authentication(user("SPECIALIST"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.type").value("CONTRACT"))
+                .andExpect(jsonPath("$.type").value("BANK_STATEMENT"))
                 .andExpect(jsonPath("$.source").value("SPECIALIST"));
     }
 
@@ -241,7 +241,7 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
                         .with(authentication(user("SENIOR_SPECIALIST"))))
                 .andExpect(status().isAccepted());
         mockMvc.perform(get("/api/v1/doc-types").with(authentication(user("AUDITOR"))))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(9));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(10));
     }
 
     @TestConfiguration
@@ -260,11 +260,11 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
                     if ("CLASSIFYING".equals(rq.stage())) {
                         root.putArray("segments")
                                 .add(segment(json, 1, 1, "APPLICATION"))
-                                .add(segment(json, 2, 2, "INVOICE"));
-                    } else if (rq.schema().toString().contains("sellerInn")) {
-                        root.putObject("data").put("number", "17").put("date", "01.03.2026")
-                                .put("sellerInn", "1234567890").put("total", "500 000,00");
-                        root.putObject("confidence").put("number", 0.9).put("sellerInn", 0.9).put("total", 0.9);
+                                .add(segment(json, 2, 2, "GUARANTEE_LETTER"));
+                    } else if (rq.schema().toString().contains("guarantorName")) {
+                        root.putObject("data").put("guarantorName", "ООО Гарант").put("date", "01.03.2026")
+                                .put("inn", "12345").put("amount", "500 000,00");
+                        root.putObject("confidence").put("guarantorName", 0.9).put("inn", 0.9).put("amount", 0.9);
                     } else {
                         root.putObject("data").put("inn", "7707083893")
                                 .put("requestedAmount", "1 500 000 руб. 00 коп.").put("date", "«1» марта 2026 г.");

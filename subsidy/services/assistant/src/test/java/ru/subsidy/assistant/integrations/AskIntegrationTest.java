@@ -32,7 +32,7 @@ import ru.subsidy.llm.api.ModelUnavailableException;
 class AskIntegrationTest extends AbstractIntegrationTest {
 
     private static final String FACTS = """
-            {"facts":{"packageId":"%s","inn":"7707083893","programCode":"DEMO-2026","documents":[
+            {"facts":{"packageId":"%s","inn":"7707083893","programCode":"INNOVATION","documents":[
               {"documentId":"d1","type":"APPLICATION","fromPage":1,"toPage":1,
                "fields":{"requestedAmount":{"value":"1500000.00","source":"MODEL","confidence":0.95}}}],"files":[]},
              "protocol":{"version":1,"status":"INCOMPLETE","failed":1,"warnings":0,"needsReview":0,

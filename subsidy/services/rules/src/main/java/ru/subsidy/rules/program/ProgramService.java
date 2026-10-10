@@ -19,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ru.subsidy.common.exception.DomainException;
 import ru.subsidy.common.exception.ErrorCode;
+import ru.subsidy.rules.engine.declarative.ProgramRules;
+import ru.subsidy.rules.engine.rules.ProgramRulesRule;
 import ru.subsidy.rules.jooq.Tables;
 import ru.subsidy.rules.recheck.RecheckRequests;
 
@@ -35,6 +37,7 @@ public class ProgramService {
     private final ObjectMapper json;
     private final Clock clock;
     private final RecheckRequests recheck;
+    private final ProgramRules programRules = new ProgramRules();
 
     /**
      * Конструктор.
@@ -107,6 +110,11 @@ public class ProgramService {
             throw new DomainException(ErrorCode.VALIDATION_ERROR, "params — объект, checklist — массив пунктов");
         }
         parseChecklist(checklist);
+        try {
+            programRules.parse(params.path(ProgramRulesRule.RULES));
+        } catch (IllegalArgumentException broken) {
+            throw new DomainException(ErrorCode.VALIDATION_ERROR, broken.getMessage());
+        }
         Optional<Program> previous = find(code);
         int version = previous.map(Program::version).orElse(0) + 1;
         dsl.insertInto(Tables.PROGRAMS)

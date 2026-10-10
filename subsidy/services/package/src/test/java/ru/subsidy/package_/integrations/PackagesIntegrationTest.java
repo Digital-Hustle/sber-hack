@@ -22,7 +22,7 @@ import ru.subsidy.package_.config.AbstractIntegrationTest;
 class PackagesIntegrationTest extends AbstractIntegrationTest {
 
     private static final String INN = "7707083893";
-    private static final String BODY = "{\"orgInn\":\"" + INN + "\",\"programCode\":\"DEMO-2026\"}";
+    private static final String BODY = "{\"orgInn\":\"" + INN + "\",\"programCode\":\"INNOVATION\"}";
 
     private static CurrentUser user(String role) {
         Jwt token = Jwt.withTokenValue("test").header("alg", "none")
@@ -51,7 +51,7 @@ class PackagesIntegrationTest extends AbstractIntegrationTest {
     void createPackage_invalidInn_returns400() throws Exception {
         mockMvc.perform(post("/api/v1/packages").with(authentication(user("SPECIALIST")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orgInn\":\"7707083894\",\"programCode\":\"DEMO-2026\"}"))
+                        .content("{\"orgInn\":\"7707083894\",\"programCode\":\"INNOVATION\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INN_INVALID"));
     }

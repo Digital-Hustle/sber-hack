@@ -60,7 +60,7 @@ class ProtocolIntegrationTest extends AbstractIntegrationTest {
         UUID fileId = UUID.randomUUID();
         UUID documentId = UUID.randomUUID();
         event("PackageCreated", objectMapper.createObjectNode().put("packageId", packageId.toString())
-                .put("inn", INN).put("programCode", "DEMO-2026").put("createdBy", "user-SPECIALIST"));
+                .put("inn", INN).put("programCode", "INNOVATION").put("createdBy", "user-SPECIALIST"));
         event("FileReceived", objectMapper.createObjectNode().put("packageId", packageId.toString())
                 .put("fileId", fileId.toString()).put("version", 1));
         ArrayNode fields = objectMapper.createArrayNode()
@@ -92,7 +92,7 @@ class ProtocolIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.status").value("INCOMPLETE"))
-                .andExpect(jsonPath("$.programCode").value("DEMO-2026"));
+                .andExpect(jsonPath("$.programCode").value("INNOVATION"));
         long outbox = dsl.fetchCount(Tables.OUTBOX, Tables.OUTBOX.MESSAGE_KEY.eq(ids[0].toString()));
         assertThat(outbox).isEqualTo(1);
     }
@@ -146,18 +146,19 @@ class ProtocolIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/programs").with(authentication(user(SPECIALIST))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].code").value("DEMO-2026"));
-        String program = mockMvc.perform(get("/api/v1/programs/DEMO-2026").with(authentication(user(SPECIALIST))))
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.items[1].code").value("INNOVATION"));
+        String program = mockMvc.perform(get("/api/v1/programs/INNOVATION").with(authentication(user(SPECIALIST))))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         ObjectNode current = (ObjectNode) objectMapper.readTree(program);
-        ObjectNode update = objectMapper.createObjectNode().put("name", "Демо 2026 (изм.)");
+        ObjectNode update = objectMapper.createObjectNode().put("name", "Инновационный проект (изм.)");
         update.set("params", current.path("params"));
         update.set("checklist", current.path("checklist"));
-        mockMvc.perform(put("/api/v1/programs/DEMO-2026").with(authentication(user(SPECIALIST)))
+        mockMvc.perform(put("/api/v1/programs/INNOVATION").with(authentication(user(SPECIALIST)))
                         .contentType(MediaType.APPLICATION_JSON).content(update.toString()))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(put("/api/v1/programs/DEMO-2026").with(authentication(user("SENIOR_SPECIALIST")))
+        mockMvc.perform(put("/api/v1/programs/INNOVATION").with(authentication(user("SENIOR_SPECIALIST")))
                         .contentType(MediaType.APPLICATION_JSON).content(update.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(2));

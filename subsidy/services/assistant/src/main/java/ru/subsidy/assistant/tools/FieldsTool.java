@@ -39,8 +39,8 @@ public class FieldsTool implements Tool {
     @Override
     public String description() {
         return "поля документов пакета: documentId, вид, страницы, поля {значение, источник, уверенность}. "
-                + "Аргумент — вид документа (APPLICATION, EGRUL, TAX, FINANCE, ESTIMATE, CONTRACT, INVOICE, "
-                + "PAYMENT, ACT) или пусто для всех.";
+                + "Аргумент — вид документа (APPLICATION, PD_CONSENT, CERTIFICATE, PRESENTATION, COST_JUSTIFICATION, "
+                + "BANK_STATEMENT, PROPERTY_DOC, GUARANTEE_LETTER, GIMS_DECLARATION, OTHER) или пусто для всех.";
     }
 
     @Override

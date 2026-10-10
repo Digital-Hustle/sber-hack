@@ -47,7 +47,7 @@ class PackageQueueIntegrationTest extends AbstractIntegrationTest {
     private String create(String inn) throws Exception {
         String body = mockMvc.perform(post("/api/v1/packages").with(authentication(user("SPECIALIST")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orgInn\":\"" + inn + "\",\"programCode\":\"DEMO-2026\"}"))
+                        .content("{\"orgInn\":\"" + inn + "\",\"programCode\":\"INNOVATION\"}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.packageId");
     }
