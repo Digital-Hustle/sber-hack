@@ -134,7 +134,7 @@ public class CompletenessEngine {
         String condition = program.checklist().stream().filter(source -> source.item().equals(item.item()))
                 .map(ChecklistItem::condition).filter(flag -> flag != null && program.params().flag(flag))
                 .findFirst().orElse(null);
-        String text = item.title() + (item.conditionText() == null ? "" : OPEN + item.conditionText() + CLOSE);
+        String text = item.title() + (item.condition() == null ? "" : OPEN + item.condition() + CLOSE);
         return condition == null ? text : text + REQUIRED_MARK;
     }
 

@@ -53,7 +53,7 @@ public final class RequiredFieldsOp implements DeclarativeOp {
         List<String> problems = new ArrayList<>();
         List<Evidence> where = new ArrayList<>();
         int checked = 0;
-        Iterator<Map.Entry<String, JsonNode>> byType = spec.params().path(FIELDS).fields();
+        Iterator<Map.Entry<String, JsonNode>> byType = spec.params().path(FIELDS).properties().iterator();
         while (byType.hasNext()) {
             Map.Entry<String, JsonNode> entry = byType.next();
             List<String> required = new ArrayList<>();
