@@ -3,6 +3,8 @@ package ru.subsidy.package_.staff;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,12 +15,13 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.util.HtmlUtils;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import ru.subsidy.common.exception.DomainException;
-import ru.subsidy.common.exception.ErrorCode;
 
 /**
  * Письма сотрудникам через общий ящик кейсов ({@code SMTP_*}, {@code MAIL_FROM}, см. корневой MAIL.md): HTML в стиле
@@ -33,11 +36,13 @@ public class StaffMailer {
     private static final int CODE_HALF = 3;
     private static final String HELLO = "Здравствуйте, ";
     private static final String INVITED = "Вас пригласили в «Субсидии»";
+    private static final long[] RETRY_PAUSES_MS = {3_000, 15_000, 60_000};
 
     private final ObjectProvider<JavaMailSender> sender;
     private final StaffSettings settings;
     private final String host;
     private final boolean logCodes;
+    private final ExecutorService outbox = Executors.newFixedThreadPool(2, Thread.ofVirtual().name("mail-", 0).factory());
 
     /**
      * Конструктор.
@@ -62,7 +67,6 @@ public class StaffMailer {
      * @param name    имя сотрудника
      * @param code    шесть цифр
      * @param minutes срок действия
-     * @throws DomainException MAIL_UNAVAILABLE — SMTP настроен, но письмо не ушло
      */
     public void loginCode(String email, String name, String code, long minutes) {
         String spaced = code.substring(0, CODE_HALF) + " " + code.substring(CODE_HALF);
@@ -98,11 +102,7 @@ public class StaffMailer {
                         + HtmlUtils.htmlEscape(role) + "</b></p><p style=\"margin:16px 0 0;color:#5C6B60\">Пароль не нужен: на странице "
                         + "входа введите эту почту — мы пришлём одноразовый код.</p>",
                 "Войти", "Если вы не ждали приглашения, просто проигнорируйте письмо."));
-        try {
-            send(email, "Приглашение в «Субсидии»", text, html);
-        } catch (DomainException error) {
-            LOG.warn("Приглашение создано, но письмо не ушло");
-        }
+        send(email, "Приглашение в «Субсидии»", text, html);
     }
 
     private String layout(Letter letter) {
@@ -121,25 +121,78 @@ public class StaffMailer {
                 .replace("{{note}}", letter.note());
     }
 
+    /**
+     * Ставит письмо в очередь отправки и сразу возвращается: SMTP не держит HTTP-запрос и транзакцию с блокировками.
+     * В транзакции письмо уходит только после коммита. Неудача — повтор с паузой, итог — в лог.
+     *
+     * @param email   адрес
+     * @param subject тема
+     * @param text    текст
+     * @param html    HTML
+     * @return false — SMTP не настроен, письмо не отправляется
+     */
     private boolean send(String email, String subject, String text, String html) {
         JavaMailSender mail = sender.getIfAvailable();
         if (host.isBlank() || mail == null) {
-            LOG.warn("SMTP не настроен (SMTP_HOST) — письмо «{}» не отправлено", subject.replaceAll("\\d", "•"));
+            LOG.warn("SMTP не настроен (SMTP_HOST) — письмо «{}» не отправлено", masked(subject));
             return false;
         }
-        try {
-            MimeMessage message = mail.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
-            helper.setFrom(settings.mailFrom(), "Субсидии");
-            helper.setTo(email);
-            helper.setSubject(subject);
-            helper.setText(text, html);
-            mail.send(message);
-            return true;
-        } catch (MailException | MessagingException | java.io.UnsupportedEncodingException error) {
-            LOG.error("Письмо не отправлено: {}", error.getMessage());
-            throw new DomainException(ErrorCode.MAIL_UNAVAILABLE, "Не удалось отправить письмо — попробуйте через минуту");
+        Runnable task = () -> outbox.execute(() -> deliver(mail, email, subject, text, html));
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
         }
+        return true;
+    }
+
+    private void deliver(JavaMailSender mail, String email, String subject, String text, String html) {
+        String safe = masked(subject);
+        boolean done = false;
+        for (int attempt = 1; !done && attempt <= RETRY_PAUSES_MS.length + 1; attempt++) {
+            try {
+                MimeMessage message = mail.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
+                helper.setFrom(settings.mailFrom(), "Субсидии");
+                helper.setTo(email);
+                helper.setSubject(subject);
+                helper.setText(text, html);
+                mail.send(message);
+                LOG.info("Письмо «{}» отправлено (попытка {})", safe, attempt);
+                done = true;
+            } catch (MailException | MessagingException | java.io.UnsupportedEncodingException error) {
+                LOG.warn("Письмо «{}» не отправлено (попытка {}): {}", safe, attempt, error.getMessage());
+                if (attempt > RETRY_PAUSES_MS.length || !pause(RETRY_PAUSES_MS[attempt - 1])) {
+                    LOG.error("Письмо «{}» так и не ушло — проверьте SMTP_* в infra/mail.env", safe);
+                    done = true;
+                }
+            }
+        }
+    }
+
+    private static String masked(String subject) {
+        return subject.replaceAll("\\d", "•");
+    }
+
+    private static boolean pause(long millis) {
+        try {
+            Thread.sleep(millis);
+            return true;
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    /** Остановка приложения: письма в очереди дожидаются не дольше паузы повтора. */
+    @PreDestroy
+    void close() {
+        outbox.shutdown();
     }
 
     /**

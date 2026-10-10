@@ -65,7 +65,7 @@ public class StaffLoginService {
      *
      * @param rawEmail адрес
      * @return маска адреса и сроки (на демо-стенде — и сам код)
-     * @throws DomainException LOGIN_RESEND_TOO_SOON раньше {@code resendAfter}; MAIL_UNAVAILABLE — письмо не ушло
+     * @throws DomainException LOGIN_RESEND_TOO_SOON раньше {@code resendAfter}; письмо уходит в фоне после коммита (StaffMailer)
      */
     @Transactional
     public CodeSent requestCode(String rawEmail) {
@@ -81,7 +81,8 @@ public class StaffLoginService {
         Instant expires = now.plus(props.codeTtl());
         Instant resend = now.plus(props.resendAfter());
         codes.put(email, user != null ? crypto.hash(salt, code) : null, salt, expires, resend);
-        if (user != null) {
+        // демо-сотрудникам письма не шлём: их адреса вымышленные, код виден на странице входа
+        if (user != null && !user.demo()) {
             mailer.loginCode(email, user.name(), code, props.codeTtl().toMinutes());
         }
         // демо: код виден в интерфейсе («письмо» стенда); для неизвестного адреса кода нет — ответ ничего не раскрывает

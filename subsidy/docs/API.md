@@ -7,7 +7,7 @@
 
 ### Вход сотрудников (`/package/api/v1/auth`, без токена)
 - `GET /auth/mode` → `{mode: demo|prod, demo: [сотрудник], demoCode}` — в `prod` список пуст, `demoCode` = null
-- `POST /auth/code` `{email}` → `{sentTo, expiresAt, resendAt, demoCode}` — письмо с 6-значным кодом; `demoCode` приходит только в демо-режиме. Неизвестная почта даёт такой же ответ (список сотрудников не раскрываем). Ошибки: 429 `LOGIN_RESEND_TOO_SOON`, 429 `RATE_LIMITED` (лимит gateway `RATE_LOGINS_PER_MINUTE`=20 по IP), 503 `MAIL_UNAVAILABLE`
+- `POST /auth/code` `{email}` → `{sentTo, expiresAt, resendAt, demoCode}` — письмо с 6-значным кодом; `demoCode` приходит только в демо-режиме. Неизвестная почта даёт такой же ответ (список сотрудников не раскрываем). Ошибки: 429 `LOGIN_RESEND_TOO_SOON`, 429 `RATE_LIMITED` (лимит gateway `RATE_LOGINS_PER_MINUTE`=20 по IP). Письмо уходит в фоне после ответа (повторы 3 с, 15 с, 60 с); демо-сотрудникам письма не шлются
 - `POST /auth/verify` `{email, code}` → `{accessToken, expiresAt, sessionExpiresAt, user}` + httpOnly-cookie `subsidy_session` (refresh, `SameSite=Strict`, путь `/package/api/v1/auth`). Ошибки: 400 `LOGIN_CODE_INVALID`, 410 `LOGIN_CODE_EXPIRED`, 429 `LOGIN_CODE_LOCKED` (5 попыток)
 - `POST /auth/refresh` (cookie) → новая пара, cookie ротируется; 401 `SESSION_EXPIRED`
 - `POST /auth/logout` (cookie) → 204, сессия закрыта
