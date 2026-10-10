@@ -20,7 +20,7 @@ export const HeaderBar = ({ children, className, inner }: { children: React.Reac
   return (
     <header className={cn("pointer-events-none sticky top-0 z-nav transform-gpu px-2 pt-safe sm:px-6", className)}>
       <div
-        className={cn("pointer-events-auto mx-auto mt-2 flex h-15 max-w-7xl items-center gap-2 rounded-lg bg-card/90 p-1.5 backdrop-blur-xl transition-shadow duration-base sm:mt-3 sm:gap-3", scrolled ? "shadow-float" : "shadow-card", inner)}>
+        className={cn("pointer-events-auto mx-auto mt-2 flex h-15 max-w-7xl items-center gap-2 relative rounded-lg p-1.5 glass-round transition-shadow duration-base sm:mt-3 sm:gap-3", scrolled ? "shadow-float" : "shadow-card", inner)}>
         {children}
       </div>
     </header>

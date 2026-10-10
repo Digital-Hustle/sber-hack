@@ -55,7 +55,7 @@ export const SpecialistShell = () => {
 
       {/* Нижняя навигация телефона: плавающая панель */}
       <nav className="fixed inset-x-0 bottom-0 z-nav px-3 pb-safe lg:hidden" aria-label="Разделы">
-        <div ref={ind.ref} className="relative mx-auto mb-3 flex max-w-md items-stretch gap-0.5 rounded-xl bg-card/90 p-1 shadow-float backdrop-blur-xl">
+        <div ref={ind.ref} className="relative mx-auto mb-3 flex max-w-md items-stretch gap-0.5 rounded-xl p-1 shadow-float glass-round [--clip-r:var(--radius-xl)]">
           <TrackIndicator ind={ind} className="inset-y-1 rounded-lg bg-accent" />
           {items.map(({ to, short, icon: Icon }) => (
             <NavLink key={to} to={to} className={({ isActive }) => cn("relative flex min-h-control-lg min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-xs font-medium outline-none", isActive ? "text-accent-foreground" : "text-muted-foreground")}>
