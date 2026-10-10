@@ -66,7 +66,7 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
     private UUID[] upload() throws Exception {
         String created = mockMvc.perform(post("/api/v1/packages").with(authentication(user()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orgInn\":\"7707083893\",\"programCode\":\"DEMO-2026\"}"))
+                        .content("{\"orgInn\":\"7707083893\",\"programCode\":\"INNOVATION\"}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         String packageId = JsonPath.read(created, "$.packageId");
         String body = mockMvc.perform(multipart("/api/v1/packages/" + packageId + "/files")
@@ -106,11 +106,11 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
 
         UUID documentId = UUID.randomUUID();
         assertThat(service.handle(UUID.randomUUID(), "DocumentParsed", node(Map.of("fileId", fileId.toString(),
-                "documentId", documentId.toString(), "type", "COST_ESTIMATE", "typeConfidence", 0.93,
+                "documentId", documentId.toString(), "type", "COST_JUSTIFICATION", "typeConfidence", 0.93,
                 "fromPage", 1, "toPage", 1, "source", "TEXT_LAYER", "stage", "NEEDS_REVIEW")))).isPresent();
         var doc = dsl.selectFrom(Tables.FILE_DOCUMENTS)
                 .where(Tables.FILE_DOCUMENTS.DOCUMENT_ID.eq(documentId)).fetchOne();
-        assertThat(doc.getDocType()).isEqualTo("COST_ESTIMATE");
+        assertThat(doc.getDocType()).isEqualTo("COST_JUSTIFICATION");
         assertThat(doc.getSource()).isEqualTo("TEXT_LAYER");
         assertThat(doc.getStage()).isEqualTo("NEEDS_REVIEW");
 

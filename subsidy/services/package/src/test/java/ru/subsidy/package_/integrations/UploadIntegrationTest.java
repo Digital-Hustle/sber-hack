@@ -64,7 +64,7 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
     private String createPackage() throws Exception {
         String body = mockMvc.perform(post("/api/v1/packages").with(authentication(user("SPECIALIST")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orgInn\":\"7707083893\",\"programCode\":\"DEMO-2026\"}"))
+                        .content("{\"orgInn\":\"7707083893\",\"programCode\":\"INNOVATION\"}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.packageId");
     }

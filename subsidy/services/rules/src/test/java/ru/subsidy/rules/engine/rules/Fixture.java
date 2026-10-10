@@ -45,14 +45,12 @@ final class Fixture {
     }
 
     PackageFacts facts() {
-        return new PackageFacts(UUID.randomUUID(), APPLICANT, "DEMO-2026", PACKAGE_DATE, docs,
+        return new PackageFacts(UUID.randomUUID(), APPLICANT, "INNOVATION", PACKAGE_DATE, docs,
                 List.of(new FileFacts(UUID.randomUUID(), 1, "PARSED", null)));
     }
 
     static ProgramParams params() {
-        return new ProgramParams(JSON.valueToTree(Map.of("rate", "0.50", "maxAmount", "3000000.00",
-                "egrulMaxAgeDays", 30, "taxMaxAgeDays", 30, "costFrom", "2026-01-01", "costTo", "2026-12-31",
-                "okvedAllowed", List.of("10.*", "25.*", "62.01"), "reimbursePaidOnly", true)));
+        return new ProgramParams(JSON.createObjectNode());
     }
 
     static List<Map<String, Object>> items(Object... rows) {
@@ -63,7 +61,6 @@ final class Fixture {
             row.put("qty", rows[idx]);
             row.put("price", rows[idx + 1]);
             row.put("amount", rows[idx + 2]);
-            row.put("vatRate", "20%");
             out.add(row);
         }
         return out;

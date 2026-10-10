@@ -56,7 +56,7 @@ class FileVersionsIntegrationTest extends AbstractIntegrationTest {
     private String[] upload(byte[] content) throws Exception {
         String created = mockMvc.perform(post("/api/v1/packages").with(authentication(user()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orgInn\":\"7707083893\",\"programCode\":\"DEMO-2026\"}"))
+                        .content("{\"orgInn\":\"7707083893\",\"programCode\":\"INNOVATION\"}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         String packageId = JsonPath.read(created, "$.packageId");
         String body = mockMvc.perform(multipart("/api/v1/packages/" + packageId + "/files")

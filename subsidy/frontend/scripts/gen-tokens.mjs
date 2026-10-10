@@ -98,6 +98,8 @@ function css() {
   const utils = [
     ...Object.entries(t.motion.duration).map(([k, v]) => `@utility duration-${k} {\n  transition-duration: ${ms(v)};\n}`),
     ...Object.entries(t.zIndex).map(([k, v]) => `@utility z-${k} {\n  z-index: ${v};\n}`),
+    "/* WebKit: слой с filter/transform/backdrop-filter внутри overflow-hidden + border-radius рисуется с прямыми углами.\n   clip-path режет по скруглению; радиус — --clip-r (по умолчанию rounded-sm, 14px). Где есть суперэллипс (Chrome), не трогаем. */\n@utility clip-round {\n  clip-path: inset(0 round var(--clip-r, var(--radius-sm)));\n  @supports (corner-shape: squircle) {\n    clip-path: none;\n  }\n}",
+    "/* стекло шапки и панелей: фон и блюр на ::before с clip-path, тень остаётся на блоке (clip-path её бы срезал) */\n@utility glass-round {\n  isolation: isolate;\n  &::before {\n    content: \"\";\n    position: absolute;\n    inset: 0;\n    z-index: -1;\n    border-radius: inherit;\n    pointer-events: none;\n    background: color-mix(in oklab, var(--card) 90%, transparent);\n    -webkit-backdrop-filter: blur(24px);\n    backdrop-filter: blur(24px);\n    clip-path: inset(0 round var(--clip-r, var(--radius-lg)));\n  }\n}",
     "@utility pt-safe {\n  padding-top: env(safe-area-inset-top);\n}",
     "@utility pb-safe {\n  padding-bottom: env(safe-area-inset-bottom);\n}",
     "@utility bg-brand-gradient {\n  background-image: var(--gradient-brand);\n}",
@@ -124,6 +126,8 @@ function css() {
   html { -webkit-tap-highlight-color: transparent; background-color: var(--background); }
   /* место под полосу прокрутки зарезервировано всегда: центровка не прыгает между страницами и при открытии модалки */
   html { scrollbar-gutter: stable; }
+  /* iOS Safari: без «резинки» у страницы липкая шапка и нижняя панель не пружинят при прокрутке за край */
+  html, body { overscroll-behavior-y: none; }
   /* смена темы: плавный перелив через View Transitions */
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: ${ms(t.motion.duration.slow)}; animation-timing-function: ${bez(t.motion.ease.out)}; }
   /* органичные скругления: суперэллипс вместо дуги окружности (Chrome 139+, остальные — обычный радиус) */

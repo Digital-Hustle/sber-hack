@@ -49,7 +49,7 @@ public class PackageService {
      * @param outbox outbox событий
      */
     public PackageService(DSLContext dsl, Clock clock, OrganizationService organizations,
-                          @Value("${subsidy.programs:DEMO-2026}") List<String> programs, OutboxWriter outbox) {
+                          @Value("${subsidy.programs:INNOVATION,BEACH,MODERNIZATION}") List<String> programs, OutboxWriter outbox) {
         this.dsl = dsl;
         this.clock = clock;
         this.organizations = organizations;

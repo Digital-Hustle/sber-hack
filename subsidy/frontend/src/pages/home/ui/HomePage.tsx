@@ -25,16 +25,16 @@ const STORIES = [
 
 // Факты о системе (docs/DOC-TYPES.md, docs/RULES-CATALOG.md), не данные организаций: до входа их не видно (rules.md §1.8)
 const FACTS = [
-  { value: 8, label: "видов документов различает модель" },
-  { value: 27, label: "правил проверки на сервере" },
+  { value: 9, label: "видов документов различает модель" },
+  { value: 3, label: "программы поддержки с правилами" },
   { value: 3, label: "роли: специалист, старший, аудитор" },
   { value: 3, label: "формата выгрузки протокола" },
 ];
 
 const SAMPLE = [
-  { label: "Выписка из ЕГРЮЛ", ok: true },
-  { label: "Справка ФНС", ok: true },
-  { label: "Счёт: сумма позиций", ok: false },
+  { label: "ИНН совпадает", ok: true },
+  { label: "Свои средства ≥ 50%", ok: true },
+  { label: "Сумма = обоснованию", ok: false },
 ];
 
 /** Герой как у sberbank.ru: две карточки внахлёст с наклоном — подсказка и пример протокола (иллюстрация, не данные). */
@@ -111,9 +111,9 @@ export const HomePage = () => (
           <motion.div key={label} variants={fadeUp} className="w-20 shrink-0">
             <motion.div {...liftArea} className="group">
               <Link to={to} className="flex flex-col gap-2 text-left outline-none">
-                <motion.span variants={liftItem} className={cn("relative flex size-20 items-center justify-center overflow-hidden rounded-xl shadow-card ring-2 ring-white/70 transition-shadow duration-base group-hover:shadow-float group-focus-visible:ring-ring dark:ring-white/10", tone !== "conic" && tone)}>
+                <motion.span variants={liftItem} className={cn("relative flex size-20 items-center justify-center overflow-hidden rounded-xl shadow-card [&>img]:clip-round [&>img]:[--clip-r:var(--radius-xl)] ring-2 ring-white/70 transition-shadow duration-base group-hover:shadow-float group-focus-visible:ring-ring dark:ring-white/10", tone !== "conic" && tone)}>
                   {img ? <img src={img} alt="" className="size-full object-cover" loading="lazy" /> : Icon && (<>
-                    {tone === "conic" ? <BrandConicFill /> : <span aria-hidden className="absolute inset-0 bg-sheen" />}<Icon className="relative size-8 text-white drop-shadow-sm" />
+                    {tone === "conic" ? <BrandConicFill radius="var(--radius-xl)" /> : <span aria-hidden className="absolute inset-0 bg-sheen" />}<Icon className="relative size-8 text-white drop-shadow-sm" />
                   </>)}
                 </motion.span>
                 <span className="text-sm font-semibold leading-tight">{label}</span>
@@ -141,7 +141,7 @@ export const HomePage = () => (
               <motion.div {...liftArea} className="group h-full">
                 <motion.div variants={liftItem} className="h-full rounded-2xl shadow-card transition-shadow duration-slow group-hover:shadow-float">
                   <Link to={to} className="flex h-full flex-col gap-4 rounded-2xl bg-card p-2 pb-4 outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <span className="block aspect-4/3 overflow-hidden rounded-xl"><motion.img variants={liftZoom} src={img} alt="" loading="lazy" className="size-full object-cover" /></span>
+                    <span className="clip-round block aspect-4/3 overflow-hidden rounded-xl [--clip-r:var(--radius-xl)]"><motion.img variants={liftZoom} src={img} alt="" loading="lazy" className="size-full object-cover" /></span>
                     <div className="flex flex-1 flex-col gap-1.5 px-3">
                       <h3 className="font-display text-xl font-semibold tracking-display">{title}</h3>
                       <p className="text-pretty text-sm text-muted-foreground">{text}</p>

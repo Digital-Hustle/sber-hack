@@ -19,22 +19,18 @@ import ru.subsidy.rules.facts.DocFacts;
 import ru.subsidy.rules.facts.FactsAssembler;
 import ru.subsidy.rules.facts.PackageFacts;
 import ru.subsidy.rules.jooq.Tables;
-import ru.subsidy.rules.program.Program;
-import ru.subsidy.rules.program.ProgramService;
 
 /**
- * Истекающие документы (B-05): выписка ЕГРЮЛ и справка ФНС по пакетам без решения.
+ * Истекающие документы (бонус кейса): сертификат соответствия и декларация ГИМС по пакетам без решения.
  */
 @Service
 public class ExpiringService {
 
-    private static final List<Source> SOURCES = List.of(
-            new Source(Docs.EGRUL, "extractDate", "egrulMaxAgeDays"),
-            new Source(Docs.TAX, "certificateDate", "taxMaxAgeDays"));
+    private static final String VALID_UNTIL = "validUntil";
+    private static final List<String> TYPES = List.of(Docs.CERTIFICATE, Docs.GIMS_DECLARATION);
 
     private final DSLContext dsl;
     private final FactsAssembler assembler;
-    private final ProgramService programs;
     private final Clock clock;
     private final RulesProperties props;
 
@@ -43,15 +39,13 @@ public class ExpiringService {
      *
      * @param dsl jOOQ
      * @param assembler факты
-     * @param programs программы
      * @param clock часы
      * @param props настройки
      */
-    public ExpiringService(DSLContext dsl, FactsAssembler assembler, ProgramService programs, Clock clock,
+    public ExpiringService(DSLContext dsl, FactsAssembler assembler, Clock clock,
                            RulesProperties props) {
         this.dsl = dsl;
         this.assembler = assembler;
-        this.programs = programs;
         this.clock = clock;
         this.props = props;
     }
@@ -70,28 +64,21 @@ public class ExpiringService {
         List<UUID> open = dsl.select(Tables.PACKAGE_VIEW.PACKAGE_ID).from(Tables.PACKAGE_VIEW)
                 .where(Tables.PACKAGE_VIEW.STATUS.ne("DECIDED")).fetch(Tables.PACKAGE_VIEW.PACKAGE_ID);
         for (UUID packageId : open) {
-            Optional<PackageFacts> facts = assembler.assemble(packageId);
-            Optional<Program> program = facts.flatMap(found -> programs.find(found.programCode()));
-            if (facts.isPresent() && program.isPresent()) {
-                collect(facts.get(), program.get(), today, horizon, out);
-            }
+            assembler.assemble(packageId).ifPresent(facts -> collect(facts, today, horizon, out));
         }
         out.sort(Comparator.comparingLong(Expiring::daysLeft));
         return out;
     }
 
-    private static void collect(PackageFacts facts, Program program, LocalDate today, int horizon,
-                                List<Expiring> out) {
-        for (Source source : SOURCES) {
-            Optional<Integer> maxAge = program.params().integer(source.param());
-            for (DocFacts doc : facts.ofType(source.type())) {
-                Optional<LocalDate> date = doc.date(source.field());
-                if (date.isPresent() && maxAge.isPresent()) {
-                    LocalDate expires = date.get().plusDays(maxAge.get());
-                    long left = ChronoUnit.DAYS.between(today, expires);
+    private static void collect(PackageFacts facts, LocalDate today, int horizon, List<Expiring> out) {
+        for (String type : TYPES) {
+            for (DocFacts doc : facts.ofType(type)) {
+                Optional<LocalDate> until = doc.date(VALID_UNTIL);
+                if (until.isPresent()) {
+                    long left = ChronoUnit.DAYS.between(today, until.get());
                     if (left <= horizon) {
-                        out.add(new Expiring(facts.packageId(), facts.inn(), doc.documentId(), source.type(),
-                                Docs.title(source.type()), date.get(), expires, left));
+                        out.add(new Expiring(facts.packageId(), facts.inn(), doc.documentId(), type,
+                                Docs.title(type), doc.date("issueDate").orElse(null), until.get(), left));
                     }
                 }
             }
@@ -112,15 +99,5 @@ public class ExpiringService {
      */
     public record Expiring(UUID packageId, String inn, UUID documentId, String type, String title, LocalDate date,
                            LocalDate expiresAt, long daysLeft) {
-    }
-
-    /**
-     * Откуда брать дату и срок.
-     *
-     * @param type вид
-     * @param field поле даты
-     * @param param параметр срока
-     */
-    private record Source(String type, String field, String param) {
     }
 }

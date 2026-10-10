@@ -4,11 +4,16 @@ import { cn } from "@/shared/lib";
  * Знак «Субсидий»: суперэллипс с конусом брендбука Сбера и галочкой-проходом.
  * Мягкость — конус размыт внутри маски, сверху блик (bg-sheen) и тонкая внутренняя подсветка.
  */
-/** Эталонная заливка конусом Сбера, как в знаке: размытый конус + блик. Родитель — relative overflow-hidden. */
-export const BrandConicFill = () => (<>
-  <span aria-hidden className="absolute -inset-1/2 bg-brand-conic blur-sm" />
-  <span aria-hidden className="absolute inset-0 bg-sheen opacity-70" />
-</>);
+/**
+ * Эталонная заливка конусом Сбера, как в знаке: размытый конус + блик. Родитель — relative overflow-hidden.
+ * Размытый слой в Safari вылезает за скругление родителя — режем clip-path по радиусу родителя (radius, CSS-длина).
+ */
+export const BrandConicFill = ({ radius = "var(--radius-sm)" }: { radius?: string }) => (
+  <span aria-hidden className="clip-round absolute inset-0 overflow-hidden rounded-[inherit]" style={{ "--clip-r": radius } as React.CSSProperties}>
+    <span className="absolute -inset-1/2 bg-brand-conic blur-sm" />
+    <span className="absolute inset-0 bg-sheen opacity-70" />
+  </span>
+);
 
 export const LogoMark = ({ className }: { className?: string }) => (
   <span className={cn("relative isolate flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm shadow-glow", className)}>

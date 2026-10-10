@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
@@ -20,7 +21,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import ru.subsidy.docproc.classify.DocType;
 
 /**
- * Нормализация и проверка полей: деньги, даты, контрольные суммы ИНН/ОГРН/КПП/БИК/счёта (код, не модель).
+ * Нормализация и проверка полей: деньги, даты, формат ИНН/ОГРН, контрольные суммы КПП/БИК/счёта (код, не модель).
+ * ИНН и ОГРН проверяются по формату (10/12 и 13/15 цифр), как требует кейс: контрольная сумма у синтетических
+ * документов может не сходиться, а это не повод считать реквизит неверным (ADR-025).
  */
 @Component
 public class FieldValidator {
@@ -33,6 +36,8 @@ public class FieldValidator {
     private static final String FORMAT_INVALID = "FORMAT_INVALID";
     private static final String LOW_CONFIDENCE = "LOW_CONFIDENCE";
     private static final String AMOUNT = "amount";
+    private static final Pattern INN_FORMAT = Pattern.compile("\\d{10}|\\d{12}");
+    private static final Pattern OGRN_FORMAT = Pattern.compile("\\d{13}|\\d{15}");
     private static final String PRICE = "price";
     private static final int SCALE = 3;
     private static final BigDecimal DEFAULT_CONFIDENCE = new BigDecimal("0.700");
@@ -98,8 +103,8 @@ public class FieldValidator {
         return switch (kind) {
             case MONEY -> money(raw.asText(), checks);
             case DATE -> date(raw.asText(), checks);
-            case "inn" -> requisite(digits(raw), Requisites.inn(digits(raw)), "ИНН", checks);
-            case "ogrn" -> requisite(digits(raw), Requisites.ogrn(digits(raw)), "ОГРН", checks);
+            case "inn" -> format(digits(raw), INN_FORMAT, "ИНН — 10 или 12 цифр", checks);
+            case "ogrn" -> format(digits(raw), OGRN_FORMAT, "ОГРН — 13 цифр, ОГРНИП — 15 цифр", checks);
             case "kpp" -> requisite(raw.asText().strip(), Requisites.kpp(raw.asText().strip()), "КПП", checks);
             case BIK -> requisite(digits(raw), Requisites.bik(digits(raw)), "БИК", checks);
             case ACCOUNT -> requisite(digits(raw), bik == null || Requisites.account(digits(raw), bik),
@@ -130,6 +135,13 @@ public class FieldValidator {
     private static JsonNode requisite(String value, boolean valid, String label, List<FieldCheck> checks) {
         checks.add(valid ? new FieldCheck(CHECKSUM_FAILED, FieldCheck.OK, label + " прошёл проверку")
                 : new FieldCheck(CHECKSUM_FAILED, FieldCheck.FAILED, label + " не прошёл проверку контрольной суммы"));
+        return JsonNodeFactory.instance.textNode(value == null ? "" : value);
+    }
+
+    private static JsonNode format(String value, Pattern pattern, String rule, List<FieldCheck> checks) {
+        boolean valid = value != null && pattern.matcher(value).matches();
+        checks.add(new FieldCheck(FORMAT_INVALID, valid ? FieldCheck.OK : FieldCheck.FAILED,
+                valid ? rule + ": формат верный" : "Неверный формат: " + rule));
         return JsonNodeFactory.instance.textNode(value == null ? "" : value);
     }
 

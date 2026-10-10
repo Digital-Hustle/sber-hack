@@ -1,60 +1,37 @@
-# Каталог правил проверки пакета (гипотеза до текста кейса, PLT-00)
+# Каталог правил проверки (кейс 3, п. 4.3)
 
-Каждое правило: **код → формула → параметры (`programs.params`) → статус → текст специалисту**. Реализация — `services/rules/…/rules/<Code>Rule.java` + тест с числами (граница, копейки). Деньги — `BigDecimal`, scale 2, допуск `TOLERANCE = 0.01`. Нет данных → `DATA_MISSING` (а не `PASSED`). Правило неприменимо по условию → `NOT_APPLICABLE`.
+Правила — данные программы (`programs.params.rules`, ADR-024): администратор правит их на странице «Программы» без релиза, сервер проверяет схему (`VALIDATION_ERROR`). Ниже — набор, который миграция `20261010090000-case-programs.sql` кладёт во все три программы. Версия движка — `RULES_VERSION` в протоколе.
 
-## Комплектность (С5–С7)
-| Код | Проверка | Статус при нарушении |
+| Код | Что проверяет | Операция | Важность | Параметры |
+|---|---|---|---|---|
+| `MIN_FIELDS` | Минимум полей вычитан | `REQUIRED_FIELDS` | WARNING | `{"fields": {"APPLICATION": ["orgName", "inn", "requestedAmount", "date"], "PD_CONSENT": ["fullName", "date"], "CERTIFICATE": ["number", "validUntil"], "PRESENTATION": ["projectName"], "COST_JUSTIFICATION": ["totalCost", "ownFunds"], "BANK_STATEMENT": ["orgName", "balance", "date"], "PROPERTY_DOC": ["cadastralNumber"], "GUARANTEE_LETTER": ["guarantorName", "amount", "date"], "GIMS_DECLARATION": ["number", "validUntil"]}}` |
+| `INN_FORMAT` | ИНН — 10 или 12 цифр | `PATTERN` | FAILED | `{"types": ["*"], "field": "inn", "normalize": "digits", "pattern": "\\d{10}\|\\d{12}", "hint": "10 цифр у организации, 12 — у ИП"}` |
+| `INN_SAME` | ИНН одинаков во всех документах | `SAME_VALUE` | FAILED | `{"types": ["*"], "field": "inn", "includeApplicant": true}` |
+| `DATE_NOT_FUTURE` | Дата документа не в будущем | `DATE_NOT_FUTURE` | FAILED | `{"types": ["*"], "field": "date"}` |
+| `NOT_EXPIRED` | Срок действия не истёк | `NOT_EXPIRED` | FAILED | `{"types": ["CERTIFICATE", "GIMS_DECLARATION"], "field": "validUntil", "warnDays": 30}` |
+| `OWN_FUNDS_SHARE` | Собственные средства не менее 50 % расходов | `RATIO_MIN` | FAILED | `{"numerator": ["COST_JUSTIFICATION.ownFunds", "COST_JUSTIFICATION.totalCost - COST_JUSTIFICATION.requestedAmount", "APPLICATION.ownFunds", "COST_JUSTIFICATION.totalCost - APPLICATION.requestedAmount", "APPLICATION.totalCost - APPLICATION.requestedAmount"], "denominator": ["COST_JUSTIFICATION.totalCost", "APPLICATION.totalCost"], "min": "0.50"}` |
+| `REQUEST_MATCH` | Сумма в заявлении совпадает с обоснованием затрат | `EQUAL_SUM` | FAILED | `{"pairs": [{"left": "APPLICATION.requestedAmount", "right": "COST_JUSTIFICATION.requestedAmount"}, {"left": "APPLICATION.requestedAmount", "right": "COST_JUSTIFICATION.totalCost - COST_JUSTIFICATION.ownFunds"}, {"left": "APPLICATION.totalCost", "right": "COST_JUSTIFICATION.totalCost"}]}` |
+| `CADASTRAL_FORMAT` | Кадастровый номер в принятом формате | `PATTERN` | FAILED | `{"types": ["PROPERTY_DOC"], "field": "cadastralNumber", "normalize": "compact", "pattern": "\\d{2}:\\d{2}:\\d{6,7}:\\d+", "hint": "АА:ВВ:ССССССС:КК, например 61:44:0050706:12"}` |
+| `PRESENTATION_NOT_EMPTY` | Презентация не пустая | `NOT_EMPTY` | FAILED | `{"types": ["PRESENTATION"], "fields": ["projectName", "description"]}` |
+
+## Операции
+| op | Смысл | Параметры |
 |---|---|---|
-| `CHK_REQUIRED` | для каждого пункта чек-листа есть документ нужного вида (по определённому типу, не по файлу) | FAILED: «Нет документа: {вид}» |
-| `CHK_CONDITIONAL` | условный пункт (доверенность, отчётность старше 1 года) — условие вычислено по данным, документ есть | FAILED / NOT_APPLICABLE |
-| `CHK_ONE_OF` | «договор **или** счёт» на каждую статью сметы | FAILED |
-| `CHK_DUPLICATE` | два документа одного вида там, где нужен один | WARNING |
-| `CHK_UNKNOWN` | есть `TYPE_UNKNOWN`/`UNREADABLE`/`OTHER` | WARNING: пакет → NEEDS_REVIEW |
+| `REQUIRED_FIELDS` | поля вычитаны | `fields: {ВИД: [поля]}` |
+| `PATTERN` | значение по шаблону | `types`, `field`, `pattern`, `normalize` (digits/compact), `hint` |
+| `SAME_VALUE` | значение одинаково во всех документах | `types`, `field`, `includeApplicant` |
+| `DATE_NOT_FUTURE` | дата не позже сегодня | `types`, `field` |
+| `NOT_EXPIRED` | срок действия не истёк (предупреждение за `warnDays`) | `types`, `field`, `warnDays` |
+| `RATIO_MIN` | доля ≥ `min` | `numerator[]`, `denominator[]` — выражения, берётся первое вычислимое; `min` |
+| `EQUAL_SUM` | суммы совпадают (допуск 0.01) | `pairs[{left,right}]` — первая вычислимая пара |
+| `NOT_EMPTY` | поля не пустые | `types`, `fields` |
+| `RANGE` | число в диапазоне | `operand`, `min?`, `max?` |
 
-## Реквизиты и сверка между документами (С8–С9, B-01)
-| Код | Формула | Статус |
+Операнд — `ВИД.поле` или разность `ВИД.a - ВИД.b`; `*` в `types` — все виды пакета. Нет данных для проверки — правило в статусе `DATA_MISSING` с причиной, а не «пройдено».
+
+## Правила вне программы
+| Код | Что | Где |
 |---|---|---|
-| `REQ_INN_CHECKSUM` | контрольная сумма ИНН в каждом документе (DOC-TYPES §Контрольные суммы) | FAILED |
-| `REQ_OGRN_CHECKSUM` | ОГРН/ОГРНИП | FAILED |
-| `REQ_BANK_KEY` | ключ счёта с БИК своего банка: заявление (`bankAccount`+`bik`), платёжка (`payerAccount`+`payerBik`, `payeeAccount`+`payeeBik`) | FAILED |
-| `CROSS_INN` | ИНН заявителя одинаков в заявлении, ЕГРЮЛ, справке ФНС, отчётности, договорах (покупатель), платёжках (плательщик) | FAILED: «ИНН в {doc A} ≠ {doc B}» |
-| `CROSS_OGRN` / `CROSS_NAME` | ОГРН и наименование (нормализация кавычек, ОПФ «ООО»/«Общество с ограниченной ответственностью») | FAILED / WARNING |
-| `CROSS_SIGNER` | подписант заявления = руководитель из ЕГРЮЛ или есть доверенность | FAILED |
-| `CROSS_COUNTERPARTY` | продавец в счёте = исполнитель договора = получатель платежа (ИНН) | FAILED |
+| `CHK_REQUIRED`, `CHK_ONE_OF`, `CHK_CONDITIONAL`, `CHK_DUPLICATE`, `CHK_UNKNOWN` | комплектность по чек-листу программы | `CompletenessEngine` |
+| `ANOMALY_OUTLIER` | статья обоснования затрат выше mean + 3σ по программе (ADR-019) | `OutlierRule` |
 
-## Сроки и даты (С10)
-| Код | Формула | Параметр | Статус |
-|---|---|---|---|
-| `DATE_EGRUL_FRESH` | `packageDate − extractDate ≤ egrulMaxAgeDays` | 30 | FAILED |
-| `DATE_TAX_FRESH` | `packageDate − certificateDate ≤ taxMaxAgeDays` | 30 | FAILED |
-| `TAX_NO_DEBT` | `hasDebt = false` | — | FAILED |
-| `DATE_ORDER` | `contract.date ≤ invoice.date ≤ payment.date` | — | WARNING |
-| `DATE_COST_PERIOD` | дата затрат в периоде программы `[costFrom, costTo]` | даты | FAILED |
-| `ORG_ACTIVE` | статус в ЕГРЮЛ «действующее», нет ликвидации/банкротства | — | FAILED |
-| `ORG_OKVED_ALLOWED` | основной ОКВЭД в списке программы | список | FAILED |
-
-## Арифметика (С11, Д11 — только на сервере)
-| Код | Формула | Статус |
-|---|---|---|
-| `SUM_INVOICE_ITEMS` | `Σ items.amount = total` (± 0.01); `qty × price = amount` по каждой позиции | FAILED: «Сумма позиций {a} ≠ итог {b}» |
-| `SUM_VAT` | `total − vatAmount = amountWithoutVat`; `vatAmount = round(base × rate)` для ставок 0/10/20 % | WARNING |
-| `SUM_ESTIMATE_TOTAL` | `Σ estimate.items = estimate.total` | FAILED |
-| `SUM_ESTIMATE_CONFIRMED` | каждая статья сметы подтверждена счётом/договором на сумму ≥ статьи; `Σ подтверждённого ≥ estimate.total` | FAILED / WARNING |
-| `SUM_PAID` | `Σ payments по счёту ≥ invoice.total` (если программа возмещает оплаченные затраты) | FAILED |
-| `SUM_SUBSIDY_CAP` | `subsidy ≤ min(rate × eligibleCosts, maxAmount)` | FAILED: «Запрошено {a}, максимум {b} = min({rate} × {costs}, {cap})» |
-| `SUM_REQUEST_MATCH` | `application.requestedAmount = estimate.subsidyAmount` | FAILED |
-| `SUM_WORDS` | сумма прописью = цифрами (если есть) | WARNING |
-| `FIN_BALANCE` | `1600 = 1700` в балансе | WARNING |
-
-## Аномалии (B-06, только WARNING — специалист решает)
-`ANOMALY_ROUND_SUMS` (все суммы круглые), `ANOMALY_WEEKEND_DATES` (платёж в выходной), `ANOMALY_SAME_DAY_CHAIN` (договор, счёт и оплата в один день на крупную сумму), `ANOMALY_OUTLIER` (статья > 3σ от средней по программе — только если в БД ≥ 20 пакетов, иначе NOT_APPLICABLE).
-
-`ANOMALY_OUTLIER` подробно: выборка — суммы `amount` всех статей смет (`COST_ESTIMATE`, не удалённых, не `TYPE_UNKNOWN`) **других** пакетов той же программы из проекции rules; агрегат в PostgreSQL (`avg`, `stddev_pop`). `limit = round(mean + 3σ, 2)`; статья с `amount > limit` (строго) → WARNING, `expected = limit`, `actual` = наибольшая такая статья. Пакетов в выборке < 20 → NOT_APPLICABLE «Мало пакетов программы для сравнения: N из 20»; в смете нет статей → DATA_MISSING. Правки специалиста других пакетов в фон не входят.
-
-## Параметры программы (данные `programs.params`, версия в протоколе)
-```json
-{"rate": "0.50", "maxAmount": "3000000.00", "egrulMaxAgeDays": 30, "taxMaxAgeDays": 30,
- "costFrom": "2026-01-01", "costTo": "2026-12-31", "okvedAllowed": ["10.*", "25.*", "62.01"],
- "reimbursePaidOnly": true}
-```
-Демо-программа `DEMO-2026` создаётся миграцией с контекстом `demo` (не prod) и помечена «демо».

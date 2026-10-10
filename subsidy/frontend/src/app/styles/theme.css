@@ -348,6 +348,32 @@
   z-index: 80;
 }
 
+/* WebKit: слой с filter/transform/backdrop-filter внутри overflow-hidden + border-radius рисуется с прямыми углами.
+   clip-path режет по скруглению; радиус — --clip-r (по умолчанию rounded-sm, 14px). Где есть суперэллипс (Chrome), не трогаем. */
+@utility clip-round {
+  clip-path: inset(0 round var(--clip-r, var(--radius-sm)));
+  @supports (corner-shape: squircle) {
+    clip-path: none;
+  }
+}
+
+/* стекло шапки и панелей: фон и блюр на ::before с clip-path, тень остаётся на блоке (clip-path её бы срезал) */
+@utility glass-round {
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: color-mix(in oklab, var(--card) 90%, transparent);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    clip-path: inset(0 round var(--clip-r, var(--radius-lg)));
+  }
+}
+
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
@@ -425,6 +451,8 @@
   html { -webkit-tap-highlight-color: transparent; background-color: var(--background); }
   /* место под полосу прокрутки зарезервировано всегда: центровка не прыгает между страницами и при открытии модалки */
   html { scrollbar-gutter: stable; }
+  /* iOS Safari: без «резинки» у страницы липкая шапка и нижняя панель не пружинят при прокрутке за край */
+  html, body { overscroll-behavior-y: none; }
   /* смена темы: плавный перелив через View Transitions */
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 450ms; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
   /* органичные скругления: суперэллипс вместо дуги окружности (Chrome 139+, остальные — обычный радиус) */

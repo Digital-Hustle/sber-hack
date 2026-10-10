@@ -54,7 +54,7 @@ class ProjectionRebuildIntegrationTest extends AbstractIntegrationTest {
         UUID packageId = UUID.randomUUID();
         UUID fileId = UUID.randomUUID();
         event("PackageCreated", objectMapper.createObjectNode().put(PACKAGE_ID, packageId.toString())
-                .put("inn", "7707083893").put("programCode", "DEMO-2026").put("createdBy", "user-SPECIALIST"));
+                .put("inn", "7707083893").put("programCode", "INNOVATION").put("createdBy", "user-SPECIALIST"));
         event("FileReceived", objectMapper.createObjectNode().put(PACKAGE_ID, packageId.toString())
                 .put(FILE_ID, fileId.toString()).put(VERSION, 1));
         event("StageChanged", objectMapper.createObjectNode().put(PACKAGE_ID, packageId.toString())

@@ -4,7 +4,7 @@
 
 ## 1. Текущее состояние
 - RUL-01..16 готовы (#43): проекция из событий → debounce-перепроверка (`recheck_requests`, SKIP LOCKED) → `ProtocolService.check` → неизменяемый протокол + `PackageChecked`.
-- 25 правил в `engine/rules`, полнота — `completeness/CompletenessEngine`, параметры/чек-лист — таблица `programs` (DEMO-2026 в контексте `demo`).
+- FR-30: правила п. 4.3 — данные программы (`programs.params.rules`), движок `engine/declarative` (ProgramRules + 9 операций), запуск — `ProgramRulesRule`; хардкод — только `OutlierRule`. Программы INNOVATION/BEACH/MODERNIZATION (миграция `20261010090000-case-programs.sql`), DEMO-2026 удалена. RULES_VERSION 2026.10-3.
 - Протокол создаётся только когда все файлы в терминальной стадии; новая версия — только при изменении фактов.
 - Liquibase contexts: прод `prod`, демо-стенд `prod,demo` (env `LIQUIBASE_CONTEXTS`).
 - RUL-18: `projection/ProjectionRebuild` + `DocprocClient` (svc-rules → docproc `/internal`): `POST /packages/{id}/projection/rebuild` (SENIOR) и авто-пересборка в `RecheckWorker`, если у PARSED/NEEDS_REVIEW-файла нет документов в проекции. Сверка — `ProjectionService.reconcile` (upsert по resultVersion, снятие отсутствующих).
@@ -43,3 +43,4 @@
 - 2026-10-09 · agent · feat(rules): RUL-01..16 — проекция, 25 правил, полнота, протоколы, экспорт, история, статистика (#43)
 - 2026-10-09 · agent · feat(rules): RUL-18 пересборка проекции из docproc (ручная SENIOR и авто перед протоколом)
 - 2026-10-09 · agent · feat(rules): RUL-17 ANOMALY_OUTLIER — статья сметы > средняя + 3σ по программе (≥ 20 пакетов)
+- 2026-10-10 · subsidy-agent · FR-30: виды документов и программы по тексту кейса, декларативные правила в `programs.params.rules` (ADR-024), ИНН — формат (ADR-025)

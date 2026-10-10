@@ -3,74 +3,75 @@ package ru.subsidy.rules.engine;
 import java.util.Map;
 
 /**
- * Виды документов и имена полей (docproc doc-types/registry.json) и их названия для текстов.
+ * Виды документов и имена полей (docproc doc-types/registry.json) и их названия для текстов специалисту.
  */
 public final class Docs {
 
-    /** Заявление. */
+    /** Заявление на субсидию. */
     public static final String APPLICATION = "APPLICATION";
-    /** Выписка ЕГРЮЛ. */
-    public static final String EGRUL = "EGRUL_EXTRACT";
-    /** Справка ФНС. */
-    public static final String TAX = "TAX_CERTIFICATE";
-    /** Отчётность. */
-    public static final String FIN = "FIN_STATEMENTS";
-    /** Смета. */
-    public static final String ESTIMATE = "COST_ESTIMATE";
-    /** Договор. */
-    public static final String CONTRACT = "CONTRACT";
-    /** Счёт. */
-    public static final String INVOICE = "INVOICE";
-    /** Платёжное поручение. */
-    public static final String PAYMENT = "PAYMENT_ORDER";
-    /** Прочее. */
+    /** Согласие на обработку персональных данных. */
+    public static final String PD_CONSENT = "PD_CONSENT";
+    /** Сертификат соответствия. */
+    public static final String CERTIFICATE = "CERTIFICATE";
+    /** Презентация проекта. */
+    public static final String PRESENTATION = "PRESENTATION";
+    /** Обоснование затрат. */
+    public static final String COST_JUSTIFICATION = "COST_JUSTIFICATION";
+    /** Выписка из банка. */
+    public static final String BANK_STATEMENT = "BANK_STATEMENT";
+    /** Документ на недвижимое имущество. */
+    public static final String PROPERTY_DOC = "PROPERTY_DOC";
+    /** Гарантийное письмо. */
+    public static final String GUARANTEE_LETTER = "GUARANTEE_LETTER";
+    /** Декларация ГИМС. */
+    public static final String GIMS_DECLARATION = "GIMS_DECLARATION";
+    /** Документ вне перечня. */
     public static final String OTHER = "OTHER";
 
-    /** ИНН. */
-    public static final String INN = "inn";
-    /** ОГРН. */
-    public static final String OGRN = "ogrn";
-    /** Наименование. */
-    public static final String ORG_NAME = "orgName";
-    /** Дата. */
-    public static final String DATE = "date";
-    /** Сумма. */
-    public static final String AMOUNT = "amount";
-    /** Итог. */
-    public static final String TOTAL = "total";
-    /** Позиции. */
+    /** Позиции (статьи расходов). */
     public static final String ITEMS = "items";
-    /** ИНН покупателя. */
-    public static final String BUYER_INN = "buyerInn";
-    /** ИНН продавца. */
-    public static final String SELLER_INN = "sellerInn";
-    /** ИНН плательщика. */
-    public static final String PAYER_INN = "payerInn";
-    /** ИНН получателя. */
-    public static final String PAYEE_INN = "payeeInn";
-    /** БИК. */
-    public static final String BIK = "bik";
-    /** БИК банка плательщика (платёжное поручение). */
-    public static final String PAYER_BIK = "payerBik";
-    /** БИК банка получателя (платёжное поручение). */
-    public static final String PAYEE_BIK = "payeeBik";
-    /** НДС. */
-    public static final String VAT = "vatAmount";
-    /** Запрошенная сумма. */
-    public static final String REQUESTED = "requestedAmount";
-    /** Сумма субсидии в смете. */
-    public static final String SUBSIDY = "subsidyAmount";
+    /** Сумма строки. */
+    public static final String AMOUNT = "amount";
 
     private static final Map<String, String> TITLES = Map.ofEntries(
             Map.entry(APPLICATION, "Заявление"),
-            Map.entry(EGRUL, "Выписка ЕГРЮЛ"),
-            Map.entry(TAX, "Справка ФНС"),
-            Map.entry(FIN, "Отчётность"),
-            Map.entry(ESTIMATE, "Смета"),
-            Map.entry(CONTRACT, "Договор"),
-            Map.entry(INVOICE, "Счёт"),
-            Map.entry(PAYMENT, "Платёжное поручение"),
+            Map.entry(PD_CONSENT, "Согласие на обработку ПД"),
+            Map.entry(CERTIFICATE, "Сертификат соответствия"),
+            Map.entry(PRESENTATION, "Презентация проекта"),
+            Map.entry(COST_JUSTIFICATION, "Обоснование затрат"),
+            Map.entry(BANK_STATEMENT, "Выписка из банка"),
+            Map.entry(PROPERTY_DOC, "Документ на недвижимость"),
+            Map.entry(GUARANTEE_LETTER, "Гарантийное письмо"),
+            Map.entry(GIMS_DECLARATION, "Декларация ГИМС"),
             Map.entry(OTHER, "Прочий документ"));
+
+    private static final Map<String, String> FIELDS = Map.ofEntries(
+            Map.entry("orgName", "организация"),
+            Map.entry("inn", "ИНН"),
+            Map.entry("ogrn", "ОГРН"),
+            Map.entry("projectName", "наименование проекта"),
+            Map.entry("description", "описание"),
+            Map.entry("requestedAmount", "запрашиваемая сумма"),
+            Map.entry("totalCost", "общая сумма расходов"),
+            Map.entry("ownFunds", "собственные средства"),
+            Map.entry("date", "дата"),
+            Map.entry("signerName", "подписант"),
+            Map.entry("fullName", "ФИО"),
+            Map.entry("passport", "паспортные данные"),
+            Map.entry("number", "номер"),
+            Map.entry("issuer", "орган сертификации"),
+            Map.entry("issueDate", "дата выдачи"),
+            Map.entry("validUntil", "срок действия"),
+            Map.entry("bankName", "банк"),
+            Map.entry("account", "номер счёта"),
+            Map.entry("balance", "остаток"),
+            Map.entry("cadastralNumber", "кадастровый номер"),
+            Map.entry("area", "площадь"),
+            Map.entry("purpose", "назначение"),
+            Map.entry("address", "адрес"),
+            Map.entry("guarantorName", "организация-гарант"),
+            Map.entry(AMOUNT, "сумма"),
+            Map.entry(ITEMS, "статьи расходов"));
 
     private Docs() {
     }
@@ -79,10 +80,30 @@ public final class Docs {
      * Название вида для текста специалисту.
      *
      * @param type код вида
-     * @return «Счёт», «Выписка ЕГРЮЛ», …
+     * @return «Заявление», «Выписка из банка», …
      */
     public static String title(String type) {
         return TITLES.getOrDefault(type, type == null ? "Документ" : type);
+    }
+
+    /**
+     * Название поля для текста специалисту.
+     *
+     * @param field имя поля
+     * @return «ИНН», «собственные средства», … или само имя
+     */
+    public static String field(String field) {
+        return FIELDS.getOrDefault(field, field);
+    }
+
+    /**
+     * Известен ли вид.
+     *
+     * @param type код вида
+     * @return true для видов из реестра
+     */
+    public static boolean known(String type) {
+        return TITLES.containsKey(type);
     }
 
     /**

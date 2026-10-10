@@ -26,7 +26,7 @@ public class EstimateBaselineRepository implements ProgramBaseline {
                 cross join lateral jsonb_array_elements(case when jsonb_typeof(field -> 'value') = 'array'
                     then field -> 'value' else '[]'::jsonb end) item
                 where v.program_code = ? and d.package_id <> ? and not d.removed
-                  and d.type = 'COST_ESTIMATE' and coalesce(d.reason_code, '') <> 'TYPE_UNKNOWN'
+                  and d.type = 'COST_JUSTIFICATION' and coalesce(d.reason_code, '') <> 'TYPE_UNKNOWN'
                   and field ->> 'name' = 'items'
             )
             select count(distinct package_id), count(*), avg(amount::numeric), stddev_pop(amount::numeric)
