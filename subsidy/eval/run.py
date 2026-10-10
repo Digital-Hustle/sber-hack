@@ -1,19 +1,16 @@
 """Прогон качества через публичный API стенда (docs/EVAL.md): вход как специалист → пакет → файлы → протокол.
 
-uv run python run.py --api https://host --dir /tmp/pkg [--user specialist] [--report out.md]
-Пароль — EVAL_PASSWORD. Сертификат стенда самоподписанный — проверка TLS выключена (включить: --verify).
+uv run python run.py --api https://host --dir /tmp/pkg [--email specialist@demo.subsidy.local] [--report out.md]
+Код входа — EVAL_CODE (на демо-стенде берётся из ответа API).
+Сертификат стенда самоподписанный — проверка TLS выключена (включить: --verify).
 """
 
 from __future__ import annotations
 
 import argparse
-import base64
-import hashlib
-import html
 import http.cookiejar
 import json
 import os
-import re
 import secrets
 import ssl
 import sys
@@ -25,12 +22,6 @@ from pathlib import Path
 from typing import Any
 
 TERMINAL = {"PARSED", "NEEDS_REVIEW", "UNREADABLE", "FAILED", "REJECTED"}
-CLIENT = "subsidy-specialist"
-
-
-class NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
-        return None
 
 
 class Api:
@@ -43,55 +34,28 @@ class Api:
         self.jar = http.cookiejar.CookieJar()
         self.token = ""
 
-    def _opener(self, follow: bool = True) -> urllib.request.OpenerDirector:
-        handlers: list[Any] = [
-            urllib.request.HTTPSHandler(context=self.ctx),
-            urllib.request.HTTPCookieProcessor(self.jar),
-        ]
-        if not follow:
-            handlers.append(NoRedirect())
-        return urllib.request.build_opener(*handlers)
-
-    def login(self, user: str, password: str) -> None:
-        """Authorization Code + PKCE, как браузер: форма Keycloak → code → token."""
-        realm = f"{self.base}/auth/realms/subsidy/protocol/openid-connect"
-        redirect = f"{self.base}/specialist/callback"
-        verifier = secrets.token_urlsafe(48)
-        challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
-        query = urllib.parse.urlencode(
-            {
-                "client_id": CLIENT,
-                "response_type": "code",
-                "scope": "openid",
-                "redirect_uri": redirect,
-                "code_challenge": challenge,
-                "code_challenge_method": "S256",
-                "state": secrets.token_hex(8),
-            }
+    def _opener(self) -> urllib.request.OpenerDirector:
+        return urllib.request.build_opener(
+            urllib.request.HTTPSHandler(context=self.ctx), urllib.request.HTTPCookieProcessor(self.jar)
         )
-        page = self._opener().open(f"{realm}/auth?{query}").read().decode()
-        form = re.search(r'<form[^>]*id="kc-form-login"[^>]*action="([^"]+)"', page)
-        if not form:
-            raise SystemExit("форма входа Keycloak не найдена")
-        data = urllib.parse.urlencode({"username": user, "password": password, "credentialId": ""}).encode()
-        location = ""
-        try:
-            self._opener(follow=False).open(html.unescape(form.group(1)), data)
-        except urllib.error.HTTPError as e:
-            location = e.headers.get("Location", "")
-        code = urllib.parse.parse_qs(urllib.parse.urlparse(location).query).get("code", [""])[0]
+
+    def login(self, email: str, code: str) -> None:
+        """Вход по коду из письма (ADR-023): /auth/code → /auth/verify; на демо-стенде код приходит в ответе."""
+        auth = f"{self.base}/package/api/v1/auth"
+
+        def post(path: str, body: dict[str, str]) -> Any:
+            req = urllib.request.Request(auth + path, data=json.dumps(body).encode(), method="POST")
+            req.add_header("Content-Type", "application/json")
+            try:
+                return json.loads(self._opener().open(req, timeout=60).read() or b"{}")
+            except urllib.error.HTTPError as e:
+                raise SystemExit(f"вход: {path} → {e.code}: {e.read()[:300]!r}") from e
+
         if not code:
-            raise SystemExit("вход не удался (неверный логин или пароль?)")
-        body = urllib.parse.urlencode(
-            {
-                "grant_type": "authorization_code",
-                "client_id": CLIENT,
-                "code": code,
-                "redirect_uri": redirect,
-                "code_verifier": verifier,
-            }
-        ).encode()
-        self.token = json.loads(self._opener().open(f"{realm}/token", body).read())["access_token"]
+            code = str(post("/code", {"email": email}).get("demoCode") or "")
+        if not code:
+            raise SystemExit("код отправлен на почту — передайте его в EVAL_CODE и запустите снова")
+        self.token = post("/verify", {"email": email, "code": code})["accessToken"]
 
     def call(
         self, method: str, path: str, body: Any = None, raw: bytes | None = None, ctype: str = "application/json"
@@ -182,8 +146,8 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--api", required=True)
     p.add_argument("--dir", required=True, type=Path)
-    p.add_argument("--user", default="specialist")
-    p.add_argument("--program", default="DEMO-2026")
+    p.add_argument("--email", default="specialist@demo.subsidy.local")
+    p.add_argument("--program", default="INNOVATION")
     p.add_argument("--timeout", type=int, default=1800)
     p.add_argument("--report", type=Path)
     p.add_argument("--verify", action="store_true")
@@ -191,7 +155,7 @@ def main() -> None:
     a = p.parse_args()
     labels = json.loads((a.dir / "labels.json").read_text(encoding="utf-8"))
     api = Api(a.api, a.verify)
-    api.login(a.user, os.environ.get("EVAL_PASSWORD", ""))
+    api.login(a.email, os.environ.get("EVAL_CODE", ""))
     inn = inn_of(labels)
     if api.call("GET", f"/package/api/v1/organizations?inn={inn}").get("_status") == 404:
         api.call("POST", "/package/api/v1/organizations", {"inn": inn})
