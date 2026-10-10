@@ -104,6 +104,9 @@ public class TextStage {
                 && !llm.status().visionModel().isBlank();
         if (weak && visionAvailable && !files.isEmpty()) {
             out.put("vision", true);
+            if (quality != null && chars < props.minTextChars()) {
+                out.put("qualityReason", quality); // если и модель не узнает документ — честно «непригоден» (С9)
+            }
             return StepOutcome.next(out);
         }
         if (files.isEmpty() || chars < props.minTextChars()) {
