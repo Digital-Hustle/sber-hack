@@ -32,6 +32,7 @@ uv run python -m synthetic.gen --out /tmp/syn --seed 1 --merged          # 1 п�
 uv run python -m synthetic.gen --out /tmp/syn-bad --seed 2 --defect items # тот же пакет с ошибкой в сумме сметы
 EVAL_PASSWORD=... uv run python run.py --api https://<host> --dir /tmp/syn --report reports/synthetic.md
 EVAL_OPEN_DIR=~/datasets/subsidy-open uv run python run.py --api https://<host> --dir "$EVAL_OPEN_DIR"
+uv run --group dev python bench_llm.py --model qwen3:1.7b --seeds 1                # замер модели без стенда (docs/LLM.md)
 ```
 Генератор (`synthetic/gen.py`, reportlab) создаёт документы **вымышленной** организации с верными контрольными суммами ИНН/ОГРН/КПП/БИК/р/с, файлы называются нейтрально (`doc-XXXX.pdf`) — вид нельзя угадать по имени. Рядом кладётся `labels.json`: страницы → вид, ключевые поля и ожидаемые статусы правил (`expectedRules`).
 
