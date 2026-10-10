@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, ClipboardCopy, FileSearch } from "lucide-react";
-import { ProtocolStatusBadge } from "@/entities/package";
+import { ProtocolStatusBadge, fieldLabel } from "@/entities/package";
 import { CHECK_STATUS, protocolApi, protocolKeys, ruleView, type Protocol, type RuleResult } from "@/entities/protocol";
 import { ApiError, errorText } from "@/shared/api";
 import { AnimatedNumber, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Progress, RowsSkeleton, Segmented, Select, Spinner, Status, toast } from "@/shared/ui";
@@ -82,7 +82,7 @@ const Result = ({ r, onEvidence }: { r: RuleResult; onEvidence: (documentId: str
       {!!r.evidence?.length && (
         <div className="flex flex-wrap gap-1">
           {r.evidence.filter((e) => e.documentId).map((e, i) => (
-            <Button key={i} size="sm" variant="ghost" onClick={() => onEvidence(e.documentId!, e.page)}><FileSearch />{e.field ?? "документ"}{e.page ? `, стр. ${e.page}` : ""}</Button>
+            <Button key={i} size="sm" variant="ghost" onClick={() => onEvidence(e.documentId!, e.page)}><FileSearch />{e.field ? fieldLabel(e.field) : "документ"}{e.page ? `, стр. ${e.page}` : ""}</Button>
           ))}
         </div>
       )}
