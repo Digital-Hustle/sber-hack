@@ -73,7 +73,7 @@ public class AuthController {
      * Отправляет 6-значный код. Ответ одинаковый для любого адреса.
      *
      * @param request почта
-     * @return маска адреса и сроки; 429 LOGIN_RESEND_TOO_SOON, 503 MAIL_UNAVAILABLE
+     * @return маска адреса и сроки; 429 LOGIN_RESEND_TOO_SOON
      */
     @PostMapping("/code")
     public CodeSentRs code(@Valid @RequestBody CodeRq request) {

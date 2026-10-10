@@ -37,11 +37,14 @@ public class MailConfig {
         sender.setProtocol(env.getProperty("SMTP_PROTOCOL", "smtps"));
         sender.setDefaultEncoding("UTF-8");
         Properties props = sender.getJavaMailProperties();
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", env.getProperty("SMTP_STARTTLS", "false"));
-        props.put("mail.smtp.connectiontimeout", CONNECT_TIMEOUT_MS);
-        props.put("mail.smtp.timeout", TIMEOUT_MS);
-        props.put("mail.smtp.writetimeout", TIMEOUT_MS);
+        // свойства читаются по имени протокола: для smtps — mail.smtps.*, иначе таймауты не действуют и запрос висит минутами
+        for (String prefix : new String[] {"mail.smtp.", "mail.smtps."}) {
+            props.put(prefix + "auth", "true");
+            props.put(prefix + "starttls.enable", env.getProperty("SMTP_STARTTLS", "false"));
+            props.put(prefix + "connectiontimeout", CONNECT_TIMEOUT_MS);
+            props.put(prefix + "timeout", TIMEOUT_MS);
+            props.put(prefix + "writetimeout", TIMEOUT_MS);
+        }
         return sender;
     }
 }
