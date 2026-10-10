@@ -48,7 +48,7 @@ const HeroCards = () => (
         <LogoMark className="size-8 shadow-none" />
         <div className="min-w-0 text-xs leading-tight text-white/80"><div className="font-semibold text-white">Протокол проверки</div>пакет на субсидию</div>
       </div>
-      <ul className="relative mt-4 flex flex-col gap-2 rounded-xl bg-white p-3 text-foreground">
+      <ul className="relative mt-4 flex flex-col gap-2 rounded-xl bg-card p-3 text-card-foreground">
         {SAMPLE.map((s) => (
           <li key={s.label} className="flex items-center gap-2.5 text-sm">
             <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full", s.ok ? "bg-success-soft text-success-soft-foreground" : "bg-warning-soft text-warning-soft-foreground")}>

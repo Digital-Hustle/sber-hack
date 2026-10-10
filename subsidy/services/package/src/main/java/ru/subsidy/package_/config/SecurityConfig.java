@@ -47,6 +47,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/health", "/v3/api-docs/**").permitAll()
+                        // ADR-023: ключи токенов сотрудников и вход по коду — без токена
+                        .requestMatchers("/internal/staff/jwks").permitAll()
+                        .requestMatchers("/api/v1/auth/mode", "/api/v1/auth/code", "/api/v1/auth/verify", "/api/v1/auth/refresh",
+                                "/api/v1/auth/logout").permitAll()
                         .requestMatchers("/internal/**").hasAuthority(SVC_DOCPROC)
                         .requestMatchers("/api/v1/stream").permitAll()
                         .anyRequest().authenticated())

@@ -17,17 +17,24 @@ import ru.subsidy.common.exception.ProblemDetailFactory;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    private static final Map<ErrorCode, HttpStatus> STATUSES = Map.of(
-            ErrorCode.INN_INVALID, HttpStatus.BAD_REQUEST,
-            ErrorCode.PROGRAM_NOT_FOUND, HttpStatus.BAD_REQUEST,
-            ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST,
-            ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND,
-            ErrorCode.PACKAGE_NOT_FOUND, HttpStatus.NOT_FOUND,
-            ErrorCode.FILE_NOT_FOUND, HttpStatus.NOT_FOUND,
-            ErrorCode.CONFLICT, HttpStatus.CONFLICT,
-            ErrorCode.PACKAGE_LOCKED, HttpStatus.CONFLICT,
-            ErrorCode.PACKAGE_DECIDED, HttpStatus.CONFLICT,
-            ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    private static final Map<ErrorCode, HttpStatus> STATUSES = Map.ofEntries(
+            Map.entry(ErrorCode.LOGIN_CODE_INVALID, HttpStatus.BAD_REQUEST),
+            Map.entry(ErrorCode.LOGIN_CODE_EXPIRED, HttpStatus.GONE),
+            Map.entry(ErrorCode.LOGIN_CODE_LOCKED, HttpStatus.TOO_MANY_REQUESTS),
+            Map.entry(ErrorCode.LOGIN_RESEND_TOO_SOON, HttpStatus.TOO_MANY_REQUESTS),
+            Map.entry(ErrorCode.SESSION_EXPIRED, HttpStatus.UNAUTHORIZED),
+            Map.entry(ErrorCode.STAFF_LAST_SENIOR, HttpStatus.CONFLICT),
+            Map.entry(ErrorCode.MAIL_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE),
+            Map.entry(ErrorCode.INN_INVALID, HttpStatus.BAD_REQUEST),
+            Map.entry(ErrorCode.PROGRAM_NOT_FOUND, HttpStatus.BAD_REQUEST),
+            Map.entry(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+            Map.entry(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND),
+            Map.entry(ErrorCode.PACKAGE_NOT_FOUND, HttpStatus.NOT_FOUND),
+            Map.entry(ErrorCode.FILE_NOT_FOUND, HttpStatus.NOT_FOUND),
+            Map.entry(ErrorCode.CONFLICT, HttpStatus.CONFLICT),
+            Map.entry(ErrorCode.PACKAGE_LOCKED, HttpStatus.CONFLICT),
+            Map.entry(ErrorCode.PACKAGE_DECIDED, HttpStatus.CONFLICT),
+            Map.entry(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN));
 
     /**
      * Доменное исключение.

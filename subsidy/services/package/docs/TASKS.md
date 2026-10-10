@@ -16,3 +16,4 @@
 | PK-10 | FR-63 | Превью страниц (ocr `/v1/render`), кэш | B1 | done |
 | PK-11 | FR-61 | Очередь пакетов: фильтры, курсоры, счётчики из протокола | B1 | done |
 | PK-12 | — | Решение по пакету (SENIOR), `PackageDecided` | B1 | done |
+| PK-13 | FR-60 | Вход сотрудников по коду из письма (ADR-023): токены сессий ES256 + JWKS, таблицы staff_*, `/api/v1/auth` и `/api/v1/staff`, письма общим ящиком, режим стенда `STAND_MODE` | B1 | doing `feat/FE-UI-04-stand-mode` |

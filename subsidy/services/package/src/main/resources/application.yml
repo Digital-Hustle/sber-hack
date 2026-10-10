@@ -59,3 +59,9 @@ management:
 springdoc:
   api-docs:
     path: /v3/api-docs
+
+app:
+  # ADR-023: токены сотрудников выпускает package; сервисы берут ключи по внутренней сети
+  staff-token:
+    issuer: ${STAFF_TOKEN_ISSUER:https://localhost/package}
+    jwks-uri: ${STAFF_JWKS_URI:http://localhost:8081/internal/staff/jwks}

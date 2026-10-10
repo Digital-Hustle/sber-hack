@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     testImplementation(testFixtures(project(":libs:common")))
+    implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation(libs.tika.core)
     implementation(libs.pdfbox)
     implementation(libs.imageio.jpeg)

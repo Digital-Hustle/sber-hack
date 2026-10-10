@@ -57,6 +57,9 @@ springdoc:
     path: /v3/api-docs
 
 app:
+  staff-token:
+    issuer: ${STAFF_TOKEN_ISSUER:https://localhost/package}
+    jwks-uri: ${STAFF_JWKS_URI:http://localhost:8081/internal/staff/jwks}
   outbox:
     shared: true
     relay: true

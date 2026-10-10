@@ -9,10 +9,54 @@
     "description" : "Generated server url"
   } ],
   "paths" : {
+    "/api/v1/staff" : {
+      "get" : {
+        "tags" : [ "staff-controller" ],
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StaffListRs"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "staff-controller" ],
+        "operationId" : "invite",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InviteRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/packages" : {
       "get" : {
         "tags" : [ "packages-controller" ],
-        "operationId" : "list",
+        "operationId" : "list_1",
         "parameters" : [ {
           "name" : "status",
           "in" : "query",
@@ -284,6 +328,169 @@
         }
       }
     },
+    "/api/v1/auth/verify" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "verify",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VerifyRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "refresh",
+        "parameters" : [ {
+          "name" : "subsidy_session",
+          "in" : "cookie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "logout",
+        "parameters" : [ {
+          "name" : "subsidy_session",
+          "in" : "cookie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/code" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "code",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CodeRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CodeSentRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/staff/{id}" : {
+      "patch" : {
+        "tags" : [ "staff-controller" ],
+        "operationId" : "update",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/staff/jwks" : {
+      "get" : {
+        "tags" : [ "staff-jwks-controller" ],
+        "operationId" : "jwks",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "object",
+                      "additionalProperties" : { }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/package/files/{fileId}" : {
       "get" : {
         "tags" : [ "internal-files-controller" ],
@@ -498,6 +705,42 @@
         }
       }
     },
+    "/api/v1/auth/mode" : {
+      "get" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "mode",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ModeRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me" : {
+      "get" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "me",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/packages/{packageId}/files/{fileId}" : {
       "delete" : {
         "tags" : [ "files-controller" ],
@@ -529,6 +772,54 @@
   },
   "components" : {
     "schemas" : {
+      "InviteRq" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "SPECIALIST", "SENIOR_SPECIALIST", "AUDITOR" ]
+          }
+        },
+        "required" : [ "email", "name", "role" ]
+      },
+      "UserRs" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "demo" : {
+            "type" : "boolean"
+          },
+          "lastSeen" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
       "CreatePackageRequest" : {
         "type" : "object",
         "properties" : {
@@ -685,6 +976,83 @@
           }
         }
       },
+      "VerifyRq" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
+          },
+          "code" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "[\\d\\s-]{6,9}"
+          }
+        },
+        "required" : [ "code", "email" ]
+      },
+      "SessionRs" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sessionExpiresAt" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "user" : {
+            "$ref" : "#/components/schemas/UserRs"
+          }
+        }
+      },
+      "CodeRq" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "email" ]
+      },
+      "CodeSentRs" : {
+        "type" : "object",
+        "properties" : {
+          "sentTo" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "resendAt" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "demoCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UpdateRq" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string",
+            "enum" : [ "SPECIALIST", "SENIOR_SPECIALIST", "AUDITOR" ]
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        }
+      },
       "SseEmitter" : {
         "type" : "object",
         "properties" : {
@@ -703,6 +1071,17 @@
           "expiresInSeconds" : {
             "type" : "integer",
             "format" : "int64"
+          }
+        }
+      },
+      "StaffListRs" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserRs"
+            }
           }
         }
       },
@@ -924,6 +1303,23 @@
           "needsReview" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "ModeRs" : {
+        "type" : "object",
+        "properties" : {
+          "mode" : {
+            "type" : "string"
+          },
+          "demo" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserRs"
+            }
+          },
+          "demoCode" : {
+            "type" : "string"
           }
         }
       }

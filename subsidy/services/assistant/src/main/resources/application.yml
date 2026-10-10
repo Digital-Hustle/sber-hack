@@ -31,6 +31,9 @@ spring:
           audiences: assistant
 
 app:
+  staff-token:
+    issuer: ${STAFF_TOKEN_ISSUER:https://localhost/package}
+    jwks-uri: ${STAFF_JWKS_URI:http://localhost:8081/internal/staff/jwks}
   service-account:
     client-id: svc-assistant
     client-secret: ${KC_SVC_ASSISTANT_SECRET}

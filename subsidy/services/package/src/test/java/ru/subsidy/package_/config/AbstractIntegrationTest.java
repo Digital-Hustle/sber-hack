@@ -34,6 +34,7 @@ public abstract class AbstractIntegrationTest {
         byte[] key = new byte[32];
         new java.security.SecureRandom().nextBytes(key);
         System.setProperty("FILES_ENCRYPTION_KEY", java.util.Base64.getEncoder().encodeToString(key));
+        System.setProperty("STAFF_TOKEN_SIGNING_KEY", StaffKeys.pkcs8());
         POSTGRES.start();
         KAFKA.start();
     }
