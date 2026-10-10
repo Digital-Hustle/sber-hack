@@ -45,6 +45,7 @@ public enum ErrorCode {
     // Generic HTTP
     NOT_FOUND,
     CONFLICT,
+    UNAUTHORIZED,
     FORBIDDEN,
     VALIDATION_ERROR;
 

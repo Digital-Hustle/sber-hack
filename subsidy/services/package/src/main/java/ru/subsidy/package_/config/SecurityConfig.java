@@ -19,6 +19,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
 
 import ru.subsidy.common.security.CurrentUser;
+import ru.subsidy.common.web.ProblemSecurity;
 
 /**
  * Доступ к package: только JWT Keycloak realm subsidy, роли — из claim {@code roles} (FR-60).
@@ -54,7 +55,11 @@ public class SecurityConfig {
                         .requestMatchers("/internal/**").hasAuthority(SVC_DOCPROC)
                         .requestMatchers("/api/v1/stream").permitAll()
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(currentUserConverter())))
+                .exceptionHandling(errors -> errors.authenticationEntryPoint(ProblemSecurity.entryPoint())
+                        .accessDeniedHandler(ProblemSecurity.accessDenied()))
+                .oauth2ResourceServer(oauth -> oauth.authenticationEntryPoint(ProblemSecurity.entryPoint())
+                        .accessDeniedHandler(ProblemSecurity.accessDenied())
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(currentUserConverter())))
                 .build();
     }
 

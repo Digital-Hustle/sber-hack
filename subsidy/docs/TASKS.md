@@ -26,6 +26,7 @@
 | PLT-07 | NFR-17 | Outbox relay + IdempotentConsumer + конверт события в `libs/common` | B1 | done |
 | PLT-08 | NFR-01 | README «с чистого клона», `smoke.sh`, проверка на чистой машине | B1 | done #79 #98 #102 #104: стенд https://subsidy.digital-hustle.ru за общим edge собран с main, `smoke.sh` со сквозным прогоном — все ✔ (8/8 видов, расхождений 0); по пути исправлены /internal снаружи, healthcheck, HTTP/1.1 к ocr |
 | PLT-09 | FR-28 | `eval/`: `run.py` через публичный API, разметка, отчёт; синтетика `eval/synthetic/` (генератор пакетов с корректными реквизитами) + запуск в CI | B2 | done #70 |
+| PLT-10 | FR-06 | Единый problem+json для отказов фреймворка: 401/403 из Spring Security, 400 валидации/параметров, 413 размера — с `code` и `hint` (`libs/common/web`) | B1 | done |
 
 ## Совместные
 | ID | FR | Задача | Роль | Статус |
