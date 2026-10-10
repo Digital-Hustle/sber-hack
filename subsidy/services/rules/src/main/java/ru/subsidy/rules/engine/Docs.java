@@ -50,6 +50,10 @@ public final class Docs {
     public static final String PAYEE_INN = "payeeInn";
     /** БИК. */
     public static final String BIK = "bik";
+    /** БИК банка плательщика (платёжное поручение). */
+    public static final String PAYER_BIK = "payerBik";
+    /** БИК банка получателя (платёжное поручение). */
+    public static final String PAYEE_BIK = "payeeBik";
     /** НДС. */
     public static final String VAT = "vatAmount";
     /** Запрошенная сумма. */

@@ -732,7 +732,7 @@
   "code": "PAYMENT_ORDER",
   "name": "Платёжное поручение",
   "hints": "«Платёжное поручение №», «Плательщик», «Получатель», БИК, «Назначение платежа», «Списано со сч. плат.», отметка банка.",
-  "version": "2",
+  "version": "3",
   "kinds": {
    "number": "text",
    "date": "date",
@@ -744,7 +744,8 @@
    "payeeName": "text",
    "payeeInn": "inn",
    "payeeAccount": "account",
-   "bik": "bik",
+   "payerBik": "bik",
+   "payeeBik": "bik",
    "purpose": "text"
   },
   "schema": {
@@ -810,7 +811,13 @@
       "null"
      ]
     },
-    "bik": {
+    "payerBik": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "payeeBik": {
      "type": [
       "string",
       "null"
@@ -834,7 +841,8 @@
     "payeeName",
     "payeeInn",
     "payeeAccount",
-    "bik",
+    "payerBik",
+    "payeeBik",
     "purpose"
    ],
    "additionalProperties": false

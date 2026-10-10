@@ -19,6 +19,9 @@ public final class Requisites {
     private static final int BIK = 9;
     private static final int ACCOUNT_LEN = 20;
     private static final int BIK_TAIL = 3;
+    private static final int BIK_CITY_FROM = 4;
+    private static final int BIK_CITY_TO = 6;
+    private static final String CORR_PREFIX = "301";
 
     private Requisites() {
     }
@@ -86,12 +89,25 @@ public final class Requisites {
         if (!digits(account) || account.length() != ACCOUNT_LEN || !bik(bik)) {
             return false;
         }
-        String full = bik.substring(BIK - BIK_TAIL) + account;
+        String full = prefix(account, bik) + account;
         int sum = 0;
         for (int idx = 0; idx < full.length(); idx++) {
             sum += (full.charAt(idx) - '0') * ACCOUNT[idx % ACCOUNT.length] % MOD10;
         }
         return sum % MOD10 == 0;
+    }
+
+    /**
+     * Префикс ключа ЦБ: у расчётного счёта — последние 3 цифры БИК,
+     * у корреспондентского (301…) — «0» и 5–6-я цифры БИК.
+     *
+     * @param account счёт
+     * @param bik БИК
+     * @return три цифры префикса
+     */
+    private static String prefix(String account, String bik) {
+        return account.startsWith(CORR_PREFIX) ? "0" + bik.substring(BIK_CITY_FROM, BIK_CITY_TO)
+                : bik.substring(BIK - BIK_TAIL);
     }
 
     private static int control(String value, int[] weights) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RotateCw, ZoomIn, ZoomOut } from "lucide-react";
-import { packageApi, fieldText, reasonText, StageBadge, type DocumentResult } from "@/entities/package";
+import { packageApi, fieldText, fieldLabel, reasonText, StageBadge, type DocumentResult } from "@/entities/package";
 import { ChangeTypeButton } from "@/features/change-type";
 import { CorrectFieldButton } from "@/features/correct-field";
 import { Button, Card, CardContent, EmptyState, Skeleton, Spinner, Status } from "@/shared/ui";
@@ -73,7 +73,7 @@ export const DocumentViewer = ({ packageId, doc, typeName }: { packageId: string
                 return (
                   <li key={f.name} className="flex items-start gap-2 py-2">
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs text-muted-foreground">{f.name}</div>
+                      <div className="text-xs text-muted-foreground">{fieldLabel(f.name)}</div>
                       <div className={cn("break-words", low && "text-warning")}>{fieldText(f.value)}</div>
                       {f.raw && f.raw !== fieldText(f.value) && <div className="text-xs text-muted-foreground">на скане: {f.raw}</div>}
                       {f.checks.filter((c) => c.status !== "PASSED" && c.status !== "OK").map((c) => (
@@ -82,7 +82,7 @@ export const DocumentViewer = ({ packageId, doc, typeName }: { packageId: string
                     </div>
                     {f.confidence !== null && <span className={cn("text-xs tabular-nums", low ? "text-warning" : "text-muted-foreground")}>{Math.round(f.confidence * PERCENT)}%</span>}
                     {typeof f.value !== "object" || f.value === null
-                      ? <CorrectFieldButton packageId={packageId} documentId={doc.documentId} field={f.name} label={f.name} current={f.value === null ? "" : String(f.value)} />
+                      ? <CorrectFieldButton packageId={packageId} documentId={doc.documentId} field={f.name} label={fieldLabel(f.name)} current={f.value === null ? "" : String(f.value)} />
                       : null}
                   </li>
                 );
