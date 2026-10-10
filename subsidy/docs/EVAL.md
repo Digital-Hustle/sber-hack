@@ -28,12 +28,12 @@
 ## Как запустить
 ```bash
 cd subsidy/eval
-uv run python -m synthetic.gen --out /tmp/syn --seed 1 --merged          # 1 пакет: 8 видов, заявление+ЕГРЮЛ+справка склеены в один PDF
-uv run python -m synthetic.gen --out /tmp/syn-bad --seed 2 --defect items # тот же пакет с ошибкой в сумме сметы
-EVAL_PASSWORD=... uv run python run.py --api https://<host> --dir /tmp/syn --report reports/synthetic.md
-EVAL_OPEN_DIR=~/datasets/subsidy-open uv run python run.py --api https://<host> --dir "$EVAL_OPEN_DIR"
+uv run python -m synthetic.gen --out /tmp/syn --seed 1 --merged          # 1 пакет: 9 видов кейса, заявка+согласие+презентация склеены в один PDF
+uv run python -m synthetic.gen --out /tmp/syn-bad --seed 2 --defect share # собственных средств < 50 % (ещё mismatch, expired, inn)
+uv run python run.py --api https://<host> --dir /tmp/syn --report reports/synthetic.md   # демо-стенд: код входа из ответа API; прод: EVAL_CODE=…
+EVAL_OPEN_DIR=/root/openset uv run python run.py --api https://<host> --dir "$EVAL_OPEN_DIR"
 uv run --group dev python bench_llm.py --model qwen3:1.7b --seeds 1                # замер модели без стенда (docs/LLM.md)
 ```
-Генератор (`synthetic/gen.py`, reportlab) создаёт документы **вымышленной** организации с верными контрольными суммами ИНН/ОГРН/КПП/БИК/р/с, файлы называются нейтрально (`doc-XXXX.pdf`) — вид нельзя угадать по имени. Рядом кладётся `labels.json`: страницы → вид, ключевые поля и ожидаемые статусы правил (`expectedRules`).
+Генератор (`synthetic/gen.py`, reportlab) создаёт документы **вымышленной** организации в формате открытого набора (заявка, обоснование затрат, справка банка и т. д.), файлы называются нейтрально (`doc-XXXX.pdf`) — вид нельзя угадать по имени. Рядом кладётся `labels.json`: страницы → вид, ключевые поля и ожидаемые статусы правил (`expectedRules`).
 
-`run.py` входит как специалист (форма Keycloak, PKCE), создаёт организацию и пакет и грузит файлы через **публичный API**, ждёт протокол и сравнивает виды, поля и статусы правил с разметкой — меряем систему целиком. Отчёт — markdown (`--report`); с `--strict` код выхода 1 при любом расхождении (для регресса), без него — 1 только если протокол не получен.
+`run.py` входит как сотрудник по коду из письма (ADR-023), создаёт организацию и пакет и грузит файлы через **публичный API**, ждёт протокол и сравнивает виды, поля и статусы правил с разметкой — меряем систему целиком. Отчёт — markdown (`--report`); с `--strict` код выхода 1 при любом расхождении (для регресса), без него — 1 только если протокол не получен.

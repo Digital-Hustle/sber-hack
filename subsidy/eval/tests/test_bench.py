@@ -13,8 +13,9 @@ def test_requisites_keep_only_digits() -> None:
 
 
 def test_segments_are_spread_over_pages() -> None:
-    got = page_types([{"fromPage": 1, "toPage": 1, "type": "APPLICATION"},
-                      {"fromPage": 2, "toPage": 3, "type": "EGRUL_EXTRACT"}], 3)
+    got = page_types(
+        [{"fromPage": 1, "toPage": 1, "type": "APPLICATION"}, {"fromPage": 2, "toPage": 3, "type": "EGRUL_EXTRACT"}], 3
+    )
     assert got == ["APPLICATION", "EGRUL_EXTRACT", "EGRUL_EXTRACT"]
 
 
