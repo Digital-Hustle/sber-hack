@@ -8,6 +8,7 @@
 - Симулятор: `PassRecorder.simulated` — журнал + `access.pass.v1` с `source=SIMULATOR`, присутствие не трогает; флаг `SIMULATOR_ENABLED`.
 - Вместимость (ACC-17): `worker_state.zone_id` + `PresenceService.zoneFull` под `pg_advisory_xact_lock` зоны в `PassRecorder.finish`; `capacity` — `zoneCapacity` из `/internal/people/checkpoints/{id}` при кадрах входа.
 - Терминалы (ACC-12): `features/kiosk` — регистрация ключа → код → сопряжение в кабинете; `KioskSignatureFilter` проверяет подпись `/api/v1/kiosk/**` (nonce в `kiosk_nonces`), проходная — из привязки.
+- Коды терминала (ACC-19): PBKDF2 в PostgreSQL, кабинет видит только метаданные; сопряжённый киоск получает хэши в `/kiosk/me`. Код не заменяет GUARD JWT.
 - Нет: circuit breaker, офлайн (ACC-15), `/internal/access/stats` (ACC-16), `/kiosk/identify`.
 
 ## 2. Карта сервиса
@@ -52,3 +53,5 @@
 - 2026-10-09 · miroslavrov (агент) · feat: ACC-17 вместимость зоны → `ZONE_FULL` (`worker_state.zone_id`, блокировка зоны, `zoneCapacity` от people) (#90)
 - 2026-10-10 · KIRI4444, miroslavrov (агент) · feat(access): ACC-18 настройки прохода `GET|PUT /api/v1/settings` (jsonb-строка `access_settings`, кэш 5 с, дефолты из env); порог лица, допуск QR, пауза, блокировка, присутствие и `requireShift` применяются сразу (`PassTuning`); `shiftGraceMin`, режим терминала и офлайн — пока только хранятся (#92)
 - 2026-10-09 · miroslavrov (агент) · feat(access): ACC-12 терминалы — регистрация ключа, код сопряжения, `/kiosk/me`, `/kiosks` (список, pair, patch, unpair), подпись запросов `X-Kiosk-*` с окном времени и одноразовым nonce; проходная скана — из привязки терминала (#109)
+
+- 2026-10-10 · miroslavrov (агент) · feat: ACC-19 коды терминала: API, PBKDF2 и матрица ролей, хэши только сопряжённому; frontend берёт код онлайн из `/kiosk/me`, нет заводского доступа после сопряжения. (#118)

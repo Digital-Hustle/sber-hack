@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Unlink, ExternalLink, WifiOff, RotateCcw } from "lucide-react";
 import { useDb, terminalModeOf, offlinePolicyOf, KIOSK_SLOT, type Kiosk } from "@/shared/api";
@@ -22,12 +22,13 @@ export const ServicePanel = ({ open, onClose, kioskId, kiosk, simOffline, setSim
   const db = useDb();
   const [pin, setPin] = useState("");
   const [ok, setOk] = useState(false);
-  const close = () => { onClose(); setPin(""); };
+  const close = () => { onClose(); setPin(""); setOk(false); setErr(null); };
   const cp = db.checkpoints.find((c) => c.id === kiosk?.checkpointId);
   const off = useOfflinePass();
   const code = useTerminalCode("service", { paired: !!kiosk?.pairedAt });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { setOk(false); setPin(""); }, [db.terminalCodes?.service?.updatedAt, kiosk?.pairedAt]);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true);
     const okay = await code.check(pin);
@@ -39,11 +40,11 @@ export const ServicePanel = ({ open, onClose, kioskId, kiosk, simOffline, setSim
     <Dialog open={open} onClose={close} title="Сервисная панель" description={ok ? "Для инженера терминалов" : "Введите сервисный код"}>
       {!ok ? (
         <form className="flex flex-col gap-4" onSubmit={submit}>
-          <Field label="Сервисный код" hint={code.factory ? `Действует заводской код ${FACTORY_CODES.service}. Смените его в админке → Терминалы` : `${code.digits} цифр · задаётся в админке → Терминалы`}
+          <Field label="Сервисный код" hint={!code.available ? "Сервисный код не задан — задайте его в кабинете → Терминалы" : code.factory ? `Действует заводской код ${FACTORY_CODES.service}. Смените его в админке → Терминалы` : `${code.digits} цифр · задаётся в админке → Терминалы`}
             error={code.lockedSec ? `Слишком много попыток. Повторите через ${code.lockedSec} с` : err}>
-            <Input type="password" inputMode="numeric" autoComplete="off" maxLength={code.digits} autoFocus disabled={!!code.lockedSec} value={pin} onChange={(e) => { setPin(e.target.value.replace(/\D/g, "")); setErr(null); }} placeholder={"•".repeat(code.digits)} />
+            <Input type="password" inputMode="numeric" autoComplete="off" maxLength={code.digits} autoFocus disabled={!code.available || !!code.lockedSec} value={pin} onChange={(e) => { setPin(e.target.value.replace(/\D/g, "")); setErr(null); }} placeholder={"•".repeat(code.digits)} />
           </Field>
-          <Button type="submit" disabled={pin.length !== code.digits || busy || !!code.lockedSec}>Открыть</Button>
+          <Button type="submit" disabled={!code.available || pin.length !== code.digits || busy || !!code.lockedSec}>Открыть</Button>
         </form>
       ) : (
         <div className="flex flex-col gap-5">

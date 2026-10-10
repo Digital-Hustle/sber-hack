@@ -6,6 +6,7 @@ package ru.proxodnaya.access.api.dto.response;
  * @param kiosk      терминал
  * @param checkpoint проходная или {@code null} — не привязан
  * @param settings   логика прохода и политика без связи
+ * @param codes      проверочные хэши только сопряжённому терминалу
  */
-public record KioskMeRs(KioskRs kiosk, KioskCheckpointRs checkpoint, SettingsRs settings) {
+public record KioskMeRs(KioskRs kiosk, KioskCheckpointRs checkpoint, SettingsRs settings, TerminalCodeHashesRs codes) {
 }

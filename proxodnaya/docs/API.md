@@ -107,3 +107,7 @@
 - people **[есть]** (роль `SVC_ACCESS`): `GET /internal/people/workers/{id}/access-profile` → `{status, fullName, position, contractor, deviceIds (действующие), permits: [{type, validUntil}], zoneIds}`, 404 — рабочего нет; `GET /internal/people/checkpoints/{id}` → `{id, zoneId, siteId, name, zoneCapacity?}` (`zoneCapacity` — ACC-17)
 - shift **[есть, SH-03]** (роль `SVC_ACCESS`): `GET /internal/shift/workers/{id}/active-shift?at=` → `{shiftId, start, end, windowOk}`: `windowOk` — `start − SHIFT_EARLY_ENTRY (60 мин) ≤ at < end`; вне окна, но смена в тот же день площадки → `windowOk: false`; смен в этот день нет → 404
 - access: `GET /internal/access/stats?...` (для assistant)
+
+### Коды терминалов (ACC-19)
+GET `/access/api/v1/terminal-codes` — ADMIN/SECURITY_OFFICER/INSTALLER, `{service?: {kind,digits,updatedAt,by}, guard?: {...}}`, без кода/соли/хэша. PUT `.../{kind}` `{code}` — ADMIN оба, INSTALLER только service, SECURITY_OFFICER только guard; 4–6 цифр, слабые коды → 400 CODE_WEAK. `updatedAt` — Unix millis, `by` — из серверного JWT.
+Подписанный `/kiosk/me` возвращает `codes` с salt/hash/iter/digits/updatedAt/by только сопряжённому терминалу. PBKDF2-HMAC-SHA256, 120000 итераций, случайная соль 16 байт. Заводских кодов в БД нет. Это разблокировка локальной панели, **не право на ALLOW/MANUAL**: серверная проверка прохода и GUARD JWT не меняются.
