@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -67,7 +68,7 @@ public class SecurityConfig {
      * @param issuer      issuer Keycloak
      * @param staffJwks   адрес ключей сессий сотрудников
      * @param staffIssuer issuer сессий сотрудников
-     * @return декодер JWT
+     * @return декодер JWT; у сессий сотрудников подпись ES256 — алгоритм задан явно (по умолчанию Nimbus ждёт только RS256)
      */
     @Bean
     public ReactiveJwtDecoder jwtDecoder(@Value("${app.oidc.jwk-set-uri}") String jwks,
@@ -76,7 +77,8 @@ public class SecurityConfig {
                                          @Value("${app.staff-token.issuer}") String staffIssuer) {
         NimbusReactiveJwtDecoder keycloak = NimbusReactiveJwtDecoder.withJwkSetUri(jwks).build();
         keycloak.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer));
-        NimbusReactiveJwtDecoder staff = NimbusReactiveJwtDecoder.withJwkSetUri(staffJwks).build();
+        NimbusReactiveJwtDecoder staff = NimbusReactiveJwtDecoder.withJwkSetUri(staffJwks)
+                .jwsAlgorithm(SignatureAlgorithm.ES256).build();
         staff.setJwtValidator(new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefaultWithIssuer(staffIssuer),
                 new JwtClaimValidator<Object>("azp", azp -> azp == null)));
         return token -> {

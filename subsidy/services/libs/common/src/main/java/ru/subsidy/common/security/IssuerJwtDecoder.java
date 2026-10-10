@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
@@ -55,7 +56,8 @@ public final class IssuerJwtDecoder implements JwtDecoder {
      * @return декодер
      */
     public static IssuerJwtDecoder of(String staffIssuer, String staffJwks, String kcIssuer, String kcJwks, List<String> audiences) {
-        NimbusJwtDecoder staff = NimbusJwtDecoder.withJwkSetUri(staffJwks).build();
+        // ES256 явно: по умолчанию декодер принимает только RS256 и отвечает «Unsupported algorithm of ES256»
+        NimbusJwtDecoder staff = NimbusJwtDecoder.withJwkSetUri(staffJwks).jwsAlgorithm(SignatureAlgorithm.ES256).build();
         staff.setJwtValidator(validator(staffIssuer, audiences, true));
         Supplier<JwtDecoder> keycloak = () -> {
             NimbusJwtDecoder decoder = blank(kcJwks)
